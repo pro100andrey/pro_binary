@@ -1,0 +1,27 @@
+name: pro_binary
+description: MessagePack is an efficient binary serialization format. It lets you exchange data among multiple languages like JSON. But it's faster and smaller. Small integers are encoded into a single byte, and typical short strings require only one extra byte in addition to the strings themselves.
+
+version: 1.0.0
+
+repository: https://github.com/pro100andrey/pro_binary
+issue_tracker: https://github.com/pro100andrey/pro_binary/issues
+homepage: https://github.com/pro100andrey/pro_binary
+documentation: https://github.com/pro100andrey/pro_binary/blob/main/README.md
+
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+  web:
+  windows:
+
+environment:
+  sdk: ^3.4.3
+
+# dependencies:
+  # meta: ^1.9.1
+
+dev_dependencies:
+  pro_lints: ^2.0.4
+  test: ^1.25.7
