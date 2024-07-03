@@ -1,12 +1,8 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 /// The [BinaryWriterInterface] class is an abstract base class used to encode
 /// various types of data into a binary format.
 abstract class BinaryWriterInterface {
-  /// The UTF-8 encoder is used to encode Strings.
-  static const utf8Encoder = Utf8Encoder();
-
   /// Writes an 8-bit unsigned integer to the buffer.
   ///
   /// This method ensures that there is enough space in the buffer to write the
@@ -209,6 +205,23 @@ abstract class BinaryWriterInterface {
   /// writer.writeBytes([1, 2, 3, 4, 5]); // Writes the bytes 1, 2, 3, 4, and 5 to the buffer.
   /// ```
   void writeBytes(List<int> bytes);
+
+  /// Writes a UTF-8 encoded string to the buffer.
+  ///
+  /// This method encodes the provided string using UTF-8 encoding and writes
+  /// the resulting bytes to the buffer. If necessary, it expands the buffer
+  /// size to accommodate the encoded string. The encoded bytes are then written
+  /// at the current offset position, and the offset is incremented by the
+  /// length of the encoded string.
+  ///
+  /// The [value] parameter is the string to be encoded and written to the
+  ///  buffer.
+  ///
+  /// Example:
+  /// ```dart
+  /// writer.writeString("Hello, world!"); // Writes the string "Hello, world!" as UTF-8 bytes to the buffer.
+  /// ```
+  void writeString(String value);
 
   /// Returns the written bytes as a [Uint8List].
   ///

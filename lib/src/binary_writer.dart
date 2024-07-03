@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'binary_writer_interface.dart';
@@ -129,6 +130,14 @@ class BinaryWriter extends BinaryWriterInterface {
       }
       _offset += length;
     }
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  @override
+  void writeString(String value) {
+    final encoded = utf8.encode(value);
+    writeBytes(encoded);
   }
 
   @override

@@ -3,6 +3,19 @@ import 'dart:typed_data';
 /// The [BinaryReaderInterface] class is an abstract base class used to decode
 /// various types of data from a binary format.
 abstract class BinaryReaderInterface {
+  /// Returns the number of bytes available to read from the buffer.
+  ///
+  /// This getter calculates the difference between the total length of the
+  /// buffer and the current offset, indicating the remaining bytes that can
+  /// still be read.
+  int get availableBytes;
+
+  /// Returns the number of bytes that have been read from the buffer.
+  ///
+  /// This getter returns the current offset, indicating how many bytes have
+  /// been consumed from the buffer since the start.
+  int get usedBytes;
+
   /// Reads an 8-bit unsigned integer from the buffer.
   ///
   /// This method reads an 8-bit unsigned integer from the current offset
@@ -178,4 +191,50 @@ abstract class BinaryReaderInterface {
   /// Uint8List bytes = reader.readBytes(5); // Reads five bytes from the buffer.
   /// ```
   Uint8List readBytes(int length);
+
+  /// Reads a UTF-8 encoded string from the buffer.
+  ///
+  /// This method reads the specified number of bytes from the buffer, decodes
+  /// them using UTF-8 encoding, and returns the resulting string. The offset
+  /// is incremented by the length of the read bytes.
+  ///
+  /// The [length] parameter specifies the number of bytes to read from the
+  /// buffer.
+  ///
+  /// Example:
+  /// ```dart
+  /// String value = reader.readString(5); // Reads 5 bytes and decodes them as a UTF-8 string.
+  /// ```
+  String readString(int length);
+
+  /// Peeks a list of bytes from the buffer without changing the internal state.
+  ///
+  /// This method reads the specified number of bytes from the specified offset
+  /// position and does not change the current offset.
+  ///
+  /// The [length] parameter specifies the number of bytes to read.
+  /// The optional [offset] parameter specifies the offset position to start
+  /// reading (defaults to the current offset).
+  ///
+  /// Returns a [Uint8List] containing the read bytes.
+  ///
+  /// Example:
+  /// ```dart
+  /// Uint8List bytes = reader.peekBytes(5); // Reads five bytes from the current offset without changing the offset.
+  /// Uint8List bytes = reader.peekBytes(5, 10); // Reads five bytes from the specified offset (10) without changing the offset.
+  /// ```
+  Uint8List peekBytes(int length, [int? offset]);
+
+  /// Skips the specified number of bytes in the buffer.
+  ///
+  /// This method increments the current offset by the specified number of
+  /// bytes, effectively skipping over that number of bytes in the buffer.
+  ///
+  /// The [length] parameter specifies the number of bytes to skip.
+  ///
+  /// Example:
+  /// ```dart
+  /// reader.skip(5); // Skips the next 5 bytes in the buffer.
+  /// ```
+  void skip(int length);
 }

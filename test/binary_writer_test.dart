@@ -106,6 +106,13 @@ void main() {
       expect(writer.takeBytes(), [1, 2, 3, 4, 5]);
     });
 
+    test('writeString', () {
+      writer.writeString('Hello, World!');
+      expect(writer.takeBytes(), [
+        72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33, // ASCII
+      ]);
+    });
+
     test('complex memory allocation test', () {
       final writer = BinaryWriter()
         ..writeUint8(42)

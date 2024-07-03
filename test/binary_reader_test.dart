@@ -28,6 +28,8 @@ void main() {
         0x40, // Float64 (3.141592653589793) little-endian
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
         0x07, // Bytes  [1, 2, 3, 4, 5, 6, 7]
+        72, 101, 108, 108, 111, 44, 32, 119, 111, 114, 108, 100,
+        33, // String 'Hello, world!'
       ]);
       reader = BinaryReader(buffer);
     });
@@ -214,6 +216,77 @@ void main() {
         ..readFloat64() // skip next eight bytes
         ..readFloat64(Endian.little); // skip next eight bytes
       expect(reader.readBytes(7), [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]);
+    });
+
+    test('readString', () {
+      reader
+        ..readUint8() // skip first byte
+        ..readInt8() // skip second byte
+        ..readUint16() // skip next two bytes
+        ..readUint16(Endian.little) // skip next two bytes
+        ..readInt16() // skip next two bytes
+        ..readInt16(Endian.little) // skip next two bytes
+        ..readUint32() // skip next four bytes
+        ..readUint32(Endian.little) // skip next four bytes
+        ..readInt32() // skip next four bytes
+        ..readInt32(Endian.little) // skip next four bytes
+        ..readFloat32() // skip next four bytes
+        ..readFloat32(Endian.little) // skip next four bytes
+        ..readFloat64() // skip next eight bytes
+        ..readFloat64(Endian.little) // skip next eight bytes
+        ..readBytes(7); // skip next seven bytes;
+
+      expect(reader.readString(13), 'Hello, world!');
+    });
+
+    test('availableBytes returns correct number of remaining bytes', () {
+      expect(reader.availableBytes, equals(70));
+      reader.readUint8();
+      expect(reader.availableBytes, equals(69));
+      reader.readBytes(4);
+      expect(reader.availableBytes, equals(65));
+    });
+
+    test('usedBytes returns correct number of used bytes', () {
+      expect(reader.usedBytes, equals(0));
+      reader.readUint8();
+      expect(reader.usedBytes, equals(1));
+      reader.readBytes(4);
+      expect(reader.usedBytes, equals(5));
+    });
+
+    test('peekBytes returns correct bytes without changing the internal state',
+        () {
+      final peekedBytes = reader.peekBytes(5);
+      expect(peekedBytes, equals([0x01, 0xFF, 0x01, 0x00, 0x00]));
+
+      // Ensure internal state has not changed
+      expect(reader.availableBytes, equals(70));
+      expect(reader.usedBytes, equals(0));
+
+      reader.readBytes(5);
+      expect(reader.availableBytes, equals(65));
+      expect(reader.usedBytes, equals(5));
+
+      final peekedBytesWithOffset = reader.peekBytes(3, 5);
+      expect(peekedBytesWithOffset, equals([0x01, 0xFF, 0xFF]));
+
+      // Ensure internal state has not changed
+      expect(reader.availableBytes, equals(65));
+      expect(reader.usedBytes, equals(5));
+    });
+
+    test('skip method correctly updates the offset', () {
+      expect(reader.usedBytes, equals(0));
+      reader.skip(6);
+      expect(reader.usedBytes, equals(6));
+      expect(reader.readUint8(), equals(0xFF)); // should read the 6th byte
+      reader.skip(10);
+      expect(reader.usedBytes, equals(17));
+      expect(
+        reader.readUint16(),
+        equals(0xFF),
+      ); // should read starting from the 9th byte
     });
   });
 }

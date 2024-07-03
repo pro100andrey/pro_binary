@@ -19,7 +19,8 @@ class BinaryWriterBenchmark extends BenchmarkBase {
       ..writeInt64(-9223372036854775808, Endian.little)
       ..writeFloat32(3.14, Endian.little)
       ..writeFloat64(3.141592653589793, Endian.little)
-      ..writeBytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 200, 255]);
+      ..writeBytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 200, 255])
+      ..writeString('Hello, World!');
 
     final _ = writer.takeBytes();
   }

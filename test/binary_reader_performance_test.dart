@@ -21,6 +21,8 @@ class BinaryReaderBenchmark extends BenchmarkBase {
     24, 45, 68, 84, 251, 33, 9,
     64, // Float64 (3.141592653589793 in IEEE 754 format, little-endian)
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 200, 255, // Bytes
+    72, 101, 108, 108, 111, 44, 32, 119, 111, 114, 108, 100,
+    33,
   ]);
 
   @override
@@ -36,7 +38,8 @@ class BinaryReaderBenchmark extends BenchmarkBase {
       ..readInt64(Endian.little)
       ..readFloat32(Endian.little)
       ..readFloat64(Endian.little)
-      ..readBytes(13); // length of the byte array
+      ..readBytes(13)
+      ..readString(13); // length of the byte array
   }
 
   @override
