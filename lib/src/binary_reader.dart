@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'binary_reader_interface.dart';
 
+/// The [BinaryReader] class is an implementation of the [BinaryReaderInterface]
+/// used to decode various types of data from a binary
 class BinaryReader extends BinaryReaderInterface {
   BinaryReader(this._buffer)
       : _data = ByteData.sublistView(_buffer),

@@ -1,7 +1,7 @@
 name: pro_binary
-description: MessagePack is an efficient binary serialization format. It lets you exchange data among multiple languages like JSON. But it's faster and smaller. Small integers are encoded into a single byte, and typical short strings require only one extra byte in addition to the strings themselves.
+description: Efficient binary serialization library for Dart. Encodes and decodes various data types.
 
-version: 1.0.0
+version: 1.0.1
 
 repository: https://github.com/pro100andrey/pro_binary
 issue_tracker: https://github.com/pro100andrey/pro_binary/issues
@@ -15,6 +15,11 @@ platforms:
   macos:
   web:
   windows:
+
+topics:
+  - binary
+  - serialization
+  - deserialization
 
 environment:
   sdk: ^3.4.3

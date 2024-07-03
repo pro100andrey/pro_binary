@@ -6,6 +6,8 @@ import 'binary_writer_interface.dart';
 const int _kInitialSize = 64;
 const int _kRegularSize = 1024;
 
+/// The [BinaryWriter] class is an implementation of the [BinaryWriterInterface]
+/// used to encode various types of data into a binary format.
 class BinaryWriter extends BinaryWriterInterface {
   final _builder = BytesBuilder(copy: false);
 
