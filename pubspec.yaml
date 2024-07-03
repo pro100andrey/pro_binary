@@ -23,5 +23,7 @@ environment:
   # meta: ^1.9.1
 
 dev_dependencies:
+  benchmark_harness: ^2.2.2
   pro_lints: ^2.0.4
   test: ^1.25.7
+

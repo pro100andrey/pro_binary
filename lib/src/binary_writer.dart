@@ -12,6 +12,8 @@ class BinaryWriter extends BinaryWriterInterface {
   ByteData? _data;
   int _offset = 0;
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   void writeUint8(int value) {
     _ensureSize(1);
@@ -19,6 +21,8 @@ class BinaryWriter extends BinaryWriterInterface {
     _offset += 1;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   void writeInt8(int value) {
     _ensureSize(1);
@@ -26,6 +30,8 @@ class BinaryWriter extends BinaryWriterInterface {
     _offset += 1;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   void writeUint16(int value, [Endian endian = Endian.big]) {
     _ensureSize(2);
@@ -33,6 +39,8 @@ class BinaryWriter extends BinaryWriterInterface {
     _offset += 2;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   void writeInt16(int value, [Endian endian = Endian.big]) {
     _ensureSize(2);
@@ -40,6 +48,8 @@ class BinaryWriter extends BinaryWriterInterface {
     _offset += 2;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   void writeUint32(int value, [Endian endian = Endian.big]) {
     _ensureSize(4);
@@ -47,6 +57,8 @@ class BinaryWriter extends BinaryWriterInterface {
     _offset += 4;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   void writeInt32(int value, [Endian endian = Endian.big]) {
     _ensureSize(4);
@@ -54,6 +66,8 @@ class BinaryWriter extends BinaryWriterInterface {
     _offset += 4;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   void writeUint64(int value, [Endian endian = Endian.big]) {
     _ensureSize(8);
@@ -61,6 +75,8 @@ class BinaryWriter extends BinaryWriterInterface {
     _offset += 8;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   void writeInt64(int value, [Endian endian = Endian.big]) {
     _ensureSize(8);
@@ -68,6 +84,8 @@ class BinaryWriter extends BinaryWriterInterface {
     _offset += 8;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   void writeFloat32(double value, [Endian endian = Endian.big]) {
     _ensureSize(4);
@@ -75,6 +93,8 @@ class BinaryWriter extends BinaryWriterInterface {
     _offset += 4;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   void writeFloat64(double value, [Endian endian = Endian.big]) {
     _ensureSize(8);
@@ -82,13 +102,14 @@ class BinaryWriter extends BinaryWriterInterface {
     _offset += 8;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   void writeBytes(List<int> bytes) {
     final length = bytes.length;
-    if (length == 0) {
-      return;
-    }
+
     _ensureSize(length);
+
     if (_offset == 0) {
       // we can add it directly
       _builder.add(bytes);
@@ -133,6 +154,12 @@ class BinaryWriter extends BinaryWriterInterface {
     }
   }
 
+  /// Ensures that the buffer has enough space to accommodate the specified
+  /// size. If the buffer is null, it initializes it with a small scratch
+  /// buffer and expands it later if needed. If the remaining space in the
+  /// buffer is less than the specified size, it appends a new scratch buffer.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void _ensureSize(int size) {
     if (_buffer == null) {
       // start with small scratch buffer, expand to regular later if needed
@@ -147,25 +174,27 @@ class BinaryWriter extends BinaryWriterInterface {
     }
   }
 
+  /// Appends the current buffer to the builder and resets the offset.
+  /// If the builder is not empty, a new buffer is allocated.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void _appendScratchBuffer() {
     if (_offset > 0) {
-      if (_builder.isEmpty) {
-        // We're still on small scratch buffer, move it to _builder
-        // and create regular one
-        _builder.add(
-          Uint8List.view(_buffer!.buffer, _buffer!.offsetInBytes, _offset),
-        );
-        _buffer = Uint8List(_kRegularSize);
-        _data = ByteData.view(_buffer!.buffer, _buffer!.offsetInBytes);
-      } else {
-        _builder.add(
-          Uint8List.fromList(
-            Uint8List.view(_buffer!.buffer, _buffer!.offsetInBytes, _offset),
-          ),
-        );
-      }
+      // Add the current buffer to the builder
+      _builder.add(
+        Uint8List.view(_buffer!.buffer, _buffer!.offsetInBytes, _offset),
+      );
 
+      // Reset offset
       _offset = 0;
+
+      // Allocate a new buffer only if the builder is not empty
+      _buffer = _builder.isEmpty
+          ? Uint8List(_kInitialSize)
+          : Uint8List(_kRegularSize);
+
+      // Create ByteData view for the new buffer
+      _data = ByteData.view(_buffer!.buffer, _buffer!.offsetInBytes);
     }
   }
 }
