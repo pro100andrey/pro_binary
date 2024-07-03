@@ -3,106 +3,108 @@ import 'dart:typed_data';
 import 'binary_reader_interface.dart';
 
 class BinaryReader extends BinaryReaderInterface {
-  BinaryReader(
-    Uint8List list, {
-    this.copyBinaryData = false,
-  })  : _list = list,
-        _data = ByteData.view(list.buffer, list.offsetInBytes);
-
-  final Uint8List _list;
+  BinaryReader(this._buffer) : _data = ByteData.sublistView(_buffer);
+  
+  final Uint8List _buffer;
   final ByteData _data;
-  final bool copyBinaryData;
-
   int _offset = 0;
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
-  int readUInt8() {
-    final result = _data.getUint8(_offset);
+  int readUint8() {
+    final value = _data.getUint8(_offset);
     _offset += 1;
-
-    return result;
+    return value;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   int readInt8() {
-    final result = _data.getInt8(_offset);
+    final value = _data.getInt8(_offset);
     _offset += 1;
-
-    return result;
+    return value;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
-  int readUInt16([Endian endian = Endian.big]) {
-    final result = _data.getUint16(_offset, endian);
+  int readUint16([Endian endian = Endian.big]) {
+    final value = _data.getUint16(_offset, endian);
     _offset += 2;
-
-    return result;
+    return value;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   int readInt16([Endian endian = Endian.big]) {
-    final result = _data.getInt16(_offset, endian);
+    final value = _data.getInt16(_offset, endian);
     _offset += 2;
-
-    return result;
+    return value;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
-  int readUInt32([Endian endian = Endian.big]) {
-    final result = _data.getUint32(_offset, endian);
+  int readUint32([Endian endian = Endian.big]) {
+    final value = _data.getUint32(_offset, endian);
     _offset += 4;
-
-    return result;
+    return value;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   int readInt32([Endian endian = Endian.big]) {
-    final result = _data.getInt32(_offset, endian);
+    final value = _data.getInt32(_offset, endian);
     _offset += 4;
-
-    return result;
+    return value;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
-  int readUInt64([Endian endian = Endian.big]) {
-    final result = _data.getUint64(_offset, endian);
+  int readUint64([Endian endian = Endian.big]) {
+    final value = _data.getUint64(_offset, endian);
     _offset += 8;
-
-    return result;
+    return value;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   int readInt64([Endian endian = Endian.big]) {
-    final result = _data.getInt64(_offset, endian);
+    final value = _data.getInt64(_offset, endian);
     _offset += 8;
-
-    return result;
+    return value;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   double readFloat32([Endian endian = Endian.big]) {
-    final result = _data.getFloat32(_offset, endian);
+    final value = _data.getFloat32(_offset, endian);
     _offset += 4;
-
-    return result;
+    return value;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   double readFloat64([Endian endian = Endian.big]) {
-    final result = _data.getFloat64(_offset, endian);
+    final value = _data.getFloat64(_offset, endian);
     _offset += 8;
-
-    return result;
+    return value;
   }
 
-  Uint8List _readBuffer(int length) {
-    final res = Uint8List.view(
-      _list.buffer,
-      _list.offsetInBytes + _offset,
-      length,
-    );
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  @override
+  Uint8List readBytes(int length) {
+    final bytes = _buffer.sublist(_offset, _offset + length);
     _offset += length;
-
-    return copyBinaryData ? Uint8List.fromList(res) : res;
+    return bytes;
   }
 }
