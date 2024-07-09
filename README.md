@@ -24,7 +24,7 @@ Then, run `pub get` to install the package.
 ### Writing Binary Data
 
 ``` dart
-import 'package:binary_rw/binary_writer.dart';
+import 'package:pro_binary/pro_binary.dart';
 
 void main() {
   final writer = BinaryWriter()
@@ -49,7 +49,7 @@ void main() {
 ### Reading Binary Data
 
 ``` dart
-import 'package:binary_rw/binary_reader.dart';
+import 'package:pro_binary/pro_binary.dart';
 
 void main() {
   final buffer = Uint8List.fromList([
@@ -91,7 +91,7 @@ This will execute all tests in the `test` directory and provide a summary of the
 
 ## Contributing
 
-Feel free to open issues or submit pull requests on GitHub. Contributions are always welcome!
+Feel free to open [issues](https://github.com/pro100andrey/pro_binary/issues) or submit [pull requests](https://github.com/pro100andrey/pro_binary/pulls) on GitHub. Contributions are always welcome!
 
 ## License
 
