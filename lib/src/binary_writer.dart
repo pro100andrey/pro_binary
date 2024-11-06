@@ -15,6 +15,9 @@ class BinaryWriter extends BinaryWriterInterface {
   ByteData? _data;
   int _offset = 0;
 
+  @override
+  int get bytesWritten => _builder.length + _offset;
+
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   @override

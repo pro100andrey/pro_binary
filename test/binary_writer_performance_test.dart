@@ -27,16 +27,6 @@ class BinaryWriterBenchmark extends BenchmarkBase {
 
   @override
   void exercise() => run();
-
-  @override
-  void setup() {
-    // Set up any initial state here
-  }
-
-  @override
-  void teardown() {
-    // Clean up any resources here
-  }
 }
 
 void main() {
