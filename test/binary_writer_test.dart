@@ -11,6 +11,10 @@ void main() {
       writer = BinaryWriter();
     });
 
+    test('takeBytes for empty', () {
+      expect(writer.takeBytes(), isEmpty);
+    });
+
     test('writeUint8', () {
       writer.writeUint8(1);
       expect(writer.takeBytes(), [1]);
@@ -169,9 +173,12 @@ void main() {
     });
 
     test('write large data set', () {
-      final largeData =
-          Uint8List.fromList(List.generate(10000, (i) => i % 256));
+      final largeData = Uint8List.fromList(
+        List.generate(10000, (i) => i % 256),
+      );
+
       writer.writeBytes(largeData);
+
       final result = writer.takeBytes();
 
       expect(result.length, equals(10000));

@@ -3,20 +3,20 @@ import 'dart:typed_data';
 
 import 'binary_writer_interface.dart';
 
-const int _kInitialSize = 64;
-const int _kRegularSize = 1024;
-
 /// The [BinaryWriter] class is an implementation of the [BinaryWriterInterface]
 /// used to encode various types of data into a binary format.
 class BinaryWriter extends BinaryWriterInterface {
-  final _builder = BytesBuilder(copy: false);
+  BinaryWriter({int initialBufferSize = 64})
+      : _initialBufferSize = initialBufferSize;
+
+  final int _initialBufferSize;
 
   Uint8List? _buffer;
   ByteData? _data;
   int _offset = 0;
 
   @override
-  int get bytesWritten => _builder.length + _offset;
+  int get bytesWritten => _offset;
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
@@ -113,28 +113,12 @@ class BinaryWriter extends BinaryWriterInterface {
   @override
   void writeBytes(List<int> bytes) {
     final length = bytes.length;
-
     _ensureSize(length);
 
-    if (_offset == 0) {
-      // we can add it directly
-      _builder.add(bytes);
-    } else {
-      // If the list is Uint8List, we can copy it directly
-      if (bytes is Uint8List) {
-        _buffer!.setRange(
-          _offset,
-          _offset + length,
-          bytes,
-        );
-      } else {
-        // Otherwise, copy it byte by byte
-        for (var i = 0; i < length; i++) {
-          _buffer![_offset + i] = bytes[i];
-        }
-      }
-      _offset += length;
-    }
+    final list = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+
+    _buffer!.setRange(_offset, _offset + length, list);
+    _offset += length;
   }
 
   @pragma('vm:prefer-inline')
@@ -147,68 +131,51 @@ class BinaryWriter extends BinaryWriterInterface {
 
   @override
   Uint8List takeBytes() {
-    if (_builder.isEmpty) {
-      // Get the view of the current scratch buffer
-      final result = Uint8List.view(
-        _buffer!.buffer,
-        _buffer!.offsetInBytes,
-        _offset,
-      );
-
-      // Reset the internal state
-      _offset = 0;
-      _buffer = null;
-      _data = null;
-
-      return result;
-    } else {
-      _appendScratchBuffer();
-
-      return _builder.takeBytes();
+    if (_buffer == null) {
+      return Uint8List(0);
     }
+
+    final result = Uint8List.sublistView(_buffer!, 0, _offset);
+
+    _offset = 0;
+    _buffer = null;
+    _data = null;
+
+    return result;
   }
 
   /// Ensures that the buffer has enough space to accommodate the specified
-  /// size. If the buffer is null, it initializes it with a small scratch
-  /// buffer and expands it later if needed. If the remaining space in the
-  /// buffer is less than the specified size, it appends a new scratch buffer.
+  /// size. If the buffer is too small, it expands it to the next power of two.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void _ensureSize(int size) {
     if (_buffer == null) {
-      // start with small scratch buffer, expand to regular later if needed
-      _buffer = Uint8List(_kInitialSize);
+      final initialSize = size > _initialBufferSize
+          ? _nextPowerOfTwo(size)
+          : _initialBufferSize;
+      _buffer = Uint8List(initialSize);
       _data = ByteData.view(_buffer!.buffer, _buffer!.offsetInBytes);
+
+      return;
     }
 
-    final remaining = _buffer!.length - _offset;
+    final requiredSize = _offset + size;
+    if (_buffer!.length < requiredSize) {
+      final newSize = _nextPowerOfTwo(requiredSize);
 
-    if (remaining < size) {
-      _appendScratchBuffer();
+      _buffer = Uint8List(newSize)..setRange(0, _offset, _buffer!);
+      _data = ByteData.view(_buffer!.buffer, _buffer!.offsetInBytes);
     }
   }
 
-  /// Appends the current buffer to the builder and resets the offset.
-  /// If the builder is not empty, a new buffer is allocated.
+  /// Returns the next power of two for the specified value.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  void _appendScratchBuffer() {
-    if (_offset > 0) {
-      // Add the current buffer to the builder
-      _builder.add(
-        Uint8List.view(_buffer!.buffer, _buffer!.offsetInBytes, _offset),
-      );
+  int _nextPowerOfTwo(int value) {
+    assert(value > 0, 'Value must be greater than zero.');
 
-      // Reset offset
-      _offset = 0;
+    final result = 1 << (value - 1).bitLength;
 
-      // Allocate a new buffer only if the builder is not empty
-      _buffer = _builder.isEmpty
-          ? Uint8List(_kInitialSize)
-          : Uint8List(_kRegularSize);
-
-      // Create ByteData view for the new buffer
-      _data = ByteData.view(_buffer!.buffer, _buffer!.offsetInBytes);
-    }
+    return result;
   }
 }

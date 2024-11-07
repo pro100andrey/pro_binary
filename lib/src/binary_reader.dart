@@ -125,7 +125,8 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('dart2js:tryInline')
   @override
   Uint8List readBytes(int length) {
-    final bytes = _buffer.sublist(_offset, _offset + length);
+    final bytes = Uint8List.sublistView(_buffer, _offset, _offset + length);
+
     _offset += length;
 
     return bytes;
@@ -144,26 +145,45 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('dart2js:tryInline')
   @override
   Uint8List peekBytes(int length, [int? offset]) {
-    assert(length >= 0, 'Length must be greater than or equal to zero.');
-    assert(
-      offset == null || offset >= 0,
-      'Offset must be greater than or equal to zero.',
-    );
+    if (length == 0) {
+      throw ArgumentError.value(length, 'Length must be greater than zero.');
+    }
+
+    if (offset != null && offset < 0) {
+      throw ArgumentError.value(
+        offset,
+        'Offset must be greater than or equal to zero.',
+      );
+    }
 
     final peekOffset = offset ?? _offset;
 
-    assert(
-      peekOffset + length <= _length,
-      'Offset is out of bounds.',
-    );
+    if (peekOffset < 0) {
+      throw ArgumentError.value(
+        peekOffset,
+        'Offset must be greater than or equal to zero.',
+      );
+    }
 
     return _data.buffer.asUint8List(peekOffset, length);
   }
 
   @override
   void skip(int length) {
-    assert(length >= 0, 'Length must be greater than or equal to zero.');
-    assert(_offset + length <= _length, 'Offset is out of bounds.');
+    if (length < 0) {
+      throw ArgumentError.value(
+        length,
+        'Length must be greater than or equal to zero.',
+      );
+    }
+
+    if (_offset + length > _length) {
+      throw ArgumentError.value(
+        length,
+        'Offset is out of bounds.',
+      );
+    }
+
     _offset += length;
   }
 }
