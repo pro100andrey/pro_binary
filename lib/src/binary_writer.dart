@@ -7,12 +7,14 @@ import 'binary_writer_interface.dart';
 /// used to encode various types of data into a binary format.
 class BinaryWriter extends BinaryWriterInterface {
   BinaryWriter({int initialBufferSize = 64})
-      : _initialBufferSize = initialBufferSize;
+      : _initialBufferSize = initialBufferSize {
+    _initializeBuffer(initialBufferSize);
+  }
 
   final int _initialBufferSize;
 
-  Uint8List? _buffer;
-  ByteData? _data;
+  late Uint8List _buffer;
+  late ByteData _data;
   int _offset = 0;
 
   @override
@@ -22,8 +24,12 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeUint8(int value) {
+    if (value < 0 || value > 255) {
+      throw RangeError.range(value, 0, 255, 'value');
+    }
+
     _ensureSize(1);
-    _data!.setUint8(_offset, value);
+    _data.setUint8(_offset, value);
     _offset += 1;
   }
 
@@ -31,8 +37,12 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeInt8(int value) {
+    if (value < -128 || value > 127) {
+      throw RangeError.range(value, -128, 127, 'value');
+    }
+
     _ensureSize(1);
-    _data!.setInt8(_offset, value);
+    _data.setInt8(_offset, value);
     _offset += 1;
   }
 
@@ -40,8 +50,12 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeUint16(int value, [Endian endian = Endian.big]) {
+    if (value < 0 || value > 65535) {
+      throw RangeError.range(value, 0, 65535, 'value');
+    }
+
     _ensureSize(2);
-    _data!.setUint16(_offset, value, endian);
+    _data.setUint16(_offset, value, endian);
     _offset += 2;
   }
 
@@ -49,8 +63,12 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeInt16(int value, [Endian endian = Endian.big]) {
+    if (value < -32768 || value > 32767) {
+      throw RangeError.range(value, -32768, 32767, 'value');
+    }
+
     _ensureSize(2);
-    _data!.setInt16(_offset, value, endian);
+    _data.setInt16(_offset, value, endian);
     _offset += 2;
   }
 
@@ -58,8 +76,12 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeUint32(int value, [Endian endian = Endian.big]) {
+    if (value < 0 || value > 4294967295) {
+      throw RangeError.range(value, 0, 4294967295, 'value');
+    }
+
     _ensureSize(4);
-    _data!.setUint32(_offset, value, endian);
+    _data.setUint32(_offset, value, endian);
     _offset += 4;
   }
 
@@ -68,7 +90,7 @@ class BinaryWriter extends BinaryWriterInterface {
   @override
   void writeInt32(int value, [Endian endian = Endian.big]) {
     _ensureSize(4);
-    _data!.setInt32(_offset, value, endian);
+    _data.setInt32(_offset, value, endian);
     _offset += 4;
   }
 
@@ -77,7 +99,7 @@ class BinaryWriter extends BinaryWriterInterface {
   @override
   void writeUint64(int value, [Endian endian = Endian.big]) {
     _ensureSize(8);
-    _data!.setUint64(_offset, value, endian);
+    _data.setUint64(_offset, value, endian);
     _offset += 8;
   }
 
@@ -86,7 +108,7 @@ class BinaryWriter extends BinaryWriterInterface {
   @override
   void writeInt64(int value, [Endian endian = Endian.big]) {
     _ensureSize(8);
-    _data!.setInt64(_offset, value, endian);
+    _data.setInt64(_offset, value, endian);
     _offset += 8;
   }
 
@@ -95,7 +117,7 @@ class BinaryWriter extends BinaryWriterInterface {
   @override
   void writeFloat32(double value, [Endian endian = Endian.big]) {
     _ensureSize(4);
-    _data!.setFloat32(_offset, value, endian);
+    _data.setFloat32(_offset, value, endian);
     _offset += 4;
   }
 
@@ -104,7 +126,7 @@ class BinaryWriter extends BinaryWriterInterface {
   @override
   void writeFloat64(double value, [Endian endian = Endian.big]) {
     _ensureSize(8);
-    _data!.setFloat64(_offset, value, endian);
+    _data.setFloat64(_offset, value, endian);
     _offset += 8;
   }
 
@@ -117,7 +139,7 @@ class BinaryWriter extends BinaryWriterInterface {
 
     final list = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
 
-    _buffer!.setRange(_offset, _offset + length, list);
+    _buffer.setRange(_offset, _offset + length, list);
     _offset += length;
   }
 
@@ -125,23 +147,31 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeString(String value) {
+     final length = value.length;
+    _ensureSize(length);
+
     final encoded = utf8.encode(value);
-    writeBytes(encoded);
+
+    _buffer.setRange(_offset, _offset + encoded.length, encoded);
+    _offset += encoded.length;
   }
 
   @override
   Uint8List takeBytes() {
-    if (_buffer == null) {
-      return Uint8List(0);
-    }
-
-    final result = Uint8List.sublistView(_buffer!, 0, _offset);
+    final result = Uint8List.sublistView(_buffer, 0, _offset);
 
     _offset = 0;
-    _buffer = null;
-    _data = null;
+    _initializeBuffer(_initialBufferSize);
 
     return result;
+  }
+
+  /// Initializes the buffer with the specified size.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void _initializeBuffer(int size) {
+    _buffer = Uint8List(size);
+    _data = ByteData.view(_buffer.buffer);
   }
 
   /// Ensures that the buffer has enough space to accommodate the specified
@@ -149,33 +179,13 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void _ensureSize(int size) {
-    if (_buffer == null) {
-      final initialSize = size > _initialBufferSize
-          ? _nextPowerOfTwo(size)
-          : _initialBufferSize;
-      _buffer = Uint8List(initialSize);
-      _data = ByteData.view(_buffer!.buffer, _buffer!.offsetInBytes);
-
-      return;
-    }
-
     final requiredSize = _offset + size;
-    if (_buffer!.length < requiredSize) {
-      final newSize = _nextPowerOfTwo(requiredSize);
+    if (_buffer.length < requiredSize) {
+      final newSize = 1 << (requiredSize - 1).bitLength;
+      final newBuffer = Uint8List(newSize)..setRange(0, _offset, _buffer);
 
-      _buffer = Uint8List(newSize)..setRange(0, _offset, _buffer!);
-      _data = ByteData.view(_buffer!.buffer, _buffer!.offsetInBytes);
+      _buffer = newBuffer;
+      _data = ByteData.view(_buffer.buffer);
     }
-  }
-
-  /// Returns the next power of two for the specified value.
-  @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  int _nextPowerOfTwo(int value) {
-    assert(value > 0, 'Value must be greater than zero.');
-
-    final result = 1 << (value - 1).bitLength;
-
-    return result;
   }
 }

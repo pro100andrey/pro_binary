@@ -186,4 +186,11 @@ class BinaryReader extends BinaryReaderInterface {
 
     _offset += length;
   }
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  @override
+  void reset() {
+    _offset = 0;
+  }
 }
