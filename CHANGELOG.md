@@ -1,3 +1,7 @@
+## 1.1.1
+
+- fix: warnings
+
 ## 1.1.0
 
 - fix: Increased test coverage, providing more comprehensive validation for edge cases.

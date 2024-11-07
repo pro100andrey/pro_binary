@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:pro_binary/pro_binary.dart';
 
 void main(List<String> args) {
-
   // ignore: avoid_print
   print('BinaryWriter\n');
   final writer = BinaryWriter()

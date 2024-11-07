@@ -147,7 +147,7 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeString(String value) {
-     final length = value.length;
+    final length = value.length;
     _ensureSize(length);
 
     final encoded = utf8.encode(value);
