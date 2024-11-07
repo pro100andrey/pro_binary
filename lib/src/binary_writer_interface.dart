@@ -3,7 +3,6 @@ import 'dart:typed_data';
 /// The [BinaryWriterInterface] class is an abstract base class used to encode
 /// various types of data into a binary format.
 abstract class BinaryWriterInterface {
-
   /// Returns the number of bytes written to the buffer.
   int get bytesWritten;
 
