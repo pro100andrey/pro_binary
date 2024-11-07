@@ -4,10 +4,13 @@ import 'package:benchmark_harness/benchmark_harness.dart';
 import 'package:pro_binary/pro_binary.dart';
 
 class BinaryReaderBenchmark extends BenchmarkBase {
-  BinaryReaderBenchmark() : super('BinaryReader performance test');
+  BinaryReaderBenchmark(this.iterations)
+      : super('BinaryReader performance test');
+
+  final iterations;
 
   // Buffer with test data
-  final Uint8List buffer = Uint8List.fromList([
+  final buffer = Uint8List.fromList([
     42, // Uint8
     214, // Int8 (two's complement of -42 is 214)
     255, 255, // Uint16 (65535 in little-endian)
@@ -25,37 +28,34 @@ class BinaryReaderBenchmark extends BenchmarkBase {
     33,
   ]);
 
-  @override
-  void run() {
-    final _ = BinaryReader(buffer)
-      ..readUint8()
-      ..readInt8()
-      ..readUint16(Endian.little)
-      ..readInt16(Endian.little)
-      ..readUint32(Endian.little)
-      ..readInt32(Endian.little)
-      ..readUint64(Endian.little)
-      ..readInt64(Endian.little)
-      ..readFloat32(Endian.little)
-      ..readFloat64(Endian.little)
-      ..readBytes(13)
-      ..readString(13); // length of the byte array
-  }
-
-  @override
-  void exercise() => run();
+  late final BinaryReader reader;
 
   @override
   void setup() {
-    // Set up any initial state here
+    reader = BinaryReader(buffer);
   }
 
   @override
-  void teardown() {
-    // Clean up any resources here
+  void run() {
+    for (var i = 0; i < iterations; i++) {
+      reader
+        ..reset()
+        ..readUint8()
+        ..readInt8()
+        ..readUint16(Endian.little)
+        ..readInt16(Endian.little)
+        ..readUint32(Endian.little)
+        ..readInt32(Endian.little)
+        ..readUint64(Endian.little)
+        ..readInt64(Endian.little)
+        ..readFloat32(Endian.little)
+        ..readFloat64(Endian.little)
+        ..readBytes(13)
+        ..readString(13); // length of the byte array
+    }
   }
 }
 
 void main() {
-  BinaryReaderBenchmark().report();
+  BinaryReaderBenchmark(1000).report();
 }

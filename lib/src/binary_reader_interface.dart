@@ -237,4 +237,7 @@ abstract class BinaryReaderInterface {
   /// reader.skip(5); // Skips the next 5 bytes in the buffer.
   /// ```
   void skip(int length);
+
+  /// Resets the reader to the initial state.
+  void reset();
 }

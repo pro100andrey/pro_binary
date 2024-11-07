@@ -11,12 +11,16 @@ void main() {
       writer = BinaryWriter();
     });
 
+    test('takeBytes for empty', () {
+      expect(writer.takeBytes(), isEmpty);
+    });
+
     test('writeUint8', () {
       writer.writeUint8(1);
       expect(writer.takeBytes(), [1]);
     });
 
-    test('writeInt8', () {
+    test('writeInt8 negative value', () {
       writer.writeInt8(-1);
       expect(writer.takeBytes(), [255]);
     });
@@ -146,6 +150,57 @@ void main() {
       ];
 
       expect(bytes, equals(expectedBytes));
+    });
+
+    test('buffer should expand when size exceeds initial allocation', () {
+      for (var i = 0; i < 100; i++) {
+        writer.writeUint8(i);
+      }
+
+      final result = writer.takeBytes();
+      expect(result.length, equals(100));
+      for (var i = 0; i < 100; i++) {
+        expect(result[i], equals(i));
+      }
+    });
+
+    test('reuse writer after takeBytes', () {
+      writer.writeUint8(1);
+      expect(writer.takeBytes(), [1]);
+
+      writer.writeUint8(2);
+      expect(writer.takeBytes(), [2]);
+    });
+
+    test('write large data set', () {
+      final largeData = Uint8List.fromList(
+        List.generate(10000, (i) => i % 256),
+      );
+
+      writer.writeBytes(largeData);
+
+      final result = writer.takeBytes();
+
+      expect(result.length, equals(10000));
+      expect(result, equals(largeData));
+    });
+
+    test('bytesWritten returns correct number of bytes', () {
+      writer.writeUint8(1);
+      expect(writer.bytesWritten, equals(1));
+
+      writer.writeUint16(258);
+      expect(writer.bytesWritten, equals(3));
+
+      writer.writeBytes([1, 2, 3, 4]);
+      expect(writer.bytesWritten, equals(7));
+
+      // Test with a large amount of data written
+      final largeData = Uint8List.fromList(
+        List.generate(10000, (i) => i % 256),
+      );
+      writer.writeBytes(largeData);
+      expect(writer.bytesWritten, equals(10007));
     });
   });
 }
