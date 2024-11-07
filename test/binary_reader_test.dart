@@ -246,9 +246,7 @@ void main() {
 
     test('skip method correctly updates the offset', () {
       final buffer = Uint8List.fromList([0x00, 0x01, 0x02, 0x03, 0x04]);
-      final reader = BinaryReader(buffer);
-
-      reader.skip(2);
+      final reader = BinaryReader(buffer)..skip(2);
       expect(reader.usedBytes, equals(2));
       expect(reader.readUint8(), equals(0x02));
     });
@@ -286,8 +284,7 @@ void main() {
 
     test('reading with offset at end of buffer', () {
       final buffer = Uint8List.fromList([0x01, 0x02]);
-      final reader = BinaryReader(buffer);
-      reader.skip(2);
+      final reader = BinaryReader(buffer)..skip(2);
 
       expect(reader.readUint8, throwsRangeError);
     });

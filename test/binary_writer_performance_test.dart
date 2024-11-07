@@ -7,7 +7,7 @@ class BinaryWriterBenchmark extends BenchmarkBase {
   BinaryWriterBenchmark(this.iterations)
       : super('BinaryWriter performance test');
 
-  final iterations;
+  final int iterations;
   late final BinaryWriter writer;
 
   @override

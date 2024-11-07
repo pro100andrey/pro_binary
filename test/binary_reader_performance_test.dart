@@ -7,7 +7,7 @@ class BinaryReaderBenchmark extends BenchmarkBase {
   BinaryReaderBenchmark(this.iterations)
       : super('BinaryReader performance test');
 
-  final iterations;
+  final int iterations;
 
   // Buffer with test data
   final buffer = Uint8List.fromList([
