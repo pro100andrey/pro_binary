@@ -1,3 +1,8 @@
+## 2.0.0
+
+- Update dependencies
+- sdk: ^3.6.0
+
 ## 1.1.1
 
 - fix: warnings
