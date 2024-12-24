@@ -14,7 +14,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ``` yaml
 dependencies:
-  pro_binary: ^1.1.0
+  pro_binary: ^2.0.0
 ```
 
 Then, run `pub get` to install the package.
