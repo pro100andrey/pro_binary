@@ -89,6 +89,10 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeInt32(int value, [Endian endian = Endian.big]) {
+    if (value < -2147483648 || value > 2147483647) {
+      throw RangeError.range(value, -2147483648, 2147483647, 'value');
+    }
+
     _ensureSize(4);
     _data.setInt32(_offset, value, endian);
     _offset += 4;
@@ -147,13 +151,12 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeString(String value) {
-    final length = value.length;
+    final encoded = utf8.encode(value);
+    final length = encoded.length;
     _ensureSize(length);
 
-    final encoded = utf8.encode(value);
-
-    _buffer.setRange(_offset, _offset + encoded.length, encoded);
-    _offset += encoded.length;
+    _buffer.setRange(_offset, _offset + length, encoded);
+    _offset += length;
   }
 
   @override
@@ -164,6 +167,15 @@ class BinaryWriter extends BinaryWriterInterface {
     _initializeBuffer(_initialBufferSize);
 
     return result;
+  }
+
+  @override
+  Uint8List toBytes() => Uint8List.sublistView(_buffer, 0, _offset);
+
+  @override
+  void clear() {
+    _offset = 0;
+    _initializeBuffer(_initialBufferSize);
   }
 
   /// Initializes the buffer with the specified size.

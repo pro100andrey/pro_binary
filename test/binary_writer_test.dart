@@ -202,5 +202,119 @@ void main() {
       writer.writeBytes(largeData);
       expect(writer.bytesWritten, equals(10007));
     });
+
+    group('Range validation', () {
+      test('writeUint8 throws when value is negative', () {
+        expect(() => writer.writeUint8(-1), throwsRangeError);
+      });
+
+      test('writeUint8 throws when value exceeds 255', () {
+        expect(() => writer.writeUint8(256), throwsRangeError);
+      });
+
+      test('writeInt8 throws when value is less than -128', () {
+        expect(() => writer.writeInt8(-129), throwsRangeError);
+      });
+
+      test('writeInt8 throws when value exceeds 127', () {
+        expect(() => writer.writeInt8(128), throwsRangeError);
+      });
+
+      test('writeUint16 throws when value is negative', () {
+        expect(() => writer.writeUint16(-1), throwsRangeError);
+      });
+
+      test('writeUint16 throws when value exceeds 65535', () {
+        expect(() => writer.writeUint16(65536), throwsRangeError);
+      });
+
+      test('writeInt16 throws when value is less than -32768', () {
+        expect(() => writer.writeInt16(-32769), throwsRangeError);
+      });
+
+      test('writeInt16 throws when value exceeds 32767', () {
+        expect(() => writer.writeInt16(32768), throwsRangeError);
+      });
+
+      test('writeUint32 throws when value is negative', () {
+        expect(() => writer.writeUint32(-1), throwsRangeError);
+      });
+
+      test('writeUint32 throws when value exceeds 4294967295', () {
+        expect(() => writer.writeUint32(4294967296), throwsRangeError);
+      });
+
+      test('writeInt32 throws when value is less than -2147483648', () {
+        expect(() => writer.writeInt32(-2147483649), throwsRangeError);
+      });
+
+      test('writeInt32 throws when value exceeds 2147483647', () {
+        expect(() => writer.writeInt32(2147483648), throwsRangeError);
+      });
+    });
+
+    group('toBytes method', () {
+      test('toBytes returns current buffer without resetting', () {
+        writer
+          ..writeUint8(42)
+          ..writeUint8(100);
+
+        final bytes1 = writer.toBytes();
+        expect(bytes1, equals([42, 100]));
+
+        // Should not reset, can continue writing
+        writer.writeUint8(200);
+        final bytes2 = writer.toBytes();
+        expect(bytes2, equals([42, 100, 200]));
+      });
+
+      test('toBytes vs takeBytes behavior', () {
+        writer
+          ..writeUint8(1)
+          ..writeUint8(2);
+
+        final bytes1 = writer.toBytes();
+        expect(bytes1, equals([1, 2]));
+
+        // takeBytes should reset
+        final bytes2 = writer.takeBytes();
+        expect(bytes2, equals([1, 2]));
+
+        // After takeBytes, should be empty
+        final bytes3 = writer.toBytes();
+        expect(bytes3, isEmpty);
+      });
+
+      test('toBytes on empty writer returns empty list', () {
+        final bytes = writer.toBytes();
+        expect(bytes, isEmpty);
+      });
+    });
+
+    group('clear method', () {
+      test('clear resets writer without returning bytes', () {
+        writer
+          ..writeUint8(42)
+          ..writeUint8(100)
+          ..clear();
+
+        expect(writer.bytesWritten, equals(0));
+        expect(writer.toBytes(), isEmpty);
+      });
+
+      test('clear allows writing new data after reset', () {
+        writer
+          ..writeUint8(42)
+          ..clear()
+          ..writeUint8(100);
+
+        expect(writer.toBytes(), equals([100]));
+      });
+
+      test('clear on empty writer does nothing', () {
+        writer.clear();
+        expect(writer.bytesWritten, equals(0));
+      });
+    });
   });
 }

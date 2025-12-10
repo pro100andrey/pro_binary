@@ -239,5 +239,27 @@ abstract class BinaryReaderInterface {
   void skip(int length);
 
   /// Resets the reader to the initial state.
+  ///
+  /// This method sets the current offset back to 0, allowing the reader to
+  /// start reading from the beginning of the buffer again.
+  ///
+  /// Example:
+  /// ```dart
+  /// reader.readUint8(); // Reads a byte
+  /// reader.reset(); // Resets to the beginning
+  /// reader.readUint8(); // Reads the same byte again
+  /// ```
   void reset();
+
+  /// Returns the current offset position in the buffer.
+  ///
+  /// This getter returns the current reading position, which is the same as
+  /// [usedBytes]. This is useful when you need to save the current position
+  /// to return to it later.
+  ///
+  /// Example:
+  /// ```dart
+  /// int position = reader.offset; // Gets current position
+  /// ```
+  int get offset;
 }

@@ -226,14 +226,57 @@ abstract class BinaryWriterInterface {
   /// ```
   void writeString(String value);
 
-  /// Returns the written bytes as a [Uint8List].
+  /// Returns the written bytes as a [Uint8List] and resets the writer.
   ///
-  /// If the builder is empty, it returns the current scratch buffer contents
-  /// as a [Uint8List] view. Otherwise, it appends the scratch buffer to the
-  /// builder
-  /// and returns the builder's bytes.
+  /// This method returns a copy of the written bytes from the beginning to the
+  /// current offset position. After returning the bytes, it resets the internal
+  /// state by clearing the offset and reinitializing the buffer to its initial
+  /// size, preparing the writer for new data.
   ///
-  /// This method also resets the internal state, preparing the writer for new
-  /// data.
+  /// Use this method when you want to retrieve the data and start fresh.
+  ///
+  /// Example:
+  /// ```dart
+  /// final writer = BinaryWriter();
+  /// writer.writeUint8(42);
+  /// final bytes = writer.takeBytes(); // Returns [42] and resets the writer
+  /// writer.writeUint8(100); // Can write new data
+  /// ```
   Uint8List takeBytes();
+
+  /// Returns the written bytes as a [Uint8List] without resetting the writer.
+  ///
+  /// This method returns a view of the written bytes from the beginning to the
+  /// current offset position. Unlike [takeBytes], this method does not reset
+  /// the internal state, allowing you to continue writing more data.
+  ///
+  /// Use this method when you want to inspect the current buffer state without
+  /// losing the ability to continue writing.
+  ///
+  /// Example:
+  /// ```dart
+  /// final writer = BinaryWriter();
+  /// writer.writeUint8(42);
+  /// final bytes = writer.toBytes(); // Returns [42] without resetting
+  /// writer.writeUint8(100); // Continues writing, buffer is now [42, 100]
+  /// ```
+  Uint8List toBytes();
+
+  /// Clears the writer by resetting the internal state without returning bytes.
+  ///
+  /// This method resets the offset to 0 and reinitializes the buffer to its
+  /// initial size. Unlike [takeBytes], this method does not return the written
+  /// bytes, making it useful when you want to discard the current data and
+  /// start fresh.
+  ///
+  /// Use this method when you want to clear the buffer without retrieving data.
+  ///
+  /// Example:
+  /// ```dart
+  /// final writer = BinaryWriter();
+  /// writer.writeUint8(42);
+  /// writer.clear(); // Clears the buffer without returning data
+  /// writer.writeUint8(100); // Starts fresh with new data
+  /// ```
+  void clear();
 }

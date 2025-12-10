@@ -401,5 +401,196 @@ void main() {
 
       expect(reader.readString(encoded.length), equals(str));
     });
+
+    group('Boundary checks', () {
+      test('readUint8 throws when buffer is empty', () {
+        final buffer = Uint8List.fromList([]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readUint8, throwsRangeError);
+      });
+
+      test('readInt8 throws when buffer is empty', () {
+        final buffer = Uint8List.fromList([]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readInt8, throwsRangeError);
+      });
+
+      test('readUint16 throws when only 1 byte available', () {
+        final buffer = Uint8List.fromList([0x01]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readUint16, throwsRangeError);
+      });
+
+      test('readInt16 throws when only 1 byte available', () {
+        final buffer = Uint8List.fromList([0xFF]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readInt16, throwsRangeError);
+      });
+
+      test('readUint32 throws when only 3 bytes available', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readUint32, throwsRangeError);
+      });
+
+      test('readInt32 throws when only 3 bytes available', () {
+        final buffer = Uint8List.fromList([0xFF, 0xFF, 0xFF]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readInt32, throwsRangeError);
+      });
+
+      test('readUint64 throws when only 7 bytes available', () {
+        final buffer = Uint8List.fromList([
+          0x01,
+          0x02,
+          0x03,
+          0x04,
+          0x05,
+          0x06,
+          0x07,
+        ]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readUint64, throwsRangeError);
+      });
+
+      test('readInt64 throws when only 7 bytes available', () {
+        final buffer = Uint8List.fromList([
+          0xFF,
+          0xFF,
+          0xFF,
+          0xFF,
+          0xFF,
+          0xFF,
+          0xFF,
+        ]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readInt64, throwsRangeError);
+      });
+
+      test('readFloat32 throws when only 3 bytes available', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readFloat32, throwsRangeError);
+      });
+
+      test('readFloat64 throws when only 7 bytes available', () {
+        final buffer = Uint8List.fromList([
+          0x01,
+          0x02,
+          0x03,
+          0x04,
+          0x05,
+          0x06,
+          0x07,
+        ]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readFloat64, throwsRangeError);
+      });
+
+      test('readBytes throws when requested length exceeds available', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
+        final reader = BinaryReader(buffer);
+
+        expect(() => reader.readBytes(5), throwsRangeError);
+      });
+
+      test('readBytes throws when length is negative', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
+        final reader = BinaryReader(buffer);
+
+        expect(() => reader.readBytes(-1), throwsArgumentError);
+      });
+
+      test('readString throws when requested length exceeds available', () {
+        final buffer = Uint8List.fromList([0x48, 0x65, 0x6C]); // "Hel"
+        final reader = BinaryReader(buffer);
+
+        expect(() => reader.readString(10), throwsRangeError);
+      });
+
+      test('multiple reads exceed buffer size', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03, 0x04]);
+        final reader = BinaryReader(buffer)
+          ..readUint8() // 1 byte read, 3 remaining
+          ..readUint8() // 1 byte read, 2 remaining
+          ..readUint16(); // 2 bytes read, 0 remaining
+
+        expect(reader.readUint8, throwsRangeError);
+      });
+
+      test('peekBytes throws when length is zero', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
+        final reader = BinaryReader(buffer);
+
+        expect(() => reader.peekBytes(0), throwsArgumentError);
+      });
+
+      test('peekBytes throws when length is negative', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
+        final reader = BinaryReader(buffer);
+
+        expect(() => reader.peekBytes(-1), throwsArgumentError);
+      });
+
+      test('skip throws when length exceeds available bytes', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
+        final reader = BinaryReader(buffer);
+
+        expect(() => reader.skip(5), throwsArgumentError);
+      });
+
+      test('skip throws when length is negative', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
+        final reader = BinaryReader(buffer);
+
+        expect(() => reader.skip(-1), throwsArgumentError);
+      });
+    });
+
+    group('offset getter', () {
+      test('offset returns current reading position', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03, 0x04]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.offset, equals(0));
+
+        reader.readUint8();
+        expect(reader.offset, equals(1));
+
+        reader.readUint16();
+        expect(reader.offset, equals(3));
+
+        reader.readUint8();
+        expect(reader.offset, equals(4));
+      });
+
+      test('offset equals usedBytes', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
+        final reader = BinaryReader(buffer)..readUint8();
+        expect(reader.offset, equals(reader.usedBytes));
+
+        reader.readUint8();
+        expect(reader.offset, equals(reader.usedBytes));
+      });
+
+      test('offset resets to 0 after reset', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
+        final reader = BinaryReader(buffer)..readUint8();
+        expect(reader.offset, equals(1));
+
+        reader.reset();
+        expect(reader.offset, equals(0));
+      });
+    });
   });
 }
