@@ -3,19 +3,48 @@ import 'dart:typed_data';
 
 import 'binary_reader_interface.dart';
 
-/// The [BinaryReader] class is an implementation of the [BinaryReaderInterface]
-/// used to decode various types of data from a binary
+/// A high-performance implementation of [BinaryReaderInterface] for decoding
+/// binary data.
+///
+/// Features:
+/// - Zero-copy operations using ByteData views
+/// - Inline bounds checking for safety
+/// - Support for big-endian and little-endian byte order
+/// - UTF-8 string decoding
+/// - Peek operations without advancing position
+///
+/// Example:
+/// ```dart
+/// final bytes = Uint8List.fromList([0, 0, 0, 42]);
+/// final reader = BinaryReader(bytes);
+/// final value = reader.readUint32(); // 42
+/// print(reader.availableBytes); // 0
+/// ```
 class BinaryReader extends BinaryReaderInterface {
-  BinaryReader(this._buffer)
-    : _data = ByteData.sublistView(_buffer),
-      _length = _buffer.length;
+  /// Creates a new [BinaryReader] for the given byte buffer.
+  ///
+  /// The [buffer] parameter must be a [Uint8List] containing the data to read.
+  /// The reader starts at position 0 and can read up to the buffer's length.
+  BinaryReader(Uint8List buffer)
+    : _buffer = buffer,
+      _data = ByteData.sublistView(buffer),
+      _length = buffer.length;
 
+  /// The underlying byte buffer being read from.
   final Uint8List _buffer;
+
+  /// Efficient view for typed data access.
   final ByteData _data;
+
+  /// Total length of the buffer.
   final int _length;
+
+  /// Current read position in the buffer.
   int _offset = 0;
 
-  /// Inline bounds check to improve performance
+  /// Performs inline bounds check to ensure safe reads.
+  ///
+  /// Throws [RangeError] if attempting to read beyond buffer boundaries.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void _checkBounds(int bytes, String type) {
@@ -168,6 +197,10 @@ class BinaryReader extends BinaryReaderInterface {
     return utf8.decode(bytes);
   }
 
+  /// Reads bytes without advancing the read position.
+  ///
+  /// If [offset] is provided, peeks from that position instead of current.
+  /// Useful for lookahead operations without modifying the reader state.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   @override
@@ -206,6 +239,10 @@ class BinaryReader extends BinaryReaderInterface {
     return Uint8List.sublistView(_buffer, peekOffset, peekOffset + length);
   }
 
+  /// Skips the specified number of bytes in the buffer.
+  ///
+  /// Advances the read position without returning data.
+  /// Throws [ArgumentError] if [length] is negative or would exceed buffer bounds.
   @override
   void skip(int length) {
     if (length < 0) {
@@ -225,6 +262,7 @@ class BinaryReader extends BinaryReaderInterface {
     _offset += length;
   }
 
+  /// Resets the read position to the beginning of the buffer.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   @override

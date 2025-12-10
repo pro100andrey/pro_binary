@@ -118,8 +118,8 @@ abstract class BinaryWriterInterface {
   ///
   /// This method ensures that there is enough space in the buffer to write the
   /// 64-bit unsigned integer. If necessary, it expands the buffer size. The
-  /// integer is then written at the current scratch offset position with the
-  /// specified byte order (endian), and the scratch offset is incremented by 8
+  /// integer is then written at the current offset position with the
+  /// specified byte order (endian), and the offset is incremented by 8
   /// bytes.
   ///
   /// The [value] parameter must be an unsigned 64-bit integer
@@ -138,8 +138,8 @@ abstract class BinaryWriterInterface {
   ///
   /// This method ensures that there is enough space in the buffer to write the
   /// 64-bit signed integer. If necessary, it expands the buffer size. The
-  /// integer is then written at the current scratch offset position with the
-  /// specified byte order (endian), and the scratch offset is incremented by 8
+  /// integer is then written at the current offset position with the
+  /// specified byte order (endian), and the offset is incremented by 8
   /// bytes.
   ///
   /// The [value] parameter must be a signed 64-bit integer
@@ -158,8 +158,8 @@ abstract class BinaryWriterInterface {
   ///
   /// This method ensures that there is enough space in the buffer to write the
   /// 32-bit float. If necessary, it expands the buffer size. The float is then
-  /// written at the current scratch offset position with the specified byte
-  /// order (endian), and the scratch offset is incremented by 4 bytes.
+  /// written at the current offset position with the specified byte
+  /// order (endian), and the offset is incremented by 4 bytes.
   ///
   /// The [value] parameter must be a 32-bit floating point number.
   /// The optional [endian] parameter specifies the byte order to use
@@ -176,8 +176,8 @@ abstract class BinaryWriterInterface {
   ///
   /// This method ensures that there is enough space in the buffer to write the
   /// 64-bit float. If necessary, it expands the buffer size. The float is then
-  /// written at the current scratch offset position with the specified byte
-  /// order (endian), and the scratch offset is incremented by 8 bytes.
+  /// written at the current offset position with the specified byte
+  /// order (endian), and the offset is incremented by 8 bytes.
   ///
   /// The [value] parameter must be a 64-bit floating point number.
   /// The optional [endian] parameter specifies the byte order to use (defaults
