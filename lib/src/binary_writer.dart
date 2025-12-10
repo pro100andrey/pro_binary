@@ -7,7 +7,7 @@ import 'binary_writer_interface.dart';
 /// used to encode various types of data into a binary format.
 class BinaryWriter extends BinaryWriterInterface {
   BinaryWriter({int initialBufferSize = 64})
-    : _initialBufferSize = initialBufferSize {
+  : _initialBufferSize = initialBufferSize {
     _initializeBuffer(initialBufferSize);
   }
 
@@ -141,20 +141,17 @@ class BinaryWriter extends BinaryWriterInterface {
     final length = bytes.length;
     _ensureSize(length);
 
-    final list = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
-
-    _buffer.setRange(_offset, _offset + length, list);
+    _buffer.setRange(_offset, _offset + length, bytes);
     _offset += length;
   }
 
-  @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
   @override
   void writeString(String value) {
     final encoded = utf8.encode(value);
     final length = encoded.length;
     _ensureSize(length);
 
+    // Use setRange for better performance with encoded bytes
     _buffer.setRange(_offset, _offset + length, encoded);
     _offset += length;
   }
@@ -193,7 +190,11 @@ class BinaryWriter extends BinaryWriterInterface {
   void _ensureSize(int size) {
     final requiredSize = _offset + size;
     if (_buffer.length < requiredSize) {
-      final newSize = 1 << (requiredSize - 1).bitLength;
+      var newSize = _buffer.length * 2;
+      if (newSize < requiredSize) {
+        newSize = 1 << requiredSize.bitLength;
+      }
+
       final newBuffer = Uint8List(newSize)..setRange(0, _offset, _buffer);
 
       _buffer = newBuffer;

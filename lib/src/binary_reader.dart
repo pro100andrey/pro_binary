@@ -15,6 +15,18 @@ class BinaryReader extends BinaryReaderInterface {
   final int _length;
   int _offset = 0;
 
+  /// Inline bounds check to improve performance
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void _checkBounds(int bytes, String type) {
+    if (_offset + bytes > _length) {
+      throw RangeError(
+        'Not enough bytes to read $type: required $bytes bytes, available '
+        '${_length - _offset} bytes at offset $_offset',
+      );
+    }
+  }
+
   @override
   int get availableBytes => _length - _offset;
 
@@ -25,16 +37,9 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('dart2js:tryInline')
   @override
   int readUint8() {
-    if (_offset + 1 > _length) {
-      throw RangeError(
-        'Not enough bytes to read Uint8: required 1 byte, available '
-        '${_length - _offset} bytes at offset $_offset',
-      );
-    }
-
+    _checkBounds(1, 'Uint8');
     final value = _data.getUint8(_offset);
     _offset += 1;
-
     return value;
   }
 
@@ -42,16 +47,9 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('dart2js:tryInline')
   @override
   int readInt8() {
-    if (_offset + 1 > _length) {
-      throw RangeError(
-        'Not enough bytes to read Int8: required 1 byte, available '
-        '${_length - _offset} bytes at offset $_offset',
-      );
-    }
-
+    _checkBounds(1, 'Int8');
     final value = _data.getInt8(_offset);
     _offset += 1;
-
     return value;
   }
 
@@ -59,16 +57,9 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('dart2js:tryInline')
   @override
   int readUint16([Endian endian = Endian.big]) {
-    if (_offset + 2 > _length) {
-      throw RangeError(
-        'Not enough bytes to read Uint16: required 2 bytes, available '
-        '${_length - _offset} bytes at offset $_offset',
-      );
-    }
-
+    _checkBounds(2, 'Uint16');
     final value = _data.getUint16(_offset, endian);
     _offset += 2;
-
     return value;
   }
 
@@ -76,16 +67,9 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('dart2js:tryInline')
   @override
   int readInt16([Endian endian = Endian.big]) {
-    if (_offset + 2 > _length) {
-      throw RangeError(
-        'Not enough bytes to read Int16: required 2 bytes, available '
-        '${_length - _offset} bytes at offset $_offset',
-      );
-    }
-
+    _checkBounds(2, 'Int16');
     final value = _data.getInt16(_offset, endian);
     _offset += 2;
-
     return value;
   }
 
@@ -93,16 +77,9 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('dart2js:tryInline')
   @override
   int readUint32([Endian endian = Endian.big]) {
-    if (_offset + 4 > _length) {
-      throw RangeError(
-        'Not enough bytes to read Uint32: required 4 bytes, available '
-        '${_length - _offset} bytes at offset $_offset',
-      );
-    }
-
+    _checkBounds(4, 'Uint32');
     final value = _data.getUint32(_offset, endian);
     _offset += 4;
-
     return value;
   }
 
@@ -110,16 +87,9 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('dart2js:tryInline')
   @override
   int readInt32([Endian endian = Endian.big]) {
-    if (_offset + 4 > _length) {
-      throw RangeError(
-        'Not enough bytes to read Int32: required 4 bytes, available '
-        '${_length - _offset} bytes at offset $_offset',
-      );
-    }
-
+    _checkBounds(4, 'Int32');
     final value = _data.getInt32(_offset, endian);
     _offset += 4;
-
     return value;
   }
 
@@ -127,16 +97,9 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('dart2js:tryInline')
   @override
   int readUint64([Endian endian = Endian.big]) {
-    if (_offset + 8 > _length) {
-      throw RangeError(
-        'Not enough bytes to read Uint64: required 8 bytes, available '
-        '${_length - _offset} bytes at offset $_offset',
-      );
-    }
-
+    _checkBounds(8, 'Uint64');
     final value = _data.getUint64(_offset, endian);
     _offset += 8;
-
     return value;
   }
 
@@ -144,16 +107,9 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('dart2js:tryInline')
   @override
   int readInt64([Endian endian = Endian.big]) {
-    if (_offset + 8 > _length) {
-      throw RangeError(
-        'Not enough bytes to read Int64: required 8 bytes, available '
-        '${_length - _offset} bytes at offset $_offset',
-      );
-    }
-
+    _checkBounds(8, 'Int64');
     final value = _data.getInt64(_offset, endian);
     _offset += 8;
-
     return value;
   }
 
@@ -161,16 +117,9 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('dart2js:tryInline')
   @override
   double readFloat32([Endian endian = Endian.big]) {
-    if (_offset + 4 > _length) {
-      throw RangeError(
-        'Not enough bytes to read Float32: required 4 bytes, available '
-        '${_length - _offset} bytes at offset $_offset',
-      );
-    }
-
+    _checkBounds(4, 'Float32');
     final value = _data.getFloat32(_offset, endian);
     _offset += 4;
-
     return value;
   }
 
@@ -178,16 +127,9 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('dart2js:tryInline')
   @override
   double readFloat64([Endian endian = Endian.big]) {
-    if (_offset + 8 > _length) {
-      throw RangeError(
-        'Not enough bytes to read Float64: required 8 bytes, available '
-        '${_length - _offset} bytes at offset $_offset',
-      );
-    }
-
+    _checkBounds(8, 'Float64');
     final value = _data.getFloat64(_offset, endian);
     _offset += 8;
-
     return value;
   }
 
@@ -254,7 +196,14 @@ class BinaryReader extends BinaryReaderInterface {
       );
     }
 
-    return _data.buffer.asUint8List(peekOffset, length);
+    if (peekOffset + length > _length) {
+      throw RangeError(
+        'Not enough bytes to peek $length bytes: '
+        'available ${_length - peekOffset} bytes at offset $peekOffset',
+      );
+    }
+
+    return Uint8List.sublistView(_buffer, peekOffset, peekOffset + length);
   }
 
   @override
