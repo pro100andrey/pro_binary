@@ -242,7 +242,8 @@ class BinaryReader extends BinaryReaderInterface {
   /// Skips the specified number of bytes in the buffer.
   ///
   /// Advances the read position without returning data.
-  /// Throws [ArgumentError] if [length] is negative or would exceed buffer bounds.
+  /// Throws [ArgumentError] if [length] is negative or would exceed buffer
+  /// bounds.
   @override
   void skip(int length) {
     if (length < 0) {
