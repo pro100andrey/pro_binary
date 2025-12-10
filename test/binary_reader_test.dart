@@ -87,8 +87,16 @@ void main() {
     });
 
     test('readUint64 big-endian', () {
-      final buffer =
-          Uint8List.fromList([0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00]);
+      final buffer = Uint8List.fromList([
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+      ]);
       final reader = BinaryReader(buffer);
 
       expect(reader.readUint64(), equals(4294967296));
@@ -96,8 +104,16 @@ void main() {
     });
 
     test('readUint64 little-endian', () {
-      final buffer =
-          Uint8List.fromList([0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00]);
+      final buffer = Uint8List.fromList([
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+      ]);
       final reader = BinaryReader(buffer);
 
       expect(reader.readUint64(Endian.little), equals(4294967296));
@@ -105,8 +121,16 @@ void main() {
     });
 
     test('readInt64 big-endian', () {
-      final buffer =
-          Uint8List.fromList([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
+      final buffer = Uint8List.fromList([
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+      ]);
       final reader = BinaryReader(buffer);
 
       expect(reader.readInt64(), equals(-1));
@@ -114,8 +138,16 @@ void main() {
     });
 
     test('readInt64 little-endian', () {
-      final buffer =
-          Uint8List.fromList([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80]);
+      final buffer = Uint8List.fromList([
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x80,
+      ]);
       final reader = BinaryReader(buffer);
 
       expect(reader.readInt64(Endian.little), equals(-9223372036854775808));
@@ -229,20 +261,22 @@ void main() {
       expect(reader.usedBytes, equals(3));
     });
 
-    test('peekBytes returns correct bytes without changing the internal state',
-        () {
-      final buffer = Uint8List.fromList([0x10, 0x20, 0x30, 0x40, 0x50]);
-      final reader = BinaryReader(buffer);
+    test(
+      'peekBytes returns correct bytes without changing the internal state',
+      () {
+        final buffer = Uint8List.fromList([0x10, 0x20, 0x30, 0x40, 0x50]);
+        final reader = BinaryReader(buffer);
 
-      final peekedBytes = reader.peekBytes(3);
-      expect(peekedBytes, equals([0x10, 0x20, 0x30]));
-      expect(reader.usedBytes, equals(0));
+        final peekedBytes = reader.peekBytes(3);
+        expect(peekedBytes, equals([0x10, 0x20, 0x30]));
+        expect(reader.usedBytes, equals(0));
 
-      reader.readUint8(); // Now usedBytes should be 1
-      final peekedBytesWithOffset = reader.peekBytes(2, 2);
-      expect(peekedBytesWithOffset, equals([0x30, 0x40]));
-      expect(reader.usedBytes, equals(1));
-    });
+        reader.readUint8(); // Now usedBytes should be 1
+        final peekedBytesWithOffset = reader.peekBytes(2, 2);
+        expect(peekedBytesWithOffset, equals([0x30, 0x40]));
+        expect(reader.usedBytes, equals(1));
+      },
+    );
 
     test('skip method correctly updates the offset', () {
       final buffer = Uint8List.fromList([0x00, 0x01, 0x02, 0x03, 0x04]);
@@ -320,14 +354,16 @@ void main() {
       expect(reader.readFloat32, throwsRangeError);
     });
 
-    test('readUint64 and readInt64 with insufficient bytes throw RangeError',
-        () {
-      final buffer = Uint8List.fromList(List.filled(7, 0x00)); // Only 7 bytes
-      final reader = BinaryReader(buffer);
+    test(
+      'readUint64 and readInt64 with insufficient bytes throw RangeError',
+      () {
+        final buffer = Uint8List.fromList(List.filled(7, 0x00)); // Only 7 bytes
+        final reader = BinaryReader(buffer);
 
-      expect(reader.readUint64, throwsRangeError);
-      expect(reader.readInt64, throwsRangeError);
-    });
+        expect(reader.readUint64, throwsRangeError);
+        expect(reader.readInt64, throwsRangeError);
+      },
+    );
 
     test('skip beyond buffer throws RangeError', () {
       final buffer = Uint8List.fromList([0x01, 0x02]);

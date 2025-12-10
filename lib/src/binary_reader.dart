@@ -7,8 +7,8 @@ import 'binary_reader_interface.dart';
 /// used to decode various types of data from a binary
 class BinaryReader extends BinaryReaderInterface {
   BinaryReader(this._buffer)
-      : _data = ByteData.sublistView(_buffer),
-        _length = _buffer.length;
+    : _data = ByteData.sublistView(_buffer),
+      _length = _buffer.length;
 
   final Uint8List _buffer;
   final ByteData _data;

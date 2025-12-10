@@ -5,7 +5,7 @@ import 'package:pro_binary/src/binary_writer.dart';
 
 class BinaryWriterBenchmark extends BenchmarkBase {
   BinaryWriterBenchmark(this.iterations)
-      : super('BinaryWriter performance test');
+    : super('BinaryWriter performance test');
 
   final int iterations;
   late final BinaryWriter writer;

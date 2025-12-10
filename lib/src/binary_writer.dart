@@ -7,7 +7,7 @@ import 'binary_writer_interface.dart';
 /// used to encode various types of data into a binary format.
 class BinaryWriter extends BinaryWriterInterface {
   BinaryWriter({int initialBufferSize = 64})
-      : _initialBufferSize = initialBufferSize {
+    : _initialBufferSize = initialBufferSize {
     _initializeBuffer(initialBufferSize);
   }
 

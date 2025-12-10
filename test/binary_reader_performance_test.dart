@@ -5,7 +5,7 @@ import 'package:pro_binary/pro_binary.dart';
 
 class BinaryReaderBenchmark extends BenchmarkBase {
   BinaryReaderBenchmark(this.iterations)
-      : super('BinaryReader performance test');
+    : super('BinaryReader performance test');
 
   final int iterations;
 
