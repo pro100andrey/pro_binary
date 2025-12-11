@@ -205,29 +205,23 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('dart2js:tryInline')
   @override
   Uint8List peekBytes(int length, [int? offset]) {
-    if (length <= 0) {
+    if (length < 0) {
       throw ArgumentError.value(
         length,
         'length',
-        'Length must be greater than zero.',
+        'Length must be greater than or equal to zero.',
       );
     }
 
     if (offset != null && offset < 0) {
       throw ArgumentError.value(
         offset,
+        'offset',
         'Offset must be greater than or equal to zero.',
       );
     }
 
     final peekOffset = offset ?? _offset;
-
-    if (peekOffset < 0) {
-      throw ArgumentError.value(
-        peekOffset,
-        'Offset must be greater than or equal to zero.',
-      );
-    }
 
     if (peekOffset + length > _length) {
       throw RangeError(
