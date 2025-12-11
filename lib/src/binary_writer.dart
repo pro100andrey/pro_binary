@@ -31,7 +31,6 @@ class BinaryWriter extends BinaryWriterInterface {
   }
 
   final int _initialBufferSize;
-  static const _utf8Encoder = Utf8Encoder();
 
   /// Internal buffer for storing binary data.
   late Uint8List _buffer;
@@ -130,6 +129,10 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeUint64(int value, [Endian endian = Endian.big]) {
+    if (value < 0) {
+      throw RangeError.value(value, 'value', 'Value must be non-negative');
+    }
+
     _ensureSize(8);
     _data.setUint64(_offset, value, endian);
     _offset += 8;
@@ -139,6 +142,20 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeInt64(int value, [Endian endian = Endian.big]) {
+    // Dart's int is 64-bit on all platforms, but we validate the range
+    // to ensure consistency and catch potential errors early
+    const minInt64 = -9223372036854775808; // -2^63
+    const maxInt64 = 9223372036854775807; // 2^63 - 1
+
+    if (value < minInt64 || value > maxInt64) {
+      throw RangeError.range(
+        value,
+        minInt64,
+        maxInt64,
+        'value',
+      );
+    }
+
     _ensureSize(8);
     _data.setInt64(_offset, value, endian);
     _offset += 8;
@@ -184,7 +201,7 @@ class BinaryWriter extends BinaryWriterInterface {
       return;
     }
 
-    final encoded = _utf8Encoder.convert(value);
+    final encoded = utf8.encode(value);
     final length = encoded.length;
     _ensureSize(length);
 
@@ -226,30 +243,26 @@ class BinaryWriter extends BinaryWriterInterface {
   ///
   /// If the buffer is too small, it expands using a 1.5x growth strategy,
   /// which balances memory usage and reallocation frequency.
-  /// Uses cached capacity for fast path optimization.
+  /// Uses O(1) calculation instead of loop for better performance.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void _ensureSize(int size) {
     final requiredSize = _offset + size;
-    if (requiredSize > _capacity) {
-      // Sync capacity with actual buffer length if needed
-      if (_capacity != _buffer.length) {
-        _capacity = _buffer.length;
-      }
-
-      if (_capacity < requiredSize) {
-        // Growth strategy: multiply by 1.5 (via * 3 / 2)
-        var newSize = _capacity;
-        do {
-          newSize = (newSize * 3) >> 1;
-        } while (newSize < requiredSize);
-
-        final newBuffer = Uint8List(newSize)..setRange(0, _offset, _buffer);
-
-        _buffer = newBuffer;
-        _data = ByteData.view(_buffer.buffer);
-        _capacity = newSize;
-      }
+    if (requiredSize <= _capacity) {
+      return;
     }
+
+    // Calculate new size with 1.5x growth strategy
+    // Ensure new size is at least requiredSize
+    var newSize = _capacity + (_capacity >> 1); // capacity * 1.5
+    if (newSize < requiredSize) {
+      newSize = requiredSize;
+    }
+
+    final newBuffer = Uint8List(newSize)..setRange(0, _offset, _buffer);
+
+    _buffer = newBuffer;
+    _data = ByteData.view(_buffer.buffer);
+    _capacity = newSize;
   }
 }

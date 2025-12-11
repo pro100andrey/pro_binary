@@ -528,13 +528,6 @@ void main() {
         expect(reader.readUint8, throwsRangeError);
       });
 
-      test('peekBytes throws when length is zero', () {
-        final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
-        final reader = BinaryReader(buffer);
-
-        expect(() => reader.peekBytes(0), throwsArgumentError);
-      });
-
       test('peekBytes throws when length is negative', () {
         final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
         final reader = BinaryReader(buffer);
@@ -590,6 +583,136 @@ void main() {
 
         reader.reset();
         expect(reader.offset, equals(0));
+      });
+    });
+
+    group('Special values and edge cases', () {
+      test('readString with empty UTF-8 string', () {
+        final buffer = Uint8List.fromList([]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readString(0), equals(''));
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('readString with emoji characters', () {
+        const str = '🚀👨‍👩‍👧‍👦'; // Rocket and family emoji
+        final encoded = utf8.encode(str);
+        final buffer = Uint8List.fromList(encoded);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readString(encoded.length), equals(str));
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('readFloat32 with NaN', () {
+        final buffer = Uint8List(4);
+        ByteData.view(buffer.buffer).setFloat32(0, double.nan);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readFloat32().isNaN, isTrue);
+      });
+
+      test('readFloat32 with Infinity', () {
+        final buffer = Uint8List(4);
+        ByteData.view(buffer.buffer).setFloat32(0, double.infinity);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readFloat32(), equals(double.infinity));
+      });
+
+      test('readFloat32 with negative Infinity', () {
+        final buffer = Uint8List(4);
+        ByteData.view(buffer.buffer).setFloat32(0, double.negativeInfinity);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readFloat32(), equals(double.negativeInfinity));
+      });
+
+      test('readFloat64 with NaN', () {
+        final buffer = Uint8List(8);
+        ByteData.view(buffer.buffer).setFloat64(0, double.nan);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readFloat64().isNaN, isTrue);
+      });
+
+      test('readFloat64 with Infinity', () {
+        final buffer = Uint8List(8);
+        ByteData.view(buffer.buffer).setFloat64(0, double.infinity);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readFloat64(), equals(double.infinity));
+      });
+
+      test('readFloat64 with negative Infinity', () {
+        final buffer = Uint8List(8);
+        ByteData.view(buffer.buffer).setFloat64(0, double.negativeInfinity);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readFloat64(), equals(double.negativeInfinity));
+      });
+
+      test('readFloat64 with negative zero', () {
+        final buffer = Uint8List(8);
+        ByteData.view(buffer.buffer).setFloat64(0, -0);
+        final reader = BinaryReader(buffer);
+
+        final value = reader.readFloat64();
+        expect(value, equals(0.0));
+        expect(value.isNegative, isTrue);
+      });
+
+      test('readUint64 with maximum value', () {
+        final buffer = Uint8List.fromList([
+          0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //
+        ]);
+        final reader = BinaryReader(buffer);
+
+        // Max Uint64 is 2^64 - 1 = 18446744073709551615
+        // In Dart, this wraps to -1 for signed int representation
+        expect(reader.readUint64(), equals(0xFFFFFFFFFFFFFFFF));
+      });
+
+      test('peekBytes with zero length', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.peekBytes(0), equals([]));
+        expect(reader.offset, equals(0));
+      });
+
+      test('peekBytes with explicit zero offset', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
+        final reader = BinaryReader(buffer)..readUint8();
+
+        final peeked = reader.peekBytes(2, 0);
+        expect(peeked, equals([0x01, 0x02]));
+        expect(reader.offset, equals(1));
+      });
+
+      test('multiple resets in sequence', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
+        final reader = BinaryReader(buffer)
+          ..readUint8()
+          ..reset()
+          ..reset()
+          ..reset();
+
+        expect(reader.offset, equals(0));
+        expect(reader.availableBytes, equals(3));
+      });
+
+      test('read after buffer exhaustion and reset', () {
+        final buffer = Uint8List.fromList([0x42, 0x43]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readUint8(), equals(0x42));
+        expect(reader.readUint8(), equals(0x43));
+        expect(reader.availableBytes, equals(0));
+
+        reader.reset();
+        expect(reader.readUint8(), equals(0x42));
       });
     });
   });

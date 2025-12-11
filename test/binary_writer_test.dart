@@ -316,5 +316,124 @@ void main() {
         expect(writer.bytesWritten, equals(0));
       });
     });
+
+    group('Special values and edge cases', () {
+      test('writeString with empty string', () {
+        writer.writeString('');
+        expect(writer.bytesWritten, equals(0));
+        expect(writer.toBytes(), isEmpty);
+      });
+
+      test('writeBytes with empty array', () {
+        writer.writeBytes([]);
+        expect(writer.bytesWritten, equals(0));
+        expect(writer.toBytes(), isEmpty);
+      });
+
+      test('writeString with emoji characters', () {
+        const str = '🚀👨‍👩‍👧‍👦';
+        writer.writeString(str);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readString(bytes.length), equals(str));
+      });
+
+      test('writeFloat32 with NaN', () {
+        writer.writeFloat32(double.nan);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readFloat32().isNaN, isTrue);
+      });
+
+      test('writeFloat32 with Infinity', () {
+        writer.writeFloat32(double.infinity);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readFloat32(), equals(double.infinity));
+      });
+
+      test('writeFloat32 with negative Infinity', () {
+        writer.writeFloat32(double.negativeInfinity);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readFloat32(), equals(double.negativeInfinity));
+      });
+
+      test('writeFloat64 with NaN', () {
+        writer.writeFloat64(double.nan);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readFloat64().isNaN, isTrue);
+      });
+
+      test('writeFloat64 with Infinity', () {
+        writer.writeFloat64(double.infinity);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readFloat64(), equals(double.infinity));
+      });
+
+      test('writeFloat64 with negative Infinity', () {
+        writer.writeFloat64(double.negativeInfinity);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readFloat64(), equals(double.negativeInfinity));
+      });
+
+      test('writeFloat64 with negative zero', () {
+        writer.writeFloat64(-0);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final value = reader.readFloat64();
+        expect(value, equals(0.0));
+        expect(value.isNegative, isTrue);
+      });
+
+      test('writeUint64 with negative value throws', () {
+        expect(() => writer.writeUint64(-1), throwsRangeError);
+      });
+
+      test('buffer expansion with precise size calculation', () {
+        final writer = BinaryWriter(initialBufferSize: 8)
+          // Write exactly 8 bytes
+          ..writeUint64(42);
+        expect(writer.bytesWritten, equals(8));
+
+        // Writing one more byte should trigger expansion
+        writer.writeUint8(1);
+        expect(writer.bytesWritten, equals(9));
+
+        final bytes = writer.takeBytes();
+        expect(bytes.length, equals(9));
+      });
+
+      test('multiple clears in sequence', () {
+        writer
+          ..writeUint8(42)
+          ..clear()
+          ..clear()
+          ..clear();
+
+        expect(writer.bytesWritten, equals(0));
+      });
+
+      test('chaining after clear', () {
+        writer
+          ..writeUint8(1)
+          ..clear()
+          ..writeUint8(2)
+          ..writeUint8(3);
+
+        expect(writer.toBytes(), equals([2, 3]));
+      });
+    });
   });
 }
