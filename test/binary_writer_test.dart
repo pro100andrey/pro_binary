@@ -296,8 +296,8 @@ void main() {
       });
 
       test(
-        'should have different behavior from takeBytes '
-        '(toBytes preserves, takeBytes resets)',
+        'should behave differently from takeBytes '
+        '(toBytes preserves state, takeBytes resets)',
         () {
           writer
             ..writeUint8(1)
@@ -348,7 +348,7 @@ void main() {
       });
     });
 
-    group('Edge cases and special values', () {
+    group('Edge cases', () {
       test('should handle empty string correctly', () {
         writer.writeString('');
         expect(writer.bytesWritten, equals(0));
@@ -433,7 +433,8 @@ void main() {
       });
 
       test(
-        'should expand buffer when writing exactly one byte over capacity',
+        'should correctly expand buffer when exceeding initial capacity by '
+        'one byte',
         () {
           final writer = BinaryWriter(initialBufferSize: 8)
             // Write exactly 8 bytes
@@ -470,7 +471,7 @@ void main() {
       });
     });
 
-    group('Maximum values', () {
+    group('Boundary values - Maximum', () {
       test('should handle Uint8 maximum value (255)', () {
         writer.writeUint8(255);
         expect(writer.takeBytes(), equals([255]));
@@ -526,7 +527,7 @@ void main() {
       );
     });
 
-    group('Minimum values', () {
+    group('Boundary values - Minimum', () {
       test('should handle Uint8 minimum value (0)', () {
         writer.writeUint8(0);
         expect(writer.takeBytes(), equals([0]));
@@ -632,7 +633,7 @@ void main() {
     });
 
     group('Float precision', () {
-      test('should handle Float32 minimum positive value', () {
+      test('should handle Float32 minimum positive subnormal value', () {
         const minFloat32 = 1.4e-45; // Approximate minimum positive Float32
         writer.writeFloat32(minFloat32);
         final bytes = writer.takeBytes();
@@ -642,7 +643,7 @@ void main() {
         expect(value, greaterThan(0));
       });
 
-      test('should handle Float64 minimum positive value', () {
+      test('should handle Float64 minimum positive subnormal value', () {
         const minFloat64 = 5e-324; // Approximate minimum positive Float64
         writer.writeFloat64(minFloat64);
         final bytes = writer.takeBytes();

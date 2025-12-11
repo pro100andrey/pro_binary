@@ -66,9 +66,7 @@ class BinaryReader extends BinaryReaderInterface {
   @override
   int readUint8() {
     _checkBounds(1, 'Uint8');
-    final value = _data.getUint8(_offset);
-    _offset += 1;
-    return value;
+    return _data.getUint8(_offset++);
   }
 
   @pragma('vm:prefer-inline')
@@ -76,9 +74,8 @@ class BinaryReader extends BinaryReaderInterface {
   @override
   int readInt8() {
     _checkBounds(1, 'Int8');
-    final value = _data.getInt8(_offset);
-    _offset += 1;
-    return value;
+
+    return _data.getInt8(_offset++);
   }
 
   @pragma('vm:prefer-inline')
@@ -86,8 +83,10 @@ class BinaryReader extends BinaryReaderInterface {
   @override
   int readUint16([Endian endian = Endian.big]) {
     _checkBounds(2, 'Uint16');
+
     final value = _data.getUint16(_offset, endian);
     _offset += 2;
+
     return value;
   }
 
@@ -96,8 +95,10 @@ class BinaryReader extends BinaryReaderInterface {
   @override
   int readInt16([Endian endian = Endian.big]) {
     _checkBounds(2, 'Int16');
+
     final value = _data.getInt16(_offset, endian);
     _offset += 2;
+
     return value;
   }
 
@@ -106,8 +107,10 @@ class BinaryReader extends BinaryReaderInterface {
   @override
   int readUint32([Endian endian = Endian.big]) {
     _checkBounds(4, 'Uint32');
+
     final value = _data.getUint32(_offset, endian);
     _offset += 4;
+
     return value;
   }
 
@@ -116,8 +119,10 @@ class BinaryReader extends BinaryReaderInterface {
   @override
   int readInt32([Endian endian = Endian.big]) {
     _checkBounds(4, 'Int32');
+
     final value = _data.getInt32(_offset, endian);
     _offset += 4;
+
     return value;
   }
 
@@ -126,8 +131,10 @@ class BinaryReader extends BinaryReaderInterface {
   @override
   int readUint64([Endian endian = Endian.big]) {
     _checkBounds(8, 'Uint64');
+
     final value = _data.getUint64(_offset, endian);
     _offset += 8;
+
     return value;
   }
 
@@ -136,8 +143,10 @@ class BinaryReader extends BinaryReaderInterface {
   @override
   int readInt64([Endian endian = Endian.big]) {
     _checkBounds(8, 'Int64');
+
     final value = _data.getInt64(_offset, endian);
     _offset += 8;
+
     return value;
   }
 
@@ -146,8 +155,10 @@ class BinaryReader extends BinaryReaderInterface {
   @override
   double readFloat32([Endian endian = Endian.big]) {
     _checkBounds(4, 'Float32');
+
     final value = _data.getFloat32(_offset, endian);
     _offset += 4;
+
     return value;
   }
 
@@ -156,8 +167,10 @@ class BinaryReader extends BinaryReaderInterface {
   @override
   double readFloat64([Endian endian = Endian.big]) {
     _checkBounds(8, 'Float64');
+
     final value = _data.getFloat64(_offset, endian);
     _offset += 8;
+
     return value;
   }
 
@@ -165,18 +178,10 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('dart2js:tryInline')
   @override
   Uint8List readBytes(int length) {
-    if (length < 0) {
-      throw ArgumentError.value(
-        length,
-        'length',
-        'Length must be greater than or equal to zero.',
-      );
-    }
-
+    assert(length >= 0, 'Length must be non-negative');
     _checkBounds(length, 'Bytes');
 
     final bytes = Uint8List.sublistView(_buffer, _offset, _offset + length);
-
     _offset += length;
 
     return bytes;
@@ -185,68 +190,42 @@ class BinaryReader extends BinaryReaderInterface {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   @override
-  String readString(int length) {
-    final bytes = readBytes(length);
+  String readString(int length, {bool allowMalformed = false}) {
+    if (length == 0) {
+      return '';
+    }
 
-    return utf8.decode(bytes);
+    _checkBounds(length, 'String');
+
+    final view = Uint8List.sublistView(_buffer, _offset, _offset + length);
+    _offset += length;
+
+    return utf8.decode(view, allowMalformed: allowMalformed);
   }
 
-  /// Reads bytes without advancing the read position.
-  ///
-  /// If [offset] is provided, peeks from that position instead of current.
-  /// Useful for lookahead operations without modifying the reader state.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   @override
   Uint8List peekBytes(int length, [int? offset]) {
-    if (length < 0) {
-      throw ArgumentError.value(
-        length,
-        'length',
-        'Length must be greater than or equal to zero.',
-      );
-    }
+    assert(length >= 0, 'Length must be non-negative');
 
-    if (offset != null && offset < 0) {
-      throw ArgumentError.value(
-        offset,
-        'offset',
-        'Offset must be greater than or equal to zero.',
-      );
+    if (length == 0) {
+      return Uint8List(0);
     }
 
     final peekOffset = offset ?? _offset;
-
     _checkBounds(length, 'Peek Bytes', peekOffset);
 
     return Uint8List.sublistView(_buffer, peekOffset, peekOffset + length);
   }
 
-  /// Skips the specified number of bytes in the buffer.
-  ///
-  /// Advances the read position without returning data.
-  /// Throws [ArgumentError] if [length] is negative or would exceed buffer
-  /// bounds.
   @override
   void skip(int length) {
-    if (length < 0) {
-      throw ArgumentError.value(
-        length,
-        'Length must be greater than or equal to zero.',
-      );
-    }
-
-    if (_offset + length > _length) {
-      throw ArgumentError.value(
-        length,
-        'Offset is out of bounds.',
-      );
-    }
-
+    assert(length >= 0, 'Length must be non-negative');
+    _checkBounds(length, 'Skip');
     _offset += length;
   }
 
-  /// Resets the read position to the beginning of the buffer.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   @override

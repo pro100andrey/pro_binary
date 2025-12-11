@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'binary_writer_interface.dart';
@@ -35,9 +34,6 @@ class BinaryWriter extends BinaryWriterInterface {
   /// Internal buffer for storing binary data.
   late Uint8List _buffer;
 
-  /// View for efficient typed data access.
-  late ByteData _data;
-
   /// Current write position in the buffer.
   int _offset = 0;
 
@@ -57,8 +53,7 @@ class BinaryWriter extends BinaryWriterInterface {
     );
 
     _ensureSize(1);
-    _data.setUint8(_offset, value);
-    _offset += 1;
+    _buffer[_offset++] = value;
   }
 
   @pragma('vm:prefer-inline')
@@ -71,8 +66,7 @@ class BinaryWriter extends BinaryWriterInterface {
     );
 
     _ensureSize(1);
-    _data.setInt8(_offset, value);
-    _offset += 1;
+    _buffer[_offset++] = value & 0xFF;
   }
 
   @pragma('vm:prefer-inline')
@@ -85,8 +79,14 @@ class BinaryWriter extends BinaryWriterInterface {
     );
 
     _ensureSize(2);
-    _data.setUint16(_offset, value, endian);
-    _offset += 2;
+
+    if (endian == Endian.big) {
+      _buffer[_offset++] = (value >> 8) & 0xFF;
+      _buffer[_offset++] = value & 0xFF;
+    } else {
+      _buffer[_offset++] = value & 0xFF;
+      _buffer[_offset++] = (value >> 8) & 0xFF;
+    }
   }
 
   @pragma('vm:prefer-inline')
@@ -99,8 +99,14 @@ class BinaryWriter extends BinaryWriterInterface {
     );
 
     _ensureSize(2);
-    _data.setInt16(_offset, value, endian);
-    _offset += 2;
+
+    if (endian == Endian.big) {
+      _buffer[_offset++] = (value >> 8) & 0xFF;
+      _buffer[_offset++] = value & 0xFF;
+    } else {
+      _buffer[_offset++] = value & 0xFF;
+      _buffer[_offset++] = (value >> 8) & 0xFF;
+    }
   }
 
   @pragma('vm:prefer-inline')
@@ -113,8 +119,18 @@ class BinaryWriter extends BinaryWriterInterface {
     );
 
     _ensureSize(4);
-    _data.setUint32(_offset, value, endian);
-    _offset += 4;
+
+    if (endian == Endian.big) {
+      _buffer[_offset++] = (value >> 24) & 0xFF;
+      _buffer[_offset++] = (value >> 16) & 0xFF;
+      _buffer[_offset++] = (value >> 8) & 0xFF;
+      _buffer[_offset++] = value & 0xFF;
+    } else {
+      _buffer[_offset++] = value & 0xFF;
+      _buffer[_offset++] = (value >> 8) & 0xFF;
+      _buffer[_offset++] = (value >> 16) & 0xFF;
+      _buffer[_offset++] = (value >> 24) & 0xFF;
+    }
   }
 
   @pragma('vm:prefer-inline')
@@ -127,8 +143,18 @@ class BinaryWriter extends BinaryWriterInterface {
     );
 
     _ensureSize(4);
-    _data.setInt32(_offset, value, endian);
-    _offset += 4;
+
+    if (endian == Endian.big) {
+      _buffer[_offset++] = (value >> 24) & 0xFF;
+      _buffer[_offset++] = (value >> 16) & 0xFF;
+      _buffer[_offset++] = (value >> 8) & 0xFF;
+      _buffer[_offset++] = value & 0xFF;
+    } else {
+      _buffer[_offset++] = value & 0xFF;
+      _buffer[_offset++] = (value >> 8) & 0xFF;
+      _buffer[_offset++] = (value >> 16) & 0xFF;
+      _buffer[_offset++] = (value >> 24) & 0xFF;
+    }
   }
 
   @pragma('vm:prefer-inline')
@@ -141,8 +167,26 @@ class BinaryWriter extends BinaryWriterInterface {
     );
 
     _ensureSize(8);
-    _data.setUint64(_offset, value, endian);
-    _offset += 8;
+
+    if (endian == Endian.big) {
+      _buffer[_offset++] = (value >> 56) & 0xFF;
+      _buffer[_offset++] = (value >> 48) & 0xFF;
+      _buffer[_offset++] = (value >> 40) & 0xFF;
+      _buffer[_offset++] = (value >> 32) & 0xFF;
+      _buffer[_offset++] = (value >> 24) & 0xFF;
+      _buffer[_offset++] = (value >> 16) & 0xFF;
+      _buffer[_offset++] = (value >> 8) & 0xFF;
+      _buffer[_offset++] = value & 0xFF;
+    } else {
+      _buffer[_offset++] = value & 0xFF;
+      _buffer[_offset++] = (value >> 8) & 0xFF;
+      _buffer[_offset++] = (value >> 16) & 0xFF;
+      _buffer[_offset++] = (value >> 24) & 0xFF;
+      _buffer[_offset++] = (value >> 32) & 0xFF;
+      _buffer[_offset++] = (value >> 40) & 0xFF;
+      _buffer[_offset++] = (value >> 48) & 0xFF;
+      _buffer[_offset++] = (value >> 56) & 0xFF;
+    }
   }
 
   @pragma('vm:prefer-inline')
@@ -155,17 +199,47 @@ class BinaryWriter extends BinaryWriterInterface {
     );
 
     _ensureSize(8);
-    _data.setInt64(_offset, value, endian);
-    _offset += 8;
+
+    if (endian == Endian.big) {
+      _buffer[_offset++] = (value >> 56) & 0xFF;
+      _buffer[_offset++] = (value >> 48) & 0xFF;
+      _buffer[_offset++] = (value >> 40) & 0xFF;
+      _buffer[_offset++] = (value >> 32) & 0xFF;
+      _buffer[_offset++] = (value >> 24) & 0xFF;
+      _buffer[_offset++] = (value >> 16) & 0xFF;
+      _buffer[_offset++] = (value >> 8) & 0xFF;
+      _buffer[_offset++] = value & 0xFF;
+    } else {
+      _buffer[_offset++] = value & 0xFF;
+      _buffer[_offset++] = (value >> 8) & 0xFF;
+      _buffer[_offset++] = (value >> 16) & 0xFF;
+      _buffer[_offset++] = (value >> 24) & 0xFF;
+      _buffer[_offset++] = (value >> 32) & 0xFF;
+      _buffer[_offset++] = (value >> 40) & 0xFF;
+      _buffer[_offset++] = (value >> 48) & 0xFF;
+      _buffer[_offset++] = (value >> 56) & 0xFF;
+    }
   }
+
+  static final Uint8List _tempU8 = Uint8List(8);
+  static final Float32List _tempF32 = Float32List.view(_tempU8.buffer);
+  static final Float64List _tempF64 = Float64List.view(_tempU8.buffer);
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   @override
   void writeFloat32(double value, [Endian endian = Endian.big]) {
     _ensureSize(4);
-    _data.setFloat32(_offset, value, endian);
-    _offset += 4;
+    _tempF32[0] = value; // Write to temp buffer
+    if (endian == Endian.big) {
+      _buffer[_offset++] = _tempU8[3];
+      _buffer[_offset++] = _tempU8[2];
+      _buffer[_offset++] = _tempU8[1];
+      _buffer[_offset++] = _tempU8[0];
+    } else {
+      _buffer.setRange(_offset, _offset + 4, _tempU8);
+      _offset += 4;
+    }
   }
 
   @pragma('vm:prefer-inline')
@@ -173,8 +247,20 @@ class BinaryWriter extends BinaryWriterInterface {
   @override
   void writeFloat64(double value, [Endian endian = Endian.big]) {
     _ensureSize(8);
-    _data.setFloat64(_offset, value, endian);
-    _offset += 8;
+    _tempF64[0] = value;
+    if (endian == Endian.big) {
+      _buffer[_offset++] = _tempU8[7];
+      _buffer[_offset++] = _tempU8[6];
+      _buffer[_offset++] = _tempU8[5];
+      _buffer[_offset++] = _tempU8[4];
+      _buffer[_offset++] = _tempU8[3];
+      _buffer[_offset++] = _tempU8[2];
+      _buffer[_offset++] = _tempU8[1];
+      _buffer[_offset++] = _tempU8[0];
+    } else {
+      _buffer.setRange(_offset, _offset + 8, _tempU8);
+      _offset += 8;
+    }
   }
 
   @pragma('vm:prefer-inline')
@@ -193,19 +279,52 @@ class BinaryWriter extends BinaryWriterInterface {
     _offset += length;
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   @override
   void writeString(String value) {
-    if (value.isEmpty) {
+    final len = value.length;
+    if (len == 0) {
       return;
     }
 
-    final encoded = utf8.encode(value);
-    final length = encoded.length;
-    _ensureSize(length);
+    // Over-allocate max UTF-8 size (4 bytes/char, ~3 )
+    _ensureSize(len * 4);
 
-    // Use setRange for better performance with encoded bytes
-    _buffer.setRange(_offset, _offset + length, encoded);
-    _offset += length;
+    var bufIdx = _offset;
+    for (var i = 0; i < len; i++) {
+      var c = value.codeUnitAt(i);
+      if (c < 128) {
+        _buffer[bufIdx++] = c;
+      } else if (c < 2048) {
+        _buffer[bufIdx++] = 192 | (c >> 6);
+        _buffer[bufIdx++] = 128 | (c & 63);
+      } else if (c >= 0xD800 && c <= 0xDBFF) {
+        // Surrogate pair
+        if (i + 1 < len) {
+          final next = value.codeUnitAt(++i);
+          if (next >= 0xDC00 && next <= 0xDFFF) {
+            c = 0x10000 + ((c & 0x3FF) << 10) + (next & 0x3FF);
+            _buffer[bufIdx++] = 240 | (c >> 18);
+            _buffer[bufIdx++] = 128 | ((c >> 12) & 63);
+            _buffer[bufIdx++] = 128 | ((c >> 6) & 63);
+            _buffer[bufIdx++] = 128 | (c & 63);
+            continue;
+          }
+        }
+        // Replacement char U+FFFD
+        _buffer[bufIdx++] = 0xEF;
+        _buffer[bufIdx++] = 0xBF;
+        _buffer[bufIdx++] = 0xBD;
+      } else {
+        // 3 bytes
+        _buffer[bufIdx++] = 224 | (c >> 12);
+        _buffer[bufIdx++] = 128 | ((c >> 6) & 63);
+        _buffer[bufIdx++] = 128 | (c & 63);
+      }
+    }
+
+    _offset = bufIdx;
   }
 
   @override
@@ -232,7 +351,6 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   void _initializeBuffer(int size) {
     _buffer = Uint8List(size);
-    _data = ByteData.view(_buffer.buffer);
     _capacity = size;
   }
 
@@ -245,22 +363,18 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void _ensureSize(int size) {
-    final requiredSize = _offset + size;
-    if (requiredSize <= _capacity) {
+    final req = _offset + size;
+    if (req <= _capacity) {
       return;
     }
 
-    // Calculate new size with 1.5x growth strategy
-    // Ensure new size is at least requiredSize
-    var newSize = _capacity + (_capacity >> 1); // capacity * 1.5
-    if (newSize < requiredSize) {
-      newSize = requiredSize;
+    var newCapacity = _capacity * 3 ~/ 2; // 1.5x
+    if (newCapacity < req) {
+      newCapacity = req;
     }
 
-    final newBuffer = Uint8List(newSize)..setRange(0, _offset, _buffer);
-
+    final newBuffer = Uint8List(newCapacity)..setRange(0, _offset, _buffer);
     _buffer = newBuffer;
-    _data = ByteData.view(_buffer.buffer);
-    _capacity = newSize;
+    _capacity = newCapacity;
   }
 }

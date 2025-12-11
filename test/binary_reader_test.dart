@@ -293,20 +293,20 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('read beyond buffer throws RangeError', () {
+    test('read beyond buffer throws AssertionError', () {
       final buffer = Uint8List.fromList([0x01, 0x02]);
       final reader = BinaryReader(buffer);
 
       expect(reader.readUint32, throwsA(isA<AssertionError>()));
     });
 
-    test('negative length input throws ArgumentError', () {
+    test('negative length input throws AssertionError', () {
       final buffer = Uint8List.fromList([0x01, 0x02]);
       final reader = BinaryReader(buffer);
 
-      expect(() => reader.readBytes(-1), throwsArgumentError);
-      expect(() => reader.skip(-5), throwsArgumentError);
-      expect(() => reader.peekBytes(-2), throwsArgumentError);
+      expect(() => reader.readBytes(-1), throwsA(isA<AssertionError>()));
+      expect(() => reader.skip(-5), throwsA(isA<AssertionError>()));
+      expect(() => reader.peekBytes(-2), throwsA(isA<AssertionError>()));
     });
 
     test('reading from empty buffer', () {
@@ -323,7 +323,7 @@ void main() {
       expect(reader.readUint8, throwsA(isA<AssertionError>()));
     });
 
-    test('peekBytes beyond buffer throws RangeError', () {
+    test('peekBytes beyond buffer throws AssertionError', () {
       final buffer = Uint8List.fromList([0x01, 0x02]);
       final reader = BinaryReader(buffer);
 
@@ -331,21 +331,21 @@ void main() {
       expect(() => reader.peekBytes(1, 2), throwsA(isA<AssertionError>()));
     });
 
-    test('readString with insufficient bytes throws RangeError', () {
+    test('readString with insufficient bytes throws AssertionError', () {
       final buffer = Uint8List.fromList([0x48, 0x65]); // 'He'
       final reader = BinaryReader(buffer);
 
       expect(() => reader.readString(5), throwsA(isA<AssertionError>()));
     });
 
-    test('readBytes with insufficient bytes throws RangeError', () {
+    test('readBytes with insufficient bytes throws AssertionError', () {
       final buffer = Uint8List.fromList([0x01, 0x02]);
       final reader = BinaryReader(buffer);
 
       expect(() => reader.readBytes(3), throwsA(isA<AssertionError>()));
     });
 
-    test('read methods throw RangeError when not enough bytes', () {
+    test('read methods throw AssertionError when not enough bytes', () {
       final buffer = Uint8List.fromList([0x00, 0x01]);
       final reader = BinaryReader(buffer);
 
@@ -355,7 +355,7 @@ void main() {
     });
 
     test(
-      'readUint64 and readInt64 with insufficient bytes throw RangeError',
+      'readUint64 and readInt64 with insufficient bytes throw AssertionError',
       () {
         final buffer = Uint8List.fromList(List.filled(7, 0x00)); // Only 7 bytes
         final reader = BinaryReader(buffer);
@@ -365,11 +365,11 @@ void main() {
       },
     );
 
-    test('skip beyond buffer throws RangeError', () {
+    test('skip beyond buffer throws AssertionError', () {
       final buffer = Uint8List.fromList([0x01, 0x02]);
       final reader = BinaryReader(buffer);
 
-      expect(() => reader.skip(3), throwsArgumentError);
+      expect(() => reader.skip(3), throwsA(isA<AssertionError>()));
     });
 
     test('read and verify multiple values sequentially', () {
@@ -508,7 +508,7 @@ void main() {
         final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
         final reader = BinaryReader(buffer);
 
-        expect(() => reader.readBytes(-1), throwsArgumentError);
+        expect(() => reader.readBytes(-1), throwsA(isA<AssertionError>()));
       });
 
       test('readString throws when requested length exceeds available', () {
@@ -532,21 +532,21 @@ void main() {
         final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
         final reader = BinaryReader(buffer);
 
-        expect(() => reader.peekBytes(-1), throwsArgumentError);
+        expect(() => reader.peekBytes(-1), throwsA(isA<AssertionError>()));
       });
 
       test('skip throws when length exceeds available bytes', () {
         final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
         final reader = BinaryReader(buffer);
 
-        expect(() => reader.skip(5), throwsArgumentError);
+        expect(() => reader.skip(5), throwsA(isA<AssertionError>()));
       });
 
       test('skip throws when length is negative', () {
         final buffer = Uint8List.fromList([0x01, 0x02, 0x03]);
         final reader = BinaryReader(buffer);
 
-        expect(() => reader.skip(-1), throwsArgumentError);
+        expect(() => reader.skip(-1), throwsA(isA<AssertionError>()));
       });
     });
 

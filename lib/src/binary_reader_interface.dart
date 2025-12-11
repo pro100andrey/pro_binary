@@ -201,11 +201,14 @@ abstract class BinaryReaderInterface {
   /// The [length] parameter specifies the number of bytes to read from the
   /// buffer.
   ///
+  /// The optional [allowMalformed] parameter specifies whether to allow
+  /// malformed UTF-8 sequences (defaults to false).
+  ///
   /// Example:
   /// ```dart
   /// String value = reader.readString(5); // Reads 5 bytes and decodes them as a UTF-8 string.
   /// ```
-  String readString(int length);
+  String readString(int length, {bool allowMalformed = false});
 
   /// Peeks a list of bytes from the buffer without changing the internal state.
   ///
