@@ -715,5 +715,255 @@ void main() {
         expect(reader.readUint8(), equals(0x42));
       });
     });
+
+    group('Malformed UTF-8', () {
+      test('readString with allowMalformed=true handles invalid UTF-8', () {
+        // Invalid UTF-8 sequence: 0xFF is not valid in UTF-8
+        final buffer = Uint8List.fromList([
+          0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
+          0xFF, // Invalid byte
+          0x57, 0x6F, 0x72, 0x6C, 0x64, // "World"
+        ]);
+        final reader = BinaryReader(buffer);
+
+        final result = reader.readString(buffer.length, allowMalformed: true);
+        expect(result, contains('Hello'));
+        expect(result, contains('World'));
+      });
+
+      test('readString with allowMalformed=false throws on invalid UTF-8', () {
+        final buffer = Uint8List.fromList([0xFF, 0xFE, 0xFD]);
+        final reader = BinaryReader(buffer);
+
+        expect(
+          () => reader.readString(buffer.length),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
+      test('readString handles truncated multi-byte sequence', () {
+        final buffer = Uint8List.fromList([0xE0, 0xA0]);
+        final reader = BinaryReader(buffer);
+
+        expect(
+          () => reader.readString(buffer.length),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
+      test('readString with allowMalformed handles truncated sequence', () {
+        final buffer = Uint8List.fromList([
+          0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
+          0xE0, 0xA0, // Incomplete 3-byte sequence
+        ]);
+        final reader = BinaryReader(buffer);
+
+        final result = reader.readString(buffer.length, allowMalformed: true);
+        expect(result, startsWith('Hello'));
+      });
+    });
+
+    group('Lone surrogate pairs', () {
+      test('readString handles lone high surrogate', () {
+        final buffer = utf8.encode('Test\uD800End');
+        final reader = BinaryReader(buffer);
+
+        final result = reader.readString(buffer.length, allowMalformed: true);
+        expect(result, isNotEmpty);
+      });
+
+      test('readString handles lone low surrogate', () {
+        final buffer = utf8.encode('Test\uDC00End');
+        final reader = BinaryReader(buffer);
+
+        final result = reader.readString(buffer.length, allowMalformed: true);
+        expect(result, isNotEmpty);
+      });
+    });
+
+    group('peekBytes advanced', () {
+      test(
+        'peekBytes with offset beyond current position but within buffer',
+        () {
+          final buffer = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+          final reader = BinaryReader(buffer)
+            ..readUint8()
+            ..readUint8();
+
+          final peeked = reader.peekBytes(3, 5);
+          expect(peeked, equals([6, 7, 8]));
+          expect(reader.offset, equals(2));
+        },
+      );
+
+      test('peekBytes at buffer boundary', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer);
+
+        final peeked = reader.peekBytes(2, 3);
+        expect(peeked, equals([4, 5]));
+        expect(reader.offset, equals(0));
+      });
+
+      test('peekBytes exactly at end with zero length', () {
+        final buffer = Uint8List.fromList([1, 2, 3]);
+        final reader = BinaryReader(buffer);
+
+        final peeked = reader.peekBytes(0, 3);
+        expect(peeked, isEmpty);
+        expect(reader.offset, equals(0));
+      });
+    });
+
+    group('Sequential operations', () {
+      test('multiple reset calls with intermediate reads', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readUint8(), equals(1));
+        reader.reset();
+        expect(reader.readUint8(), equals(1));
+        expect(reader.readUint8(), equals(2));
+        reader.reset();
+        expect(reader.offset, equals(0));
+        expect(reader.readUint8(), equals(1));
+      });
+
+      test('alternating read and peek operations', () {
+        final buffer = Uint8List.fromList([10, 20, 30, 40, 50]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readUint8(), equals(10));
+        expect(reader.peekBytes(2), equals([20, 30]));
+        expect(reader.readUint8(), equals(20));
+        expect(reader.peekBytes(1, 3), equals([40]));
+        expect(reader.readUint8(), equals(30));
+      });
+    });
+
+    group('Large buffer operations', () {
+      test('readBytes with very large length', () {
+        const largeSize = 1000000;
+        final buffer = Uint8List(largeSize);
+        for (var i = 0; i < largeSize; i++) {
+          buffer[i] = i % 256;
+        }
+
+        final reader = BinaryReader(buffer);
+        final result = reader.readBytes(largeSize);
+
+        expect(result.length, equals(largeSize));
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('skip large amount of data', () {
+        final buffer = Uint8List(100000);
+        final reader = BinaryReader(buffer)..skip(50000);
+        expect(reader.offset, equals(50000));
+        expect(reader.availableBytes, equals(50000));
+      });
+    });
+
+    group('Buffer sharing', () {
+      test('multiple readers can read same buffer concurrently', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader1 = BinaryReader(buffer);
+        final reader2 = BinaryReader(buffer);
+
+        expect(reader1.readUint8(), equals(1));
+        expect(reader2.readUint8(), equals(1));
+        expect(reader1.readUint8(), equals(2));
+        expect(reader2.readUint16(), equals(0x0203));
+      });
+
+      test('peekBytes returns independent views', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer);
+
+        final peek1 = reader.peekBytes(3);
+        final peek2 = reader.peekBytes(3);
+
+        expect(peek1, equals([1, 2, 3]));
+        expect(peek2, equals([1, 2, 3]));
+        expect(identical(peek1, peek2), isFalse);
+      });
+    });
+
+    group('Zero-copy verification', () {
+      test('readBytes returns view of original buffer', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer);
+
+        final bytes = reader.readBytes(3);
+
+        expect(bytes, isA<Uint8List>());
+        expect(bytes.length, equals(3));
+      });
+
+      test('peekBytes returns view of original buffer', () {
+        final buffer = Uint8List.fromList([10, 20, 30, 40, 50]);
+        final reader = BinaryReader(buffer);
+
+        final peeked = reader.peekBytes(3);
+
+        expect(peeked, isA<Uint8List>());
+        expect(peeked, equals([10, 20, 30]));
+      });
+    });
+
+    group('Mixed endianness operations', () {
+      test('reading alternating big and little endian values', () {
+        final writer = BinaryWriter()
+          ..writeUint16(0x1234)
+          ..writeUint16(0x5678, Endian.little)
+          ..writeUint32(0x9ABCDEF0)
+          ..writeUint32(0x11223344, Endian.little);
+
+        final buffer = writer.takeBytes();
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readUint16(), equals(0x1234));
+        expect(reader.readUint16(Endian.little), equals(0x5678));
+        expect(reader.readUint32(), equals(0x9ABCDEF0));
+        expect(reader.readUint32(Endian.little), equals(0x11223344));
+      });
+
+      test('float values with different endianness', () {
+        final writer = BinaryWriter()
+          ..writeFloat32(3.14)
+          ..writeFloat32(2.71, Endian.little)
+          ..writeFloat64(1.414)
+          ..writeFloat64(1.732, Endian.little);
+
+        final buffer = writer.takeBytes();
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readFloat32(), closeTo(3.14, 0.01));
+        expect(reader.readFloat32(Endian.little), closeTo(2.71, 0.01));
+        expect(reader.readFloat64(), closeTo(1.414, 0.001));
+        expect(reader.readFloat64(Endian.little), closeTo(1.732, 0.001));
+      });
+    });
+
+    group('Boundary conditions at exact sizes', () {
+      test('buffer exactly matches read size', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4]);
+        final reader = BinaryReader(buffer);
+
+        final result = reader.readBytes(4);
+        expect(result, equals([1, 2, 3, 4]));
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('reading exactly to boundary multiple times', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5, 6]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readUint16(), equals(0x0102));
+        expect(reader.readUint16(), equals(0x0304));
+        expect(reader.readUint16(), equals(0x0506));
+        expect(reader.availableBytes, equals(0));
+      });
+    });
   });
 }

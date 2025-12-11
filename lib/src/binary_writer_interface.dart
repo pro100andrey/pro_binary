@@ -220,11 +220,19 @@ abstract class BinaryWriterInterface {
   /// The [value] parameter is the string to be encoded and written to the
   ///  buffer.
   ///
+  /// The optional [allowMalformed] parameter specifies whether to allow
+  /// malformed UTF-16 sequences (lone surrogates). If false, a 
+  /// [FormatException]
+  /// is thrown when encountering invalid surrogate pairs. If true (default),
+  /// invalid surrogates are replaced with the Unicode replacement character
+  /// U+FFFD (�).
+  ///
   /// Example:
   /// ```dart
   /// writer.writeString("Hello, world!"); // Writes the string "Hello, world!" as UTF-8 bytes to the buffer.
+  /// writer.writeString("Test\uD800End", allowMalformed: false); // Throws FormatException for lone surrogate
   /// ```
-  void writeString(String value);
+  void writeString(String value, {bool allowMalformed = true});
 
   /// Returns the written bytes as a [Uint8List] and resets the writer.
   ///

@@ -13,6 +13,11 @@ import 'binary_reader_interface.dart';
 /// - UTF-8 string decoding
 /// - Peek operations without advancing position
 ///
+/// Memory Management:
+/// - Uses views (zero-copy) for [peekBytes] and [readBytes]
+/// - [readString] decodes directly from the buffer view
+/// - No internal allocations except for decoded strings
+///
 /// Example:
 /// ```dart
 /// final bytes = Uint8List.fromList([0, 0, 0, 42]);

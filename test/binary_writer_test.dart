@@ -770,5 +770,469 @@ void main() {
         },
       );
     });
+
+    group('Lone surrogate pairs', () {
+      test(
+        'writeString handles lone high surrogate with allowMalformed=true',
+        () {
+          const testStr = 'Before\uD800After';
+          writer.writeString(testStr);
+          final bytes = writer.takeBytes();
+
+          final reader = BinaryReader(bytes);
+          final result = reader.readString(bytes.length, allowMalformed: true);
+          expect(result, isNotEmpty);
+          expect(result, contains('Before'));
+          expect(result, contains('After'));
+          expect(result.contains('\uFFFD') || result.contains('�'), isTrue);
+        },
+      );
+
+      test(
+        'writeString throws on lone high surrogate with allowMalformed=false',
+        () {
+          const testStr = 'Before\uD800After';
+          expect(
+            () => writer.writeString(testStr, allowMalformed: false),
+            throwsA(isA<FormatException>()),
+          );
+        },
+      );
+
+      test(
+        'writeString handles lone low surrogate with allowMalformed=true',
+        () {
+          const testStr = 'Before\uDC00After';
+          writer.writeString(testStr);
+          final bytes = writer.takeBytes();
+
+          final reader = BinaryReader(bytes);
+          final result = reader.readString(bytes.length, allowMalformed: true);
+          expect(result, isNotEmpty);
+          expect(result, contains('Before'));
+          expect(result, contains('After'));
+          expect(result.contains('\uFFFD') || result.contains('�'), isTrue);
+        },
+      );
+
+      test(
+        'writeString throws on lone low surrogate with allowMalformed=false',
+        () {
+          const testStr = 'Before\uDC00After';
+          expect(
+            () => writer.writeString(testStr, allowMalformed: false),
+            throwsA(isA<FormatException>()),
+          );
+        },
+      );
+
+      test('writeString handles valid surrogate pair', () {
+        const testStr = 'Test\u{1F600}End';
+        writer.writeString(testStr);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final result = reader.readString(bytes.length);
+        expect(result, equals(testStr));
+      });
+
+      test('writeString handles mixed valid and invalid surrogates', () {
+        const testStr = 'A\u{1F600}B\uD800C';
+        writer.writeString(testStr);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final result = reader.readString(bytes.length, allowMalformed: true);
+        expect(result, contains('A'));
+        expect(result, contains('B'));
+        expect(result, contains('C'));
+        expect(result.contains('\uFFFD') || result.contains('�'), isTrue);
+      });
+
+      test(
+        'writeString throws on mixed surrogates with allowMalformed=false',
+        () {
+          const testStr = 'A\u{1F600}B\uD800C';
+          expect(
+            () => writer.writeString(testStr, allowMalformed: false),
+            throwsA(isA<FormatException>()),
+          );
+        },
+      );
+    });
+
+    group('Very large strings', () {
+      test('writeString with string exceeding initial buffer size', () {
+        final writer = BinaryWriter(initialBufferSize: 8);
+        const largeString =
+            'This is a very long string that exceeds initial'
+            ' buffer size and should trigger buffer expansion properly';
+
+        writer.writeString(largeString);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final result = reader.readString(bytes.length);
+        expect(result, equals(largeString));
+      });
+
+      test('writeString with string requiring more than 1.5x growth', () {
+        final writer = BinaryWriter(initialBufferSize: 4);
+        const str = 'Very long string to force larger growth';
+
+        writer.writeString(str);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final result = reader.readString(bytes.length);
+        expect(result, equals(str));
+      });
+
+      test('writeString with multi-byte UTF-8 characters exceeding buffer', () {
+        final writer = BinaryWriter(initialBufferSize: 8);
+        const str = 'Привет мир! Это длинная строка для теста';
+
+        writer.writeString(str);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final result = reader.readString(bytes.length);
+        expect(result, equals(str));
+      });
+
+      test('writeString with Chinese characters requiring buffer growth', () {
+        final writer = BinaryWriter(initialBufferSize: 16);
+        const str = '这是一个非常长的中文字符串用于测试缓冲区扩展功能是否正常工作';
+
+        writer.writeString(str);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final result = reader.readString(bytes.length);
+        expect(result, equals(str));
+      });
+    });
+
+    group('Uint64 maximum values', () {
+      test('writeUint64 with maximum safe integer', () {
+        const maxSafeInt = 9223372036854775807;
+        writer.writeUint64(maxSafeInt);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readUint64(), equals(maxSafeInt));
+      });
+
+      test('writeUint64 with value 0', () {
+        writer.writeUint64(0);
+        final bytes = writer.takeBytes();
+        expect(bytes, equals([0, 0, 0, 0, 0, 0, 0, 0]));
+      });
+
+      test('writeUint64 with large value in little-endian', () {
+        const largeValue = 123456789012345; // Safe for JS: < 2^53
+        writer.writeUint64(largeValue, Endian.little);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readUint64(Endian.little), equals(largeValue));
+      });
+    });
+
+    group('Buffer growth advanced', () {
+      test('exact buffer capacity boundary', () {
+        final writer = BinaryWriter(initialBufferSize: 8)..writeUint64(12345);
+        expect(writer.bytesWritten, equals(8));
+
+        writer.writeUint8(1);
+        expect(writer.bytesWritten, equals(9));
+
+        final bytes = writer.takeBytes();
+        expect(bytes.length, equals(9));
+      });
+
+      test('multiple expansions in sequence', () {
+        final writer = BinaryWriter(initialBufferSize: 4)
+          ..writeUint32(0x12345678);
+        expect(writer.bytesWritten, equals(4));
+
+        writer.writeUint8(0xAB);
+        expect(writer.bytesWritten, equals(5));
+
+        for (var i = 0; i < 20; i++) {
+          writer.writeUint8(i);
+        }
+
+        expect(writer.bytesWritten, equals(25));
+      });
+
+      test('large single write triggering immediate large expansion', () {
+        final writer = BinaryWriter(initialBufferSize: 8);
+        final largeData = Uint8List(1000);
+        for (var i = 0; i < 1000; i++) {
+          largeData[i] = i % 256;
+        }
+
+        writer.writeBytes(largeData);
+        expect(writer.bytesWritten, equals(1000));
+
+        final bytes = writer.takeBytes();
+        expect(bytes, equals(largeData));
+      });
+
+      test('alternating small and large writes', () {
+        final writer = BinaryWriter(initialBufferSize: 16)
+          ..writeUint8(1)
+          ..writeBytes(Uint8List(100))
+          ..writeUint8(2)
+          ..writeBytes(Uint8List(50))
+          ..writeUint8(3);
+
+        expect(writer.bytesWritten, equals(153));
+      });
+    });
+
+    group('Thread-safety verification', () {
+      test('float conversion uses instance buffers', () {
+        final writer1 = BinaryWriter();
+        final writer2 = BinaryWriter();
+
+        writer1.writeFloat32(1.23);
+        writer2.writeFloat32(4.56);
+
+        final bytes1 = writer1.takeBytes();
+        final bytes2 = writer2.takeBytes();
+
+        final reader1 = BinaryReader(bytes1);
+        final reader2 = BinaryReader(bytes2);
+
+        expect(reader1.readFloat32(), closeTo(1.23, 0.01));
+        expect(reader2.readFloat32(), closeTo(4.56, 0.01));
+      });
+
+      test('concurrent writers produce independent results', () {
+        final writer1 = BinaryWriter();
+        final writer2 = BinaryWriter();
+
+        writer1.writeUint32(0x11111111);
+        writer2.writeUint32(0x22222222);
+        writer1.writeFloat64(3.14159);
+        writer2.writeFloat64(2.71828);
+
+        final bytes1 = writer1.takeBytes();
+        final bytes2 = writer2.takeBytes();
+
+        expect(bytes1.length, equals(12));
+        expect(bytes2.length, equals(12));
+
+        final reader1 = BinaryReader(bytes1);
+        final reader2 = BinaryReader(bytes2);
+
+        expect(reader1.readUint32(), equals(0x11111111));
+        expect(reader2.readUint32(), equals(0x22222222));
+        expect(reader1.readFloat64(), closeTo(3.14159, 0.00001));
+        expect(reader2.readFloat64(), closeTo(2.71828, 0.00001));
+      });
+    });
+
+    group('State preservation advanced', () {
+      test('toBytes does not affect subsequent writes', () {
+        writer.writeUint32(0x12345678);
+        final snapshot1 = writer.toBytes();
+
+        writer.writeUint32(0xABCDEF00);
+        final snapshot2 = writer.toBytes();
+
+        expect(snapshot1.length, equals(4));
+        expect(snapshot2.length, equals(8));
+
+        final reader1 = BinaryReader(snapshot1);
+        final reader2 = BinaryReader(snapshot2);
+
+        expect(reader1.readUint32(), equals(0x12345678));
+        expect(reader2.readUint32(), equals(0x12345678));
+        expect(reader2.readUint32(), equals(0xABCDEF00));
+      });
+
+      test('multiple toBytes calls return equivalent data', () {
+        writer
+          ..writeUint16(100)
+          ..writeUint16(200)
+          ..writeUint16(300);
+
+        final snap1 = writer.toBytes();
+        final snap2 = writer.toBytes();
+        final snap3 = writer.toBytes();
+
+        expect(snap1, equals(snap2));
+        expect(snap2, equals(snap3));
+      });
+
+      test('reset after toBytes properly clears buffer', () {
+        writer
+          ..writeUint64(1234567890123456) // Safe for JS: < 2^53
+          ..toBytes()
+          ..reset();
+        expect(writer.bytesWritten, equals(0));
+        expect(writer.toBytes(), isEmpty);
+
+        writer.writeUint8(42);
+        expect(writer.toBytes(), equals([42]));
+      });
+    });
+
+    group('Complex integration scenarios', () {
+      test('full write-read cycle with all types and mixed endianness', () {
+        writer
+          ..writeUint8(255)
+          ..writeInt8(-128)
+          ..writeUint16(65535)
+          ..writeInt16(-32768, Endian.little)
+          ..writeUint32(4294967295, Endian.little)
+          ..writeInt32(-2147483648)
+          ..writeUint64(9223372036854775807)
+          ..writeInt64(-9223372036854775808, Endian.little)
+          ..writeFloat32(3.14159, Endian.little)
+          ..writeFloat64(2.718281828)
+          ..writeString('Hello, 世界! 🌍')
+          ..writeBytes([1, 2, 3, 4, 5]);
+
+        final bytes = writer.takeBytes();
+        final reader = BinaryReader(bytes);
+
+        expect(reader.readUint8(), equals(255));
+        expect(reader.readInt8(), equals(-128));
+        expect(reader.readUint16(), equals(65535));
+        expect(reader.readInt16(Endian.little), equals(-32768));
+        expect(reader.readUint32(Endian.little), equals(4294967295));
+        expect(reader.readInt32(), equals(-2147483648));
+        expect(reader.readUint64(), equals(9223372036854775807));
+        expect(reader.readInt64(Endian.little), equals(-9223372036854775808));
+        expect(reader.readFloat32(Endian.little), closeTo(3.14159, 0.00001));
+        expect(reader.readFloat64(), closeTo(2.718281828, 0.000000001));
+
+        reader.skip(reader.availableBytes - 5);
+        expect(reader.readBytes(5), equals([1, 2, 3, 4, 5]));
+      });
+
+      test('writer reuse with takeBytes between operations', () {
+        writer
+          ..writeUint32(100)
+          ..writeString('First');
+        final bytes1 = writer.takeBytes();
+
+        writer
+          ..writeUint32(200)
+          ..writeString('Second');
+        final bytes2 = writer.takeBytes();
+
+        writer
+          ..writeUint32(300)
+          ..writeString('Third');
+        final bytes3 = writer.takeBytes();
+
+        var reader = BinaryReader(bytes1);
+        expect(reader.readUint32(), equals(100));
+
+        reader = BinaryReader(bytes2);
+        expect(reader.readUint32(), equals(200));
+
+        reader = BinaryReader(bytes3);
+        expect(reader.readUint32(), equals(300));
+      });
+
+      test('large mixed data write with buffer expansions', () {
+        final writer = BinaryWriter(initialBufferSize: 32);
+
+        for (var i = 0; i < 100; i++) {
+          writer
+            ..writeUint8(i % 256)
+            ..writeUint16(i * 2)
+            ..writeUint32(i * 1000)
+            ..writeFloat32(i * 1.5);
+        }
+
+        writer.writeString('Final string at the end');
+
+        final bytes = writer.takeBytes();
+        expect(bytes.length, greaterThan(32));
+        expect(bytes.length, greaterThan(1000));
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readUint8(), equals(0));
+        expect(reader.readUint16(), equals(0));
+        expect(reader.readUint32(), equals(0));
+        expect(reader.readFloat32(), closeTo(0, 0.01));
+      });
+    });
+
+    group('Memory efficiency', () {
+      test('takeBytes creates view not copy', () {
+        writer.writeUint32(0x12345678);
+        final bytes = writer.takeBytes();
+
+        expect(bytes, isA<Uint8List>());
+        expect(bytes.length, equals(4));
+      });
+
+      test('toBytes creates view not copy', () {
+        writer.writeUint64(9876543210123); // Safe for JS: < 2^53
+        final bytes = writer.toBytes();
+
+        expect(bytes, isA<Uint8List>());
+        expect(bytes.length, equals(8));
+      });
+
+      test('buffer only grows when necessary', () {
+        final writer = BinaryWriter(initialBufferSize: 100);
+
+        for (var i = 0; i < 50; i++) {
+          writer.writeUint8(i);
+        }
+
+        expect(writer.bytesWritten, equals(50));
+        final bytes = writer.toBytes();
+        expect(bytes.length, equals(50));
+      });
+    });
+
+    group('Special UTF-8 cases', () {
+      test('writeString with only ASCII (fast path)', () {
+        const str = 'OnlyASCII123';
+        writer.writeString(str);
+        final bytes = writer.takeBytes();
+
+        expect(bytes.length, equals(str.length));
+      });
+
+      test('writeString with mixed ASCII and multi-byte', () {
+        const str = 'ASCII_Юникод_中文';
+        writer.writeString(str);
+        final bytes = writer.takeBytes();
+
+        expect(bytes.length, greaterThan(str.length));
+        final reader = BinaryReader(bytes);
+        expect(reader.readString(bytes.length), equals(str));
+      });
+
+      test('writeString with only 4-byte characters (emojis)', () {
+        const str = '🚀🌟💻🎉🔥';
+        writer.writeString(str);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readString(bytes.length), equals(str));
+      });
+
+      test('writeString empty string after previous writes', () {
+        writer
+          ..writeUint8(42)
+          ..writeString('')
+          ..writeUint8(43);
+
+        final bytes = writer.takeBytes();
+        expect(bytes, equals([42, 43]));
+      });
+    });
   });
 }

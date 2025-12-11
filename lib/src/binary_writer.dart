@@ -9,14 +9,29 @@ import 'binary_writer_interface.dart';
 /// - Automatic buffer growth with 1.5x expansion strategy
 /// - Cached capacity checks for minimal overhead
 /// - Optimized for sequential writes
-/// - UTF-8 string encoding
+/// - Custom UTF-8 string encoding for performance
+/// - Instance-level temporary buffers (thread-safe)
+///
+/// Buffer Management:
+/// - Automatically grows using 1.5x expansion strategy when capacity exceeded
+/// - If required size exceeds 1.5x, grows to exact required size
+/// - [takeBytes] returns a view (zero-copy) and resets the writer
+/// - [toBytes] returns a view without resetting, allowing continued writing
+/// - [reset] clears the buffer and reinitializes to initial size
+///
+/// Thread Safety:
+/// - Each writer instance is thread-safe within its own execution context
+/// - Uses instance-level temporary buffers for float conversions
+/// - Safe to use multiple writers concurrently in different isolates
 ///
 /// Example:
 /// ```dart
 /// final writer = BinaryWriter();
 /// writer.writeUint32(42);
 /// writer.writeString('Hello');
-/// final bytes = writer.toBytes();
+/// final bytes = writer.toBytes(); // View without reset
+/// writer.writeUint8(10); // Can continue writing
+/// final final = writer.takeBytes(); // View with reset
 /// ```
 class BinaryWriter extends BinaryWriterInterface {
   /// Creates a new [BinaryWriter] with an optional initial buffer size.
@@ -221,9 +236,10 @@ class BinaryWriter extends BinaryWriterInterface {
     }
   }
 
-  static final Uint8List _tempU8 = Uint8List(8);
-  static final Float32List _tempF32 = Float32List.view(_tempU8.buffer);
-  static final Float64List _tempF64 = Float64List.view(_tempU8.buffer);
+  // Instance-level temporary buffers for float conversion (thread-safe)
+  final Uint8List _tempU8 = Uint8List(8);
+  late final Float32List _tempF32 = Float32List.view(_tempU8.buffer);
+  late final Float64List _tempF64 = Float64List.view(_tempU8.buffer);
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
@@ -282,13 +298,13 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   @override
-  void writeString(String value) {
+  void writeString(String value, {bool allowMalformed = true}) {
     final len = value.length;
     if (len == 0) {
       return;
     }
 
-    // Over-allocate max UTF-8 size (4 bytes/char, ~3 )
+    // Over-allocate max UTF-8 size (4 bytes/char)
     _ensureSize(len * 4);
 
     var bufIdx = _offset;
@@ -300,10 +316,12 @@ class BinaryWriter extends BinaryWriterInterface {
         _buffer[bufIdx++] = 192 | (c >> 6);
         _buffer[bufIdx++] = 128 | (c & 63);
       } else if (c >= 0xD800 && c <= 0xDBFF) {
-        // Surrogate pair
+        // High surrogate
         if (i + 1 < len) {
-          final next = value.codeUnitAt(++i);
+          final next = value.codeUnitAt(i + 1);
           if (next >= 0xDC00 && next <= 0xDFFF) {
+            // Valid surrogate pair
+            i++;
             c = 0x10000 + ((c & 0x3FF) << 10) + (next & 0x3FF);
             _buffer[bufIdx++] = 240 | (c >> 18);
             _buffer[bufIdx++] = 128 | ((c >> 12) & 63);
@@ -311,6 +329,27 @@ class BinaryWriter extends BinaryWriterInterface {
             _buffer[bufIdx++] = 128 | (c & 63);
             continue;
           }
+        }
+        // Lone high surrogate
+        if (!allowMalformed) {
+          throw FormatException(
+            'Invalid UTF-16: lone high surrogate at index $i',
+            value,
+            i,
+          );
+        }
+        // Replacement char U+FFFD
+        _buffer[bufIdx++] = 0xEF;
+        _buffer[bufIdx++] = 0xBF;
+        _buffer[bufIdx++] = 0xBD;
+      } else if (c >= 0xDC00 && c <= 0xDFFF) {
+        // Lone low surrogate
+        if (!allowMalformed) {
+          throw FormatException(
+            'Invalid UTF-16: lone low surrogate at index $i',
+            value,
+            i,
+          );
         }
         // Replacement char U+FFFD
         _buffer[bufIdx++] = 0xEF;
