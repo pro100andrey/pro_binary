@@ -21,7 +21,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ``` yaml
 dependencies:
-  pro_binary: ^2.0.0
+  pro_binary: ^2.1.0
 ```
 
 Then, run `pub get` to install the package.
@@ -72,15 +72,22 @@ final writer = BinaryWriter(initialBufferSize: 64);
 
 // Write operations
 writer.writeUint8(255);
+writer.writeInt8(-128);
+writer.writeUint16(65535, Endian.big);
+writer.writeInt16(-32768, Endian.big);
+writer.writeUint32(4294967295, Endian.big);
 writer.writeInt32(-1000, Endian.big);
-writer.writeFloat64(3.14);
+writer.writeUint64(9223372036854775807, Endian.big);
+writer.writeInt64(-9223372036854775808, Endian.big);
+writer.writeFloat32(3.14, Endian.big);
+writer.writeFloat64(3.14159, Endian.big);
 writer.writeBytes([1, 2, 3]);
 writer.writeString('text');
 
 // Buffer operations
-final bytes = writer.toBytes();      // Get copy without reset
-final result = writer.takeBytes();   // Get and reset
-writer.clear();                       // Reset without returning
+final bytes = writer.toBytes();      // Get view without reset
+final result = writer.takeBytes();   // Get view and reset
+writer.reset();                       // Reset without returning
 print(writer.bytesWritten);          // Check written size
 ```
 
@@ -91,14 +98,25 @@ final reader = BinaryReader(buffer);
 
 // Read operations
 final u8 = reader.readUint8();
+final i8 = reader.readInt8();
+final u16 = reader.readUint16(Endian.big);
+final i16 = reader.readInt16(Endian.big);
+final u32 = reader.readUint32(Endian.big);
 final i32 = reader.readInt32(Endian.little);
-final f64 = reader.readFloat64();
+final u64 = reader.readUint64(Endian.big);
+final i64 = reader.readInt64(Endian.big);
+final f32 = reader.readFloat32(Endian.big);
+final f64 = reader.readFloat64(Endian.big);
 final bytes = reader.readBytes(10);
 final text = reader.readString(5);
+
+// Peek without advancing position
+final peeked = reader.peekBytes(4);  // View without consuming
 
 // Navigation
 reader.skip(4);                      // Skip bytes
 final pos = reader.offset;           // Current position
+final used = reader.usedBytes;       // Bytes read so far
 reader.reset();                      // Reset to start
 print(reader.availableBytes);        // Remaining bytes
 ```
@@ -111,7 +129,7 @@ All read operations validate boundaries and provide detailed error messages:
 try {
   reader.readUint32(); // Not enough bytes
 } catch (e) {
-  // RangeError: Not enough bytes to read Uint32: 
+  // AssertionError: Not enough bytes to read Uint32: 
   // required 4 bytes, available 2 bytes at offset 10
 }
 ```
