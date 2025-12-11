@@ -44,16 +44,15 @@ class BinaryReader extends BinaryReaderInterface {
 
   /// Performs inline bounds check to ensure safe reads.
   ///
-  /// Throws [RangeError] if attempting to read beyond buffer boundaries.
+  /// Throws [AssertionError] if attempting to read beyond buffer boundaries.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  void _checkBounds(int bytes, String type) {
-    if (_offset + bytes > _length) {
-      throw RangeError(
-        'Not enough bytes to read $type: required $bytes bytes, available '
-        '${_length - _offset} bytes at offset $_offset',
-      );
-    }
+  void _checkBounds(int bytes, String type, [int? offset]) {
+    assert(
+      (offset ?? _offset) + bytes <= _length,
+      'Not enough bytes to read $type: required $bytes bytes, available '
+      '${_length - _offset} bytes at offset $_offset',
+    );
   }
 
   @override
@@ -174,12 +173,7 @@ class BinaryReader extends BinaryReaderInterface {
       );
     }
 
-    if (_offset + length > _length) {
-      throw RangeError(
-        'Not enough bytes to read $length bytes: '
-        'available ${_length - _offset} bytes at offset $_offset',
-      );
-    }
+    _checkBounds(length, 'Bytes');
 
     final bytes = Uint8List.sublistView(_buffer, _offset, _offset + length);
 
@@ -223,12 +217,7 @@ class BinaryReader extends BinaryReaderInterface {
 
     final peekOffset = offset ?? _offset;
 
-    if (peekOffset + length > _length) {
-      throw RangeError(
-        'Not enough bytes to peek $length bytes: '
-        'available ${_length - peekOffset} bytes at offset $peekOffset',
-      );
-    }
+    _checkBounds(length, 'Peek Bytes', peekOffset);
 
     return Uint8List.sublistView(_buffer, peekOffset, peekOffset + length);
   }

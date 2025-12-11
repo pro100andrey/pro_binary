@@ -11,113 +11,113 @@ void main() {
       writer = BinaryWriter();
     });
 
-    test('takeBytes for empty', () {
+    test('should return empty list when takeBytes called on empty writer', () {
       expect(writer.takeBytes(), isEmpty);
     });
 
-    test('writeUint8', () {
+    test('should write single Uint8 value correctly', () {
       writer.writeUint8(1);
       expect(writer.takeBytes(), [1]);
     });
 
-    test('writeInt8 negative value', () {
+    test('should write negative Int8 value correctly', () {
       writer.writeInt8(-1);
       expect(writer.takeBytes(), [255]);
     });
 
-    test('writeUint16 big-endian', () {
+    test('should write Uint16 in big-endian format', () {
       writer.writeUint16(256);
       expect(writer.takeBytes(), [1, 0]);
     });
 
-    test('writeUint16 little-endian', () {
+    test('should write Uint16 in little-endian format', () {
       writer.writeUint16(256, Endian.little);
       expect(writer.takeBytes(), [0, 1]);
     });
 
-    test('writeInt16 big-endian', () {
+    test('should write Int16 in big-endian format', () {
       writer.writeInt16(-1);
       expect(writer.takeBytes(), [255, 255]);
     });
 
-    test('writeInt16 little-endian', () {
+    test('should write Int16 in little-endian format', () {
       writer.writeInt16(-32768, Endian.little);
       expect(writer.takeBytes(), [0, 128]);
     });
 
-    test('writeUint32 big-endian', () {
+    test('should write Uint32 in big-endian format', () {
       writer.writeUint32(65536);
       expect(writer.takeBytes(), [0, 1, 0, 0]);
     });
 
-    test('writeUint32 little-endian', () {
+    test('should write Uint32 in little-endian format', () {
       writer.writeUint32(65536, Endian.little);
       expect(writer.takeBytes(), [0, 0, 1, 0]);
     });
 
-    test('writeInt32 big-endian', () {
+    test('should write Int32 in big-endian format', () {
       writer.writeInt32(-1);
       expect(writer.takeBytes(), [255, 255, 255, 255]);
     });
 
-    test('writeInt32 little-endian', () {
+    test('should write Int32 in little-endian format', () {
       writer.writeInt32(-2147483648, Endian.little);
       expect(writer.takeBytes(), [0, 0, 0, 128]);
     });
 
-    test('writeUint64 big-endian', () {
+    test('should write Uint64 in big-endian format', () {
       writer.writeUint64(4294967296);
       expect(writer.takeBytes(), [0, 0, 0, 1, 0, 0, 0, 0]);
     });
 
-    test('writeUint64 little-endian', () {
+    test('should write Uint64 in little-endian format', () {
       writer.writeUint64(4294967296, Endian.little);
       expect(writer.takeBytes(), [0, 0, 0, 0, 1, 0, 0, 0]);
     });
 
-    test('writeInt64 big-endian', () {
+    test('should write Int64 in big-endian format', () {
       writer.writeInt64(-1);
       expect(writer.takeBytes(), [255, 255, 255, 255, 255, 255, 255, 255]);
     });
 
-    test('writeInt64 little-endian', () {
+    test('should write Int64 in little-endian format', () {
       writer.writeInt64(-9223372036854775808, Endian.little);
       expect(writer.takeBytes(), [0, 0, 0, 0, 0, 0, 0, 128]);
     });
 
-    test('writeFloat32 big-endian', () {
+    test('should write Float32 in big-endian format', () {
       writer.writeFloat32(3.1415927);
       expect(writer.takeBytes(), [64, 73, 15, 219]);
     });
 
-    test('writeFloat32 little-endian', () {
+    test('should write Float32 in little-endian format', () {
       writer.writeFloat32(3.1415927, Endian.little);
       expect(writer.takeBytes(), [219, 15, 73, 64]);
     });
 
-    test('writeFloat64 big-endian', () {
+    test('should write Float64 in big-endian format', () {
       writer.writeFloat64(3.141592653589793);
       expect(writer.takeBytes(), [64, 9, 33, 251, 84, 68, 45, 24]);
     });
 
-    test('writeFloat64 little-endian', () {
+    test('should write Float64 in little-endian format', () {
       writer.writeFloat64(3.141592653589793, Endian.little);
       expect(writer.takeBytes(), [24, 45, 68, 84, 251, 33, 9, 64]);
     });
 
-    test('writeBytes', () {
+    test('should write byte array correctly', () {
       writer.writeBytes([1, 2, 3, 4, 5]);
       expect(writer.takeBytes(), [1, 2, 3, 4, 5]);
     });
 
-    test('writeString', () {
+    test('should encode string to UTF-8 bytes correctly', () {
       writer.writeString('Hello, World!');
       expect(writer.takeBytes(), [
         72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33, // ASCII
       ]);
     });
 
-    test('complex memory allocation test', () {
+    test('should handle complex sequence of different data types', () {
       final writer = BinaryWriter()
         ..writeUint8(42)
         ..writeInt8(-42)
@@ -152,19 +152,22 @@ void main() {
       expect(bytes, equals(expectedBytes));
     });
 
-    test('buffer should expand when size exceeds initial allocation', () {
-      for (var i = 0; i < 100; i++) {
-        writer.writeUint8(i);
-      }
+    test(
+      'should automatically expand buffer when size exceeds initial capacity',
+      () {
+        for (var i = 0; i < 100; i++) {
+          writer.writeUint8(i);
+        }
 
-      final result = writer.takeBytes();
-      expect(result.length, equals(100));
-      for (var i = 0; i < 100; i++) {
-        expect(result[i], equals(i));
-      }
-    });
+        final result = writer.takeBytes();
+        expect(result.length, equals(100));
+        for (var i = 0; i < 100; i++) {
+          expect(result[i], equals(i));
+        }
+      },
+    );
 
-    test('reuse writer after takeBytes', () {
+    test('should allow reusing writer after takeBytes', () {
       writer.writeUint8(1);
       expect(writer.takeBytes(), [1]);
 
@@ -172,7 +175,7 @@ void main() {
       expect(writer.takeBytes(), [2]);
     });
 
-    test('write large data set', () {
+    test('should handle writing large data sets efficiently', () {
       final largeData = Uint8List.fromList(
         List.generate(10000, (i) => i % 256),
       );
@@ -185,7 +188,7 @@ void main() {
       expect(result, equals(largeData));
     });
 
-    test('bytesWritten returns correct number of bytes', () {
+    test('should track bytesWritten correctly', () {
       writer.writeUint8(1);
       expect(writer.bytesWritten, equals(1));
 
@@ -203,58 +206,82 @@ void main() {
       expect(writer.bytesWritten, equals(10007));
     });
 
-    group('Range validation', () {
-      test('writeUint8 throws when value is negative', () {
-        expect(() => writer.writeUint8(-1), throwsRangeError);
+    group('Input validation', () {
+      test('should throw AssertionError when Uint8 value is negative', () {
+        expect(() => writer.writeUint8(-1), throwsA(isA<AssertionError>()));
       });
 
-      test('writeUint8 throws when value exceeds 255', () {
-        expect(() => writer.writeUint8(256), throwsRangeError);
+      test('should throw AssertionError when Uint8 value exceeds 255', () {
+        expect(() => writer.writeUint8(256), throwsA(isA<AssertionError>()));
       });
 
-      test('writeInt8 throws when value is less than -128', () {
-        expect(() => writer.writeInt8(-129), throwsRangeError);
+      test('should throw AssertionError when Int8 value is less than -128', () {
+        expect(() => writer.writeInt8(-129), throwsA(isA<AssertionError>()));
       });
 
-      test('writeInt8 throws when value exceeds 127', () {
-        expect(() => writer.writeInt8(128), throwsRangeError);
+      test('should throw AssertionError when Int8 value exceeds 127', () {
+        expect(() => writer.writeInt8(128), throwsA(isA<AssertionError>()));
       });
 
-      test('writeUint16 throws when value is negative', () {
-        expect(() => writer.writeUint16(-1), throwsRangeError);
+      test('should throw AssertionError when Uint16 value is negative', () {
+        expect(() => writer.writeUint16(-1), throwsA(isA<AssertionError>()));
       });
 
-      test('writeUint16 throws when value exceeds 65535', () {
-        expect(() => writer.writeUint16(65536), throwsRangeError);
+      test('should throw AssertionError when Uint16 value exceeds 65535', () {
+        expect(() => writer.writeUint16(65536), throwsA(isA<AssertionError>()));
       });
 
-      test('writeInt16 throws when value is less than -32768', () {
-        expect(() => writer.writeInt16(-32769), throwsRangeError);
+      test(
+        'should throw AssertionError when Int16 value is less than -32768',
+        () {
+          expect(
+            () => writer.writeInt16(-32769),
+            throwsA(isA<AssertionError>()),
+          );
+        },
+      );
+
+      test('should throw AssertionError when Int16 value exceeds 32767', () {
+        expect(() => writer.writeInt16(32768), throwsA(isA<AssertionError>()));
       });
 
-      test('writeInt16 throws when value exceeds 32767', () {
-        expect(() => writer.writeInt16(32768), throwsRangeError);
+      test('should throw AssertionError when Uint32 value is negative', () {
+        expect(() => writer.writeUint32(-1), throwsA(isA<AssertionError>()));
       });
 
-      test('writeUint32 throws when value is negative', () {
-        expect(() => writer.writeUint32(-1), throwsRangeError);
-      });
+      test(
+        'should throw AssertionError when Uint32 value exceeds 4294967295',
+        () {
+          expect(
+            () => writer.writeUint32(4294967296),
+            throwsA(isA<AssertionError>()),
+          );
+        },
+      );
 
-      test('writeUint32 throws when value exceeds 4294967295', () {
-        expect(() => writer.writeUint32(4294967296), throwsRangeError);
-      });
+      test(
+        'should throw AssertionError when Int32 value is less than -2147483648',
+        () {
+          expect(
+            () => writer.writeInt32(-2147483649),
+            throwsA(isA<AssertionError>()),
+          );
+        },
+      );
 
-      test('writeInt32 throws when value is less than -2147483648', () {
-        expect(() => writer.writeInt32(-2147483649), throwsRangeError);
-      });
-
-      test('writeInt32 throws when value exceeds 2147483647', () {
-        expect(() => writer.writeInt32(2147483648), throwsRangeError);
-      });
+      test(
+        'should throw AssertionError when Int32 value exceeds 2147483647',
+        () {
+          expect(
+            () => writer.writeInt32(2147483648),
+            throwsA(isA<AssertionError>()),
+          );
+        },
+      );
     });
 
-    group('toBytes method', () {
-      test('toBytes returns current buffer without resetting', () {
+    group('toBytes', () {
+      test('should return current buffer without resetting writer state', () {
         writer
           ..writeUint8(42)
           ..writeUint8(100);
@@ -268,31 +295,35 @@ void main() {
         expect(bytes2, equals([42, 100, 200]));
       });
 
-      test('toBytes vs takeBytes behavior', () {
-        writer
-          ..writeUint8(1)
-          ..writeUint8(2);
+      test(
+        'should have different behavior from takeBytes '
+        '(toBytes preserves, takeBytes resets)',
+        () {
+          writer
+            ..writeUint8(1)
+            ..writeUint8(2);
 
-        final bytes1 = writer.toBytes();
-        expect(bytes1, equals([1, 2]));
+          final bytes1 = writer.toBytes();
+          expect(bytes1, equals([1, 2]));
 
-        // takeBytes should reset
-        final bytes2 = writer.takeBytes();
-        expect(bytes2, equals([1, 2]));
+          // takeBytes should reset
+          final bytes2 = writer.takeBytes();
+          expect(bytes2, equals([1, 2]));
 
-        // After takeBytes, should be empty
-        final bytes3 = writer.toBytes();
-        expect(bytes3, isEmpty);
-      });
+          // After takeBytes, should be empty
+          final bytes3 = writer.toBytes();
+          expect(bytes3, isEmpty);
+        },
+      );
 
-      test('toBytes on empty writer returns empty list', () {
+      test('should return empty list when called on empty writer', () {
         final bytes = writer.toBytes();
         expect(bytes, isEmpty);
       });
     });
 
-    group('clear method', () {
-      test('clear resets writer without returning bytes', () {
+    group('clear', () {
+      test('should reset writer state without returning bytes', () {
         writer
           ..writeUint8(42)
           ..writeUint8(100)
@@ -302,7 +333,7 @@ void main() {
         expect(writer.toBytes(), isEmpty);
       });
 
-      test('clear allows writing new data after reset', () {
+      test('should allow writing new data after reset', () {
         writer
           ..writeUint8(42)
           ..clear()
@@ -311,26 +342,26 @@ void main() {
         expect(writer.toBytes(), equals([100]));
       });
 
-      test('clear on empty writer does nothing', () {
+      test('should be safe to call on empty writer', () {
         writer.clear();
         expect(writer.bytesWritten, equals(0));
       });
     });
 
-    group('Special values and edge cases', () {
-      test('writeString with empty string', () {
+    group('Edge cases and special values', () {
+      test('should handle empty string correctly', () {
         writer.writeString('');
         expect(writer.bytesWritten, equals(0));
         expect(writer.toBytes(), isEmpty);
       });
 
-      test('writeBytes with empty array', () {
+      test('should handle empty byte array correctly', () {
         writer.writeBytes([]);
         expect(writer.bytesWritten, equals(0));
         expect(writer.toBytes(), isEmpty);
       });
 
-      test('writeString with emoji characters', () {
+      test('should encode emoji characters correctly', () {
         const str = '🚀👨‍👩‍👧‍👦';
         writer.writeString(str);
         final bytes = writer.takeBytes();
@@ -339,7 +370,7 @@ void main() {
         expect(reader.readString(bytes.length), equals(str));
       });
 
-      test('writeFloat32 with NaN', () {
+      test('should handle Float32 NaN value correctly', () {
         writer.writeFloat32(double.nan);
         final bytes = writer.takeBytes();
 
@@ -347,7 +378,7 @@ void main() {
         expect(reader.readFloat32().isNaN, isTrue);
       });
 
-      test('writeFloat32 with Infinity', () {
+      test('should handle Float32 positive Infinity correctly', () {
         writer.writeFloat32(double.infinity);
         final bytes = writer.takeBytes();
 
@@ -355,7 +386,7 @@ void main() {
         expect(reader.readFloat32(), equals(double.infinity));
       });
 
-      test('writeFloat32 with negative Infinity', () {
+      test('should handle Float32 negative Infinity correctly', () {
         writer.writeFloat32(double.negativeInfinity);
         final bytes = writer.takeBytes();
 
@@ -363,7 +394,7 @@ void main() {
         expect(reader.readFloat32(), equals(double.negativeInfinity));
       });
 
-      test('writeFloat64 with NaN', () {
+      test('should handle Float64 NaN value correctly', () {
         writer.writeFloat64(double.nan);
         final bytes = writer.takeBytes();
 
@@ -371,7 +402,7 @@ void main() {
         expect(reader.readFloat64().isNaN, isTrue);
       });
 
-      test('writeFloat64 with Infinity', () {
+      test('should handle Float64 positive Infinity correctly', () {
         writer.writeFloat64(double.infinity);
         final bytes = writer.takeBytes();
 
@@ -379,7 +410,7 @@ void main() {
         expect(reader.readFloat64(), equals(double.infinity));
       });
 
-      test('writeFloat64 with negative Infinity', () {
+      test('should handle Float64 negative Infinity correctly', () {
         writer.writeFloat64(double.negativeInfinity);
         final bytes = writer.takeBytes();
 
@@ -387,7 +418,7 @@ void main() {
         expect(reader.readFloat64(), equals(double.negativeInfinity));
       });
 
-      test('writeFloat64 with negative zero', () {
+      test('should preserve negative zero in Float64', () {
         writer.writeFloat64(-0);
         final bytes = writer.takeBytes();
 
@@ -397,25 +428,28 @@ void main() {
         expect(value.isNegative, isTrue);
       });
 
-      test('writeUint64 with negative value throws', () {
-        expect(() => writer.writeUint64(-1), throwsRangeError);
+      test('should throw AssertionError when Uint64 value is negative', () {
+        expect(() => writer.writeUint64(-1), throwsA(isA<AssertionError>()));
       });
 
-      test('buffer expansion with precise size calculation', () {
-        final writer = BinaryWriter(initialBufferSize: 8)
-          // Write exactly 8 bytes
-          ..writeUint64(42);
-        expect(writer.bytesWritten, equals(8));
+      test(
+        'should expand buffer when writing exactly one byte over capacity',
+        () {
+          final writer = BinaryWriter(initialBufferSize: 8)
+            // Write exactly 8 bytes
+            ..writeUint64(42);
+          expect(writer.bytesWritten, equals(8));
 
-        // Writing one more byte should trigger expansion
-        writer.writeUint8(1);
-        expect(writer.bytesWritten, equals(9));
+          // Writing one more byte should trigger expansion
+          writer.writeUint8(1);
+          expect(writer.bytesWritten, equals(9));
 
-        final bytes = writer.takeBytes();
-        expect(bytes.length, equals(9));
-      });
+          final bytes = writer.takeBytes();
+          expect(bytes.length, equals(9));
+        },
+      );
 
-      test('multiple clears in sequence', () {
+      test('should handle multiple consecutive clear calls', () {
         writer
           ..writeUint8(42)
           ..clear()
@@ -425,7 +459,7 @@ void main() {
         expect(writer.bytesWritten, equals(0));
       });
 
-      test('chaining after clear', () {
+      test('should support method chaining after clear', () {
         writer
           ..writeUint8(1)
           ..clear()
@@ -434,6 +468,306 @@ void main() {
 
         expect(writer.toBytes(), equals([2, 3]));
       });
+    });
+
+    group('Maximum values', () {
+      test('should handle Uint8 maximum value (255)', () {
+        writer.writeUint8(255);
+        expect(writer.takeBytes(), equals([255]));
+      });
+
+      test('should handle Int8 maximum positive value (127)', () {
+        writer.writeInt8(127);
+        expect(writer.takeBytes(), equals([127]));
+      });
+
+      test('should handle Int8 minimum negative value (-128)', () {
+        writer.writeInt8(-128);
+        expect(writer.takeBytes(), equals([128]));
+      });
+
+      test('should handle Uint16 maximum value (65535)', () {
+        writer.writeUint16(65535);
+        expect(writer.takeBytes(), equals([255, 255]));
+      });
+
+      test('should handle Int16 maximum positive value (32767)', () {
+        writer.writeInt16(32767);
+        expect(writer.takeBytes(), equals([127, 255]));
+      });
+
+      test('should handle Uint32 maximum value (4294967295)', () {
+        writer.writeUint32(4294967295);
+        expect(writer.takeBytes(), equals([255, 255, 255, 255]));
+      });
+
+      test('should handle Int32 maximum positive value (2147483647)', () {
+        writer.writeInt32(2147483647);
+        expect(writer.takeBytes(), equals([127, 255, 255, 255]));
+      });
+
+      test('should handle Uint64 maximum value (9223372036854775807)', () {
+        writer.writeUint64(9223372036854775807);
+        expect(
+          writer.takeBytes(),
+          equals([127, 255, 255, 255, 255, 255, 255, 255]),
+        );
+      });
+
+      test(
+        'should handle Int64 maximum positive value (9223372036854775807)',
+        () {
+          writer.writeInt64(9223372036854775807);
+          expect(
+            writer.takeBytes(),
+            equals([127, 255, 255, 255, 255, 255, 255, 255]),
+          );
+        },
+      );
+    });
+
+    group('Minimum values', () {
+      test('should handle Uint8 minimum value (0)', () {
+        writer.writeUint8(0);
+        expect(writer.takeBytes(), equals([0]));
+      });
+
+      test('should handle Int8 zero value', () {
+        writer.writeInt8(0);
+        expect(writer.takeBytes(), equals([0]));
+      });
+
+      test('should handle Uint16 minimum value (0)', () {
+        writer.writeUint16(0);
+        expect(writer.takeBytes(), equals([0, 0]));
+      });
+
+      test('should handle Int16 zero value', () {
+        writer.writeInt16(0);
+        expect(writer.takeBytes(), equals([0, 0]));
+      });
+
+      test('should handle Uint32 minimum value (0)', () {
+        writer.writeUint32(0);
+        expect(writer.takeBytes(), equals([0, 0, 0, 0]));
+      });
+
+      test('should handle Int32 zero value', () {
+        writer.writeInt32(0);
+        expect(writer.takeBytes(), equals([0, 0, 0, 0]));
+      });
+
+      test('should handle Uint64 minimum value (0)', () {
+        writer.writeUint64(0);
+        expect(writer.takeBytes(), equals([0, 0, 0, 0, 0, 0, 0, 0]));
+      });
+
+      test('should handle Int64 zero value', () {
+        writer.writeInt64(0);
+        expect(writer.takeBytes(), equals([0, 0, 0, 0, 0, 0, 0, 0]));
+      });
+    });
+
+    group('Multiple operations', () {
+      test('should handle multiple consecutive takeBytes calls', () {
+        writer.writeUint8(1);
+        expect(writer.takeBytes(), equals([1]));
+
+        writer.writeUint8(2);
+        expect(writer.takeBytes(), equals([2]));
+
+        writer.writeUint8(3);
+        expect(writer.takeBytes(), equals([3]));
+      });
+
+      test('should handle toBytes followed by clear', () {
+        writer
+          ..writeUint8(42)
+          ..writeUint8(100);
+
+        final bytes1 = writer.toBytes();
+        expect(bytes1, equals([42, 100]));
+
+        writer.clear();
+        expect(writer.toBytes(), isEmpty);
+        expect(writer.bytesWritten, equals(0));
+      });
+
+      test('should handle multiple toBytes calls without modification', () {
+        writer
+          ..writeUint8(1)
+          ..writeUint8(2);
+
+        final bytes1 = writer.toBytes();
+        final bytes2 = writer.toBytes();
+        final bytes3 = writer.toBytes();
+
+        expect(bytes1, equals([1, 2]));
+        expect(bytes2, equals([1, 2]));
+        expect(bytes3, equals([1, 2]));
+      });
+    });
+
+    group('Byte array types', () {
+      test('should accept Uint8List in writeBytes', () {
+        final data = Uint8List.fromList([1, 2, 3, 4, 5]);
+        writer.writeBytes(data);
+        expect(writer.takeBytes(), equals([1, 2, 3, 4, 5]));
+      });
+
+      test('should accept regular List<int> in writeBytes', () {
+        final data = <int>[10, 20, 30, 40, 50];
+        writer.writeBytes(data);
+        expect(writer.takeBytes(), equals([10, 20, 30, 40, 50]));
+      });
+
+      test('should handle mixed types in sequence', () {
+        writer
+          ..writeBytes(Uint8List.fromList([1, 2]))
+          ..writeBytes([3, 4])
+          ..writeUint8(5);
+
+        expect(writer.takeBytes(), equals([1, 2, 3, 4, 5]));
+      });
+    });
+
+    group('Float precision', () {
+      test('should handle Float32 minimum positive value', () {
+        const minFloat32 = 1.4e-45; // Approximate minimum positive Float32
+        writer.writeFloat32(minFloat32);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final value = reader.readFloat32();
+        expect(value, greaterThan(0));
+      });
+
+      test('should handle Float64 minimum positive value', () {
+        const minFloat64 = 5e-324; // Approximate minimum positive Float64
+        writer.writeFloat64(minFloat64);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final value = reader.readFloat64();
+        expect(value, greaterThan(0));
+      });
+
+      test('should handle Float32 maximum value', () {
+        const maxFloat32 = 3.4028235e38; // Approximate maximum Float32
+        writer.writeFloat32(maxFloat32);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readFloat32(), closeTo(maxFloat32, maxFloat32 * 0.01));
+      });
+
+      test('should handle Float64 maximum value', () {
+        const maxFloat64 = 1.7976931348623157e308; // Maximum Float64
+        writer.writeFloat64(maxFloat64);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readFloat64(), equals(maxFloat64));
+      });
+    });
+
+    group('UTF-8 encoding', () {
+      test('should encode ASCII characters correctly', () {
+        writer.writeString('ABC123');
+        expect(writer.takeBytes(), equals([65, 66, 67, 49, 50, 51]));
+      });
+
+      test('should encode Cyrillic characters correctly', () {
+        writer.writeString('Привет');
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readString(bytes.length), equals('Привет'));
+      });
+
+      test('should encode Chinese characters correctly', () {
+        const str = '你好世界';
+        writer.writeString(str);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readString(bytes.length), equals(str));
+      });
+
+      test('should encode mixed Unicode string correctly', () {
+        const str = 'Hello мир 世界 🌍';
+        writer.writeString(str);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readString(bytes.length), equals(str));
+      });
+    });
+
+    group('Buffer growth strategy', () {
+      test('should use 1.5x growth strategy', () {
+        final writer = BinaryWriter(initialBufferSize: 4)
+          // Fill initial 4 bytes
+          ..writeUint32(0);
+        expect(writer.bytesWritten, equals(4));
+
+        // Trigger expansion by writing one more byte
+        writer.writeUint8(1);
+        expect(writer.bytesWritten, equals(5));
+
+        // Should be able to write more without issues
+        writer
+          ..writeUint8(2)
+          ..writeUint8(3);
+        expect(writer.bytesWritten, equals(7));
+      });
+
+      test(
+        'should grow buffer to exact required size when 1.5x is insufficient',
+        () {
+          final writer = BinaryWriter(initialBufferSize: 4);
+
+          // Write a large block that requires more than 1.5x growth
+          final largeData = Uint8List(100);
+          writer.writeBytes(largeData);
+
+          expect(writer.bytesWritten, equals(100));
+        },
+      );
+    });
+
+    group('State preservation', () {
+      test('should preserve written data across toBytes calls', () {
+        writer.writeUint32(0x12345678);
+
+        final bytes1 = writer.toBytes();
+        expect(bytes1, equals([0x12, 0x34, 0x56, 0x78]));
+
+        // Write more data
+        writer.writeUint32(0xABCDEF00);
+
+        final bytes2 = writer.toBytes();
+        expect(
+          bytes2,
+          equals([0x12, 0x34, 0x56, 0x78, 0xAB, 0xCD, 0xEF, 0x00]),
+        );
+      });
+
+      test(
+        'should not affect data when calling bytesWritten multiple times',
+        () {
+          writer
+            ..writeUint8(1)
+            ..writeUint8(2)
+            ..writeUint8(3);
+
+          expect(writer.bytesWritten, equals(3));
+          expect(writer.bytesWritten, equals(3));
+          expect(writer.bytesWritten, equals(3));
+
+          expect(writer.toBytes(), equals([1, 2, 3]));
+        },
+      );
     });
   });
 }
