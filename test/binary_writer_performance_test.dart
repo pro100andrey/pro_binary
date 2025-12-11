@@ -1,13 +1,11 @@
 import 'dart:typed_data';
 
 import 'package:benchmark_harness/benchmark_harness.dart';
-import 'package:pro_binary/src/binary_writer.dart';
+import 'package:pro_binary/pro_binary.dart';
 
 class BinaryWriterBenchmark extends BenchmarkBase {
-  BinaryWriterBenchmark(this.iterations)
-      : super('BinaryWriter performance test');
+  BinaryWriterBenchmark() : super('BinaryWriter performance test');
 
-  final int iterations;
   late final BinaryWriter writer;
 
   @override
@@ -17,7 +15,7 @@ class BinaryWriterBenchmark extends BenchmarkBase {
 
   @override
   void run() {
-    for (var i = 0; i < iterations; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer
         ..writeUint8(42)
         ..writeInt8(-42)
@@ -30,13 +28,23 @@ class BinaryWriterBenchmark extends BenchmarkBase {
         ..writeFloat32(3.14, Endian.little)
         ..writeFloat64(3.141592653589793, Endian.little)
         ..writeBytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 200, 255])
-        ..writeString('Hello, World!');
+        ..writeString('Hello, World!')
+        ..writeString(
+          'Some more data to increase buffer usage. '
+          'The quick brown fox jumps over the lazy dog.',
+        );
 
       final _ = writer.takeBytes();
     }
   }
+
+  @override
+  void exercise() => run();
+  static void main() {
+    BinaryWriterBenchmark().report();
+  }
 }
 
 void main() {
-  BinaryWriterBenchmark(1000).report();
+  BinaryWriterBenchmark.main();
 }

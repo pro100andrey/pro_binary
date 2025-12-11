@@ -1,3 +1,15 @@
+## 2.1.0
+
+- **feat**: Added detailed error messages with context (offset, available bytes)
+- **feat**: Added `toBytes()` method in `BinaryWriter` (returns buffer without reset)
+- **feat**: Added `reset()` method in `BinaryWriter` (resets without returning data)
+- **feat**: Added `allowMalformed` parameter to `readString` in `BinaryReader`
+- **improvement**: Increased performance of read/write operations
+- **improvement**: Optimized internal buffer management in `BinaryWriter`
+- **improvement**: Added validation for all boundary conditions
+- **test**: Added new tests for boundary checks and new methods
+- **docs**: Updated documentation with better examples and error handling
+
 ## 2.0.0
 
 - Update dependencies

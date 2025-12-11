@@ -1,12 +1,19 @@
-# pro_binary - Binary Read/Write Library
+# pro_binary
 
-This library provides efficient binary reading and writing capabilities in Dart. It supports various data types and endianness, making it ideal for low-level data manipulation and network protocols.
+[![pub package](https://img.shields.io/pub/v/pro_binary.svg)](https://pub.dev/packages/pro_binary)
+[![Tests](https://github.com/pro100andrey/pro_binary/workflows/Tests/badge.svg)](https://github.com/pro100andrey/pro_binary/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
+Efficient binary serialization library for Dart with comprehensive boundary checks and detailed error messages.
 
 ## Features
 
-- Read and write operations for various data types (e.g., int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64).
-- Support for both big-endian and little-endian formats.
-- Efficient memory management with dynamic buffer resizing.
+- ✅ Read/write operations for all primitive types (int8/16/32/64, uint8/16/32/64, float32/64)
+- ✅ Big-endian and little-endian support
+- ✅ Comprehensive boundary checks with detailed error messages
+- ✅ UTF-8 string encoding with multibyte character support
+- ✅ Dynamic buffer resizing with efficient memory management
+- ✅ Zero-copy operations where possible
 
 ## Installation
 
@@ -19,79 +26,106 @@ dependencies:
 
 Then, run `pub get` to install the package.
 
-## Usage
+## Quick Start
 
-### Writing Binary Data
+### Writing
 
-``` dart
+```dart
 import 'package:pro_binary/pro_binary.dart';
 
 void main() {
   final writer = BinaryWriter()
     ..writeUint8(42)
-    ..writeInt8(-42)
-    ..writeUint16(65535, Endian.little)
-    ..writeInt16(-32768, Endian.little)
-    ..writeUint32(4294967295, Endian.little)
-    ..writeInt32(-2147483648, Endian.little)
-    ..writeUint64(9223372036854775807, Endian.little)
-    ..writeInt64(-9223372036854775808, Endian.little)
-    ..writeFloat32(3.14, Endian.little)
-    ..writeFloat64(3.141592653589793, Endian.little)
-    ..writeBytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 200, 255])
-    ..writeString('Hello, World!');
+    ..writeUint32(1000000, Endian.little)
+    ..writeFloat64(3.14159)
+    ..writeString('Hello');
 
   final bytes = writer.takeBytes();
-  print(bytes);
+  print('Written ${bytes.length} bytes');
 }
 ```
 
-### Reading Binary Data
+### Reading
 
-``` dart
+```dart
+import 'dart:typed_data';
 import 'package:pro_binary/pro_binary.dart';
 
 void main() {
-  final buffer = Uint8List.fromList([
-    42, 214, 255, 255, 0, 128, 255, 255, 255, 255, 0, 0, 0, 128,
-    255, 255, 255, 255, 255, 255, 255, 127, 0, 0, 0, 0, 0, 0, 0, 128,
-    195, 245, 72, 64, 24, 45, 68, 84, 251, 33, 9, 64,
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 200, 255, 72,
-    72, 101, 108, 108, 111, 44, 32, 119, 111, 114, 108, 100, 33
-  ]);
+  final data = Uint8List.fromList([42, 64, 66, 15, 0]);
+  final reader = BinaryReader(data);
 
-  final reader = BinaryReader(buffer);
-
-  final uint8 = reader.readUint8();
-  final int8 = reader.readInt8();
-  final uint16 = reader.readUint16(Endian.little);
-  final int16 = reader.readInt16(Endian.little);
-  final uint32 = reader.readUint32(Endian.little);
-  final int32 = reader.readInt32(Endian.little);
-  final uint64 = reader.readUint64(Endian.little);
-  final int64 = reader.readInt64(Endian.little);
-  final float32 = reader.readFloat32(Endian.little);
-  final float64 = reader.readFloat64(Endian.little);
-  final bytes = reader.readBytes(13);
-  final string = reader.readString(13);
-
-  print([uint8, int8, uint16, int16, uint32, int32, uint64, int64, float32, float64, bytes, string]);
+  final value1 = reader.readUint8();           // 42
+  final value2 = reader.readUint32(Endian.little); // 1000000
+  
+  print('Read: $value1, $value2');
+  print('Remaining: ${reader.availableBytes} bytes');
 }
 ```
 
-## Running Tests
+## API Overview
 
-To run the tests, use the following command:
+### BinaryWriter
 
-``` bash
-dart test
+```dart
+final writer = BinaryWriter(initialBufferSize: 64);
+
+// Write operations
+writer.writeUint8(255);
+writer.writeInt32(-1000, Endian.big);
+writer.writeFloat64(3.14);
+writer.writeBytes([1, 2, 3]);
+writer.writeString('text');
+
+// Buffer operations
+final bytes = writer.toBytes();      // Get copy without reset
+final result = writer.takeBytes();   // Get and reset
+writer.clear();                       // Reset without returning
+print(writer.bytesWritten);          // Check written size
 ```
 
-This will execute all tests in the `test` directory and provide a summary of the results.
+### BinaryReader
+
+```dart
+final reader = BinaryReader(buffer);
+
+// Read operations
+final u8 = reader.readUint8();
+final i32 = reader.readInt32(Endian.little);
+final f64 = reader.readFloat64();
+final bytes = reader.readBytes(10);
+final text = reader.readString(5);
+
+// Navigation
+reader.skip(4);                      // Skip bytes
+final pos = reader.offset;           // Current position
+reader.reset();                      // Reset to start
+print(reader.availableBytes);        // Remaining bytes
+```
+
+## Error Handling
+
+All read operations validate boundaries and provide detailed error messages:
+
+```dart
+try {
+  reader.readUint32(); // Not enough bytes
+} catch (e) {
+  // RangeError: Not enough bytes to read Uint32: 
+  // required 4 bytes, available 2 bytes at offset 10
+}
+```
 
 ## Contributing
 
-Feel free to open [issues](https://github.com/pro100andrey/pro_binary/issues) or submit [pull requests](https://github.com/pro100andrey/pro_binary/pulls) on GitHub. Contributions are always welcome!
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
+
+- How to set up the development environment
+- Running tests and coverage
+- Code style and formatting
+- Submitting pull requests
+
+For bugs and features, use the [issue templates](https://github.com/pro100andrey/pro_binary/issues/new/choose).
 
 ## License
 
