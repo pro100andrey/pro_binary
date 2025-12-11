@@ -221,7 +221,7 @@ abstract class BinaryWriterInterface {
   ///  buffer.
   ///
   /// The optional [allowMalformed] parameter specifies whether to allow
-  /// malformed UTF-16 sequences (lone surrogates). If false, a 
+  /// malformed UTF-16 sequences (lone surrogates). If false, a
   /// [FormatException]
   /// is thrown when encountering invalid surrogate pairs. If true (default),
   /// invalid surrogates are replaced with the Unicode replacement character
