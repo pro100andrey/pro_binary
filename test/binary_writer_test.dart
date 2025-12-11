@@ -327,7 +327,7 @@ void main() {
         writer
           ..writeUint8(42)
           ..writeUint8(100)
-          ..clear();
+          ..reset();
 
         expect(writer.bytesWritten, equals(0));
         expect(writer.toBytes(), isEmpty);
@@ -336,14 +336,14 @@ void main() {
       test('should allow writing new data after reset', () {
         writer
           ..writeUint8(42)
-          ..clear()
+          ..reset()
           ..writeUint8(100);
 
         expect(writer.toBytes(), equals([100]));
       });
 
       test('should be safe to call on empty writer', () {
-        writer.clear();
+        writer.reset();
         expect(writer.bytesWritten, equals(0));
       });
     });
@@ -450,20 +450,20 @@ void main() {
         },
       );
 
-      test('should handle multiple consecutive clear calls', () {
+      test('should handle multiple consecutive reset calls', () {
         writer
           ..writeUint8(42)
-          ..clear()
-          ..clear()
-          ..clear();
+          ..reset()
+          ..reset()
+          ..reset();
 
         expect(writer.bytesWritten, equals(0));
       });
 
-      test('should support method chaining after clear', () {
+      test('should support method chaining after reset', () {
         writer
           ..writeUint8(1)
-          ..clear()
+          ..reset()
           ..writeUint8(2)
           ..writeUint8(3);
 
@@ -581,7 +581,7 @@ void main() {
         expect(writer.takeBytes(), equals([3]));
       });
 
-      test('should handle toBytes followed by clear', () {
+      test('should handle toBytes followed by reset', () {
         writer
           ..writeUint8(42)
           ..writeUint8(100);
@@ -589,7 +589,7 @@ void main() {
         final bytes1 = writer.toBytes();
         expect(bytes1, equals([42, 100]));
 
-        writer.clear();
+        writer.reset();
         expect(writer.toBytes(), isEmpty);
         expect(writer.bytesWritten, equals(0));
       });

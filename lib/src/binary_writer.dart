@@ -341,7 +341,7 @@ class BinaryWriter extends BinaryWriterInterface {
   Uint8List toBytes() => Uint8List.sublistView(_buffer, 0, _offset);
 
   @override
-  void clear() {
+  void reset() {
     _offset = 0;
     _initializeBuffer(_initialBufferSize);
   }

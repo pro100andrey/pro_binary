@@ -262,7 +262,7 @@ abstract class BinaryWriterInterface {
   /// ```
   Uint8List toBytes();
 
-  /// Clears the writer by resetting the internal state without returning bytes.
+  /// Resets the writer to its initial state.
   ///
   /// This method resets the offset to 0 and reinitializes the buffer to its
   /// initial size. Unlike [takeBytes], this method does not return the written
@@ -275,8 +275,8 @@ abstract class BinaryWriterInterface {
   /// ```dart
   /// final writer = BinaryWriter();
   /// writer.writeUint8(42);
-  /// writer.clear(); // Clears the buffer without returning data
+  /// writer.reset(); // Resets the writer without returning bytes
   /// writer.writeUint8(100); // Starts fresh with new data
   /// ```
-  void clear();
+  void reset();
 }

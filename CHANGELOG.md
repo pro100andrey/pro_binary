@@ -1,13 +1,13 @@
 ## 2.1.0
 
-- **feat**: Added comprehensive boundary checks for all read methods
 - **feat**: Added detailed error messages with context (offset, available bytes)
-- **feat**: Added `offset` getter in `BinaryReader` for tracking current position
 - **feat**: Added `toBytes()` method in `BinaryWriter` (returns buffer without reset)
-- **feat**: Added `clear()` method in `BinaryWriter` (resets without returning data)
-- **improvement**: Fixed UTF-8 string encoding to correctly handle multibyte characters
+- **feat**: Added `reset()` method in `BinaryWriter` (resets without returning data)
+- **feat**: Added `allowMalformed` parameter to `readString` in `BinaryReader`
+- **improvement**: Increased performance of read/write operations
+- **improvement**: Optimized internal buffer management in `BinaryWriter`
 - **improvement**: Added validation for all boundary conditions
-- **test**: Added 48+ new tests for boundary checks and new methods
+- **test**: Added new tests for boundary checks and new methods
 - **docs**: Updated documentation with better examples and error handling
 
 ## 2.0.0
