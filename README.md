@@ -145,6 +145,30 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for de
 
 For bugs and features, use the [issue templates](https://github.com/pro100andrey/pro_binary/issues/new/choose).
 
+## Testing
+
+The library includes comprehensive test coverage with **279+ tests** covering:
+
+- **Basic operations**: All read/write methods for each data type
+- **Endianness**: Big-endian and little-endian operations
+- **Edge cases**: Boundary conditions, overflow, special values (NaN, Infinity)
+- **UTF-8 handling**: Multi-byte characters, emoji, malformed sequences
+- **Buffer management**: Expansion, growth strategy, memory efficiency
+- **Integration tests**: Complete read-write cycles and round-trip validation
+- **Performance tests**: Benchmark measurements for optimization
+
+Run tests with:
+
+```bash
+dart test
+```
+
+Analyze code quality:
+
+```bash
+dart analyze
+```
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for more details.

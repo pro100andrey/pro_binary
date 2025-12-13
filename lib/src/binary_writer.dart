@@ -233,7 +233,7 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   @override
-  void writeBytes(List<int> bytes) {
+  void writeBytes(Iterable<int> bytes) {
     // Early return for empty byte lists
     if (bytes.isEmpty) {
       return;

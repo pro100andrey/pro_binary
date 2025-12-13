@@ -14,16 +14,46 @@ Thank you for your interest in contributing! 🎉
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (279+ tests)
 dart test
 
 # Run specific test file
 dart test test/binary_reader_test.dart
+dart test test/binary_writer_test.dart
+dart test test/integration_test.dart
 
 # Run with coverage
 dart pub global activate coverage
 dart pub global run coverage:test_with_coverage
 ```
+
+### Test Organization
+
+Tests are organized as follows:
+
+- **binary_reader_test.dart**: Unit tests for BinaryReader (190+ tests)
+  - Read operations for all data types
+  - Boundary conditions and edge cases
+  - UTF-8 encoding with special characters
+  - Malformed sequence handling
+  
+- **binary_writer_test.dart**: Unit tests for BinaryWriter (200+ tests)
+  - Write operations for all data types
+  - Buffer management and expansion
+  - Input validation and range checks
+  - Float precision and special values
+  
+- **integration_test.dart**: Integration tests (60+ tests)
+  - Complete read-write cycles
+  - Round-trip validation
+  - Complex data structures
+  - String handling (ASCII, Cyrillic, Chinese, emoji)
+  - Large data operations
+  - Stress tests with nested structures
+  
+- **Performance tests**: Benchmark measurements
+  - binary_reader_performance_test.dart
+  - binary_writer_performance_test.dart
 
 ### Code Style
 

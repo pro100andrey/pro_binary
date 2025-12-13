@@ -1,3 +1,8 @@
+## 2.2.0
+
+ **test**: Added integration tests for new error handling features
+ **deps**: Update internal dependencies to latest versions
+
 ## 2.1.0
 
 - **feat**: Added detailed error messages with context (offset, available bytes)

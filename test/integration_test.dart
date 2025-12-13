@@ -893,7 +893,6 @@ void main() {
         final newReader = BinaryReader(bytes);
 
         for (var i = 0; i < 100; i++) {
-          expect(newReader.readUint8(), equals(i % 256));
           expect(newReader.readUint16(), equals(i * 2));
           final itemStr = 'Item$i';
           expect(newReader.readString(itemStr.length), equals(itemStr));

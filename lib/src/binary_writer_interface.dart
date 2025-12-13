@@ -50,6 +50,8 @@ abstract class BinaryWriterInterface {
   /// The optional [endian] parameter specifies the byte order to use (defaults
   /// to [Endian.big]).
   ///
+  /// Throws [RangeError] if [value] is out of range.
+  ///
   /// Example:
   /// ```dart
   /// writer.writeUint16(500); // Writes the value 500 as two bytes in big-endian order.
@@ -69,6 +71,8 @@ abstract class BinaryWriterInterface {
   /// The optional [endian] parameter specifies the byte order to use (defaults
   /// to [Endian.big]).
   ///
+  /// Throws [RangeError] if [value] is out of range.
+  ///
   /// Example:
   /// ```dart
   /// writer.writeInt16(-100); // Writes the value -100 as two bytes in big-endian order.
@@ -87,6 +91,8 @@ abstract class BinaryWriterInterface {
   /// (range: 0 to 4294967295).
   /// The optional [endian] parameter specifies the byte order to use (defaults
   /// to [Endian.big]).
+  ///
+  /// Throws [RangeError] if [value] is out of range.
   ///
   /// Example:
   /// ```dart
@@ -127,6 +133,8 @@ abstract class BinaryWriterInterface {
   /// The optional [endian] parameter specifies the byte order to use (defaults
   ///  to [Endian.big]).
   ///
+  /// Throws [RangeError] if [value] is out of range.
+  ///
   /// Example:
   /// ```dart
   /// writer.writeUint64(10000000000); // Writes the value 10000000000 as eight bytes in big-endian order.
@@ -147,6 +155,8 @@ abstract class BinaryWriterInterface {
   /// The optional [endian] parameter specifies the byte order to use (defaults
   ///  to [Endian.big]).
   ///
+  /// Throws [RangeError] if [value] is out of range.
+  ///
   /// Example:
   /// ```dart
   /// writer.writeInt64(-10000000000); // Writes the value -10000000000 as eight bytes in big-endian order.
@@ -164,6 +174,8 @@ abstract class BinaryWriterInterface {
   /// The [value] parameter must be a 32-bit floating point number.
   /// The optional [endian] parameter specifies the byte order to use
   /// (defaults to [Endian.big]).
+  ///
+  /// Throws [RangeError] if [value] is out of range.
   ///
   /// Example:
   /// ```dart
@@ -207,7 +219,7 @@ abstract class BinaryWriterInterface {
   /// ```dart
   /// writer.writeBytes([1, 2, 3, 4, 5]); // Writes the bytes 1, 2, 3, 4, and 5 to the buffer.
   /// ```
-  void writeBytes(List<int> bytes);
+  void writeBytes(Iterable<int> bytes);
 
   /// Writes a UTF-8 encoded string to the buffer.
   ///
