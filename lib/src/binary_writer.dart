@@ -344,6 +344,9 @@ class BinaryWriter extends BinaryWriterInterface {
     _capacity = size;
   }
 
+  /// Checks if the [value] is within the specified [min] and [max] range.
+  ///
+  /// Throws a [RangeError] if the value is out of bounds.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void _checkRange(int value, int min, int max, String typeName) {
