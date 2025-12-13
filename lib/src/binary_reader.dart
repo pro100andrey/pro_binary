@@ -216,7 +216,7 @@ class BinaryReader extends BinaryReaderInterface {
   void skip(int length) {
     assert(length >= 0, 'Length must be non-negative');
     _checkBounds(length, 'Skip');
-    
+
     _offset += length;
   }
 

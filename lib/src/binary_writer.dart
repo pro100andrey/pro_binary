@@ -4,7 +4,7 @@ import 'binary_writer_interface.dart';
 
 /// A high-performance implementation of [BinaryWriterInterface] for encoding
 /// data into binary format.
-/// 
+///
 /// Example:
 /// ```dart
 /// final writer = BinaryWriter();
