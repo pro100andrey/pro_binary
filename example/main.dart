@@ -1,3 +1,4 @@
+// Disable lint rule for demonstration purposes
 // ignore_for_file: avoid_print
 
 import 'dart:typed_data';
