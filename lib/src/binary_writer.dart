@@ -4,26 +4,7 @@ import 'binary_writer_interface.dart';
 
 /// A high-performance implementation of [BinaryWriterInterface] for encoding
 /// data into binary format.
-///
-/// Features:
-/// - Automatic buffer growth with 1.5x expansion strategy
-/// - Cached capacity checks for minimal overhead
-/// - Optimized for sequential writes
-/// - Custom UTF-8 string encoding for performance
-/// - Instance-level temporary buffers (thread-safe)
-///
-/// Buffer Management:
-/// - Automatically grows using 1.5x expansion strategy when capacity exceeded
-/// - If required size exceeds 1.5x, grows to exact required size
-/// - [takeBytes] returns a view (zero-copy) and resets the writer
-/// - [toBytes] returns a view without resetting, allowing continued writing
-/// - [reset] clears the buffer and reinitializes to initial size
-///
-/// Thread Safety:
-/// - Each writer instance is thread-safe within its own execution context
-/// - Uses instance-level temporary buffers for float conversions
-/// - Safe to use multiple writers concurrently in different isolates
-///
+/// 
 /// Example:
 /// ```dart
 /// final writer = BinaryWriter();
@@ -50,10 +31,10 @@ class BinaryWriter extends BinaryWriterInterface {
   late Uint8List _buffer;
 
   /// Current write position in the buffer.
-  int _offset = 0;
+  var _offset = 0;
 
   /// Cached buffer capacity to avoid repeated length checks.
-  int _capacity = 0;
+  var _capacity = 0;
 
   @override
   int get bytesWritten => _offset;
@@ -62,12 +43,9 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeUint8(int value) {
-    assert(
-      value >= 0 && value <= 255,
-      'Value out of range for Uint8: $value',
-    );
-
+    _checkRange(value, 0, 255, 'Uint8');
     _ensureSize(1);
+
     _buffer[_offset++] = value;
   }
 
@@ -75,12 +53,9 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeInt8(int value) {
-    assert(
-      value >= -128 && value <= 127,
-      'Value out of range for Int8: $value',
-    );
-
+    _checkRange(value, -128, 127, 'Int8');
     _ensureSize(1);
+
     _buffer[_offset++] = value & 0xFF;
   }
 
@@ -88,11 +63,7 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeUint16(int value, [Endian endian = Endian.big]) {
-    assert(
-      value >= 0 && value <= 65535,
-      'Value out of range for Uint16: $value',
-    );
-
+    _checkRange(value, 0, 65535, 'Uint16');
     _ensureSize(2);
 
     if (endian == Endian.big) {
@@ -108,11 +79,7 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeInt16(int value, [Endian endian = Endian.big]) {
-    assert(
-      value >= -32768 && value <= 32767,
-      'Value out of range for Int16: $value',
-    );
-
+    _checkRange(value, -32768, 32767, 'Int16');
     _ensureSize(2);
 
     if (endian == Endian.big) {
@@ -128,11 +95,7 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeUint32(int value, [Endian endian = Endian.big]) {
-    assert(
-      value >= 0 && value <= 4294967295,
-      'Value out of range for Uint32: $value',
-    );
-
+    _checkRange(value, 0, 4294967295, 'Uint32');
     _ensureSize(4);
 
     if (endian == Endian.big) {
@@ -152,11 +115,7 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeInt32(int value, [Endian endian = Endian.big]) {
-    assert(
-      value >= -2147483648 && value <= 2147483647,
-      'Value out of range for Int32: $value',
-    );
-
+    _checkRange(value, -2147483648, 2147483647, 'Int32');
     _ensureSize(4);
 
     if (endian == Endian.big) {
@@ -176,11 +135,7 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeUint64(int value, [Endian endian = Endian.big]) {
-    assert(
-      value >= 0 && value <= 9223372036854775807,
-      'Value out of range for Uint64: $value',
-    );
-
+    _checkRange(value, 0, 9223372036854775807, 'Uint64');
     _ensureSize(8);
 
     if (endian == Endian.big) {
@@ -208,11 +163,7 @@ class BinaryWriter extends BinaryWriterInterface {
   @pragma('dart2js:tryInline')
   @override
   void writeInt64(int value, [Endian endian = Endian.big]) {
-    assert(
-      value >= -9223372036854775808 && value <= 9223372036854775807,
-      'Value out of range for Int64: $value',
-    );
-
+    _checkRange(value, -9223372036854775808, 9223372036854775807, 'Int64');
     _ensureSize(8);
 
     if (endian == Endian.big) {
@@ -237,9 +188,9 @@ class BinaryWriter extends BinaryWriterInterface {
   }
 
   // Instance-level temporary buffers for float conversion (thread-safe)
-  final Uint8List _tempU8 = Uint8List(8);
-  late final Float32List _tempF32 = Float32List.view(_tempU8.buffer);
-  late final Float64List _tempF64 = Float64List.view(_tempU8.buffer);
+  final _tempU8 = Uint8List(8);
+  late final _tempF32 = Float32List.view(_tempU8.buffer);
+  late final _tempF64 = Float64List.view(_tempU8.buffer);
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
@@ -391,6 +342,14 @@ class BinaryWriter extends BinaryWriterInterface {
   void _initializeBuffer(int size) {
     _buffer = Uint8List(size);
     _capacity = size;
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void _checkRange(int value, int min, int max, String typeName) {
+    if (value < min || value > max) {
+      throw RangeError.range(value, min, max, typeName);
+    }
   }
 
   /// Ensures that the buffer has enough space to accommodate the specified

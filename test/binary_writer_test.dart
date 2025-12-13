@@ -208,27 +208,75 @@ void main() {
 
     group('Input validation', () {
       test('should throw AssertionError when Uint8 value is negative', () {
-        expect(() => writer.writeUint8(-1), throwsA(isA<AssertionError>()));
+        expect(
+          () => writer.writeUint8(-1),
+          throwsA(
+            isA<RangeError>()
+                .having((e) => e.name, 'name', 'Uint8')
+                .having((e) => e.start, 'start', 0)
+                .having((e) => e.end, 'end', 255),
+          ),
+        );
       });
 
       test('should throw AssertionError when Uint8 value exceeds 255', () {
-        expect(() => writer.writeUint8(256), throwsA(isA<AssertionError>()));
+        expect(
+          () => writer.writeUint8(256),
+          throwsA(
+            isA<RangeError>()
+                .having((e) => e.name, 'name', 'Uint8')
+                .having((e) => e.start, 'start', 0)
+                .having((e) => e.end, 'end', 255),
+          ),
+        );
       });
 
       test('should throw AssertionError when Int8 value is less than -128', () {
-        expect(() => writer.writeInt8(-129), throwsA(isA<AssertionError>()));
+        expect(
+          () => writer.writeInt8(-129),
+          throwsA(
+            isA<RangeError>()
+                .having((e) => e.name, 'name', 'Int8')
+                .having((e) => e.start, 'start', -128)
+                .having((e) => e.end, 'end', 127),
+          ),
+        );
       });
 
       test('should throw AssertionError when Int8 value exceeds 127', () {
-        expect(() => writer.writeInt8(128), throwsA(isA<AssertionError>()));
+        expect(
+          () => writer.writeInt8(128),
+          throwsA(
+            isA<RangeError>()
+                .having((e) => e.name, 'name', 'Int8')
+                .having((e) => e.start, 'start', -128)
+                .having((e) => e.end, 'end', 127),
+          ),
+        );
       });
 
       test('should throw AssertionError when Uint16 value is negative', () {
-        expect(() => writer.writeUint16(-1), throwsA(isA<AssertionError>()));
+        expect(
+          () => writer.writeUint16(-1),
+          throwsA(
+            isA<RangeError>()
+                .having((e) => e.name, 'name', 'Uint16')
+                .having((e) => e.start, 'start', 0)
+                .having((e) => e.end, 'end', 65535),
+          ),
+        );
       });
 
       test('should throw AssertionError when Uint16 value exceeds 65535', () {
-        expect(() => writer.writeUint16(65536), throwsA(isA<AssertionError>()));
+        expect(
+          () => writer.writeUint16(65536),
+          throwsA(
+            isA<RangeError>()
+                .having((e) => e.name, 'name', 'Uint16')
+                .having((e) => e.start, 'start', 0)
+                .having((e) => e.end, 'end', 65535),
+          ),
+        );
       });
 
       test(
@@ -236,17 +284,38 @@ void main() {
         () {
           expect(
             () => writer.writeInt16(-32769),
-            throwsA(isA<AssertionError>()),
+            throwsA(
+              isA<RangeError>()
+                  .having((e) => e.name, 'name', 'Int16')
+                  .having((e) => e.start, 'start', -32768)
+                  .having((e) => e.end, 'end', 32767),
+            ),
           );
         },
       );
 
       test('should throw AssertionError when Int16 value exceeds 32767', () {
-        expect(() => writer.writeInt16(32768), throwsA(isA<AssertionError>()));
+        expect(
+          () => writer.writeInt16(32768),
+          throwsA(
+            isA<RangeError>()
+                .having((e) => e.name, 'name', 'Int16')
+                .having((e) => e.start, 'start', -32768)
+                .having((e) => e.end, 'end', 32767),
+          ),
+        );
       });
 
       test('should throw AssertionError when Uint32 value is negative', () {
-        expect(() => writer.writeUint32(-1), throwsA(isA<AssertionError>()));
+        expect(
+          () => writer.writeUint32(-1),
+          throwsA(
+            isA<RangeError>()
+                .having((e) => e.name, 'name', 'Uint32')
+                .having((e) => e.start, 'start', 0)
+                .having((e) => e.end, 'end', 4294967295),
+          ),
+        );
       });
 
       test(
@@ -254,7 +323,12 @@ void main() {
         () {
           expect(
             () => writer.writeUint32(4294967296),
-            throwsA(isA<AssertionError>()),
+            throwsA(
+              isA<RangeError>()
+                  .having((e) => e.name, 'name', 'Uint32')
+                  .having((e) => e.start, 'start', 0)
+                  .having((e) => e.end, 'end', 4294967295),
+            ),
           );
         },
       );
@@ -264,7 +338,12 @@ void main() {
         () {
           expect(
             () => writer.writeInt32(-2147483649),
-            throwsA(isA<AssertionError>()),
+            throwsA(
+              isA<RangeError>()
+                  .having((e) => e.name, 'name', 'Int32')
+                  .having((e) => e.start, 'start', -2147483648)
+                  .having((e) => e.end, 'end', 2147483647),
+            ),
           );
         },
       );
@@ -274,7 +353,12 @@ void main() {
         () {
           expect(
             () => writer.writeInt32(2147483648),
-            throwsA(isA<AssertionError>()),
+            throwsA(
+              isA<RangeError>()
+                  .having((e) => e.name, 'name', 'Int32')
+                  .having((e) => e.start, 'start', -2147483648)
+                  .having((e) => e.end, 'end', 2147483647),
+            ),
           );
         },
       );
@@ -429,7 +513,15 @@ void main() {
       });
 
       test('should throw AssertionError when Uint64 value is negative', () {
-        expect(() => writer.writeUint64(-1), throwsA(isA<AssertionError>()));
+        expect(
+          () => writer.writeUint64(-1),
+          throwsA(
+            isA<RangeError>()
+                .having((e) => e.name, 'name', 'Uint64')
+                .having((e) => e.start, 'start', 0)
+                .having((e) => e.end, 'end', 9223372036854775807),
+          ),
+        );
       });
 
       test(

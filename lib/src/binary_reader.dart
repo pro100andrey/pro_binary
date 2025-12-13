@@ -6,18 +6,6 @@ import 'binary_reader_interface.dart';
 /// A high-performance implementation of [BinaryReaderInterface] for decoding
 /// binary data.
 ///
-/// Features:
-/// - Zero-copy operations using ByteData views
-/// - Inline bounds checking for safety
-/// - Support for big-endian and little-endian byte order
-/// - UTF-8 string decoding
-/// - Peek operations without advancing position
-///
-/// Memory Management:
-/// - Uses views (zero-copy) for [peekBytes] and [readBytes]
-/// - [readString] decodes directly from the buffer view
-/// - No internal allocations except for decoded strings
-///
 /// Example:
 /// ```dart
 /// final bytes = Uint8List.fromList([0, 0, 0, 42]);
@@ -45,7 +33,7 @@ class BinaryReader extends BinaryReaderInterface {
   final int _length;
 
   /// Current read position in the buffer.
-  int _offset = 0;
+  var _offset = 0;
 
   /// Performs inline bounds check to ensure safe reads.
   ///
@@ -228,6 +216,7 @@ class BinaryReader extends BinaryReaderInterface {
   void skip(int length) {
     assert(length >= 0, 'Length must be non-negative');
     _checkBounds(length, 'Skip');
+    
     _offset += length;
   }
 
