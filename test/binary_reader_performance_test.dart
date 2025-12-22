@@ -13,7 +13,7 @@ class BinaryReaderBenchmark extends BenchmarkBase {
         'Some more data to increase buffer usage. '
         'The quick brown fox jumps over the lazy dog.';
 
-    final writer = FastBinaryWriter()
+    final writer = BinaryWriter()
       ..writeUint8(42)
       ..writeInt8(-42)
       ..writeUint16(65535, .little)
@@ -70,133 +70,6 @@ class BinaryReaderBenchmark extends BenchmarkBase {
   }
 }
 
-class FastBinaryReaderBenchmark extends BenchmarkBase {
-  FastBinaryReaderBenchmark() : super('FastBinaryReader performance test');
-
-  late final FastBinaryReader reader;
-
-  @override
-  void setup() {
-    const string = 'Hello, World!';
-    const longString =
-        'Some more data to increase buffer usage. '
-        'The quick brown fox jumps over the lazy dog.';
-
-    final writer = FastBinaryWriter()
-      ..writeUint8(42)
-      ..writeInt8(-42)
-      ..writeUint16(65535, .little)
-      ..writeInt16(-32768, .little)
-      ..writeUint32(4294967295, .little)
-      ..writeInt32(-2147483648, .little)
-      ..writeUint64(9223372036854775807, .little)
-      ..writeInt64(-9223372036854775808, .little)
-      ..writeFloat32(3.14, .little)
-      ..writeFloat64(3.141592653589793, .little)
-      ..writeFloat64(2.718281828459045)
-      ..writeInt8(string.length)
-      ..writeString(string)
-      ..writeInt32(longString.length)
-      ..writeString(longString)
-      ..writeBytes([])
-      ..writeBytes(List<int>.filled(120, 100));
-
-    final buffer = writer.takeBytes();
-    reader = FastBinaryReader(buffer);
-  }
-
-  @override
-  void exercise() => run();
-
-  @override
-  void run() {
-    for (var i = 0; i < 1000; i++) {
-      final _ = reader.readUint8();
-      final _ = reader.readInt8();
-      final _ = reader.readUint16(.little);
-      final _ = reader.readInt16(.little);
-      final _ = reader.readUint32(.little);
-      final _ = reader.readInt32(.little);
-      final _ = reader.readUint64(.little);
-      final _ = reader.readInt64(.little);
-      final _ = reader.readFloat32(.little);
-      final _ = reader.readFloat64(.little);
-      final _ = reader.readFloat64(.little);
-      final length = reader.readInt8();
-      final _ = reader.readString(length);
-      final longLength = reader.readInt32();
-      final _ = reader.readString(longLength);
-      final _ = reader.readBytes(0);
-      final _ = reader.readBytes(120);
-
-      assert(reader.availableBytes == 0, 'Not all bytes were read');
-      reader.reset();
-    }
-  }
-
-  static void main() {
-    FastBinaryReaderBenchmark().report();
-  }
-}
-
-class VarIntReaderBenchmark extends BenchmarkBase {
-  VarIntReaderBenchmark() : super('VarIntReader performance test');
-
-  late final FastBinaryReader reader;
-
-  @override
-  void setup() {
-    const string = 'Hello, World!';
-    const longString =
-        'Some more data to increase buffer usage. '
-        'The quick brown fox jumps over the lazy dog.';
-
-    final writer = FastBinaryWriter()
-      ..writeVarInt(1)
-      ..writeVarInt(300)
-      ..writeVarInt(70000)
-      ..writeVarInt(1 << 20)
-      ..writeVarInt(1 << 30)
-      ..writeInt8(string.length)
-      ..writeInt32(longString.length);
-
-    final buffer = writer.takeBytes();
-    reader = FastBinaryReader(buffer);
-  }
-
-  @override
-  void exercise() => run();
-
-  @override
-  void run() {
-    for (var i = 0; i < 1000; i++) {
-      final v1 = reader.readVarInt();
-      final v2 = reader.readVarInt();
-      final v3 = reader.readVarInt();
-      final v4 = reader.readVarInt();
-      final v5 = reader.readVarInt();
-      final length = reader.readInt8();
-      final longLength = reader.readInt32();
-      assert(v1 == 1, 'Unexpected VarInt value: $v1');
-      assert(v2 == 300, 'Unexpected VarInt value: $v2');
-      assert(v3 == 70000, 'Unexpected VarInt value: $v3');
-      assert(v4 == 1 << 20, 'Unexpected VarInt value: $v4');
-      assert(v5 == 1 << 30, 'Unexpected VarInt value: $v5');
-      assert(length == 13, 'Unexpected string length: $length');
-      assert(longLength == 85, 'Unexpected long string length: $longLength');
-
-      assert(reader.availableBytes == 0, 'Not all bytes were read');
-      reader.reset();
-    }
-  }
-
-  static void main() {
-    VarIntReaderBenchmark().report();
-  }
-}
-
 void main() {
   BinaryReaderBenchmark.main();
-  FastBinaryReaderBenchmark.main();
-  VarIntReaderBenchmark.main();
 }

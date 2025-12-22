@@ -5,10 +5,10 @@ import 'package:test/test.dart';
 
 void main() {
   group('BinaryWriter', () {
-    late FastBinaryWriter writer;
+    late BinaryWriter writer;
 
     setUp(() {
-      writer = FastBinaryWriter();
+      writer = BinaryWriter();
     });
 
     test('should return empty list when takeBytes called on empty writer', () {

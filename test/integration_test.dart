@@ -560,10 +560,10 @@ void main() {
         final reader = BinaryReader(bytes);
 
         expect(reader.readUint32(), equals(100));
-        expect(reader.usedBytes, equals(4));
+        expect(reader.offset, equals(4));
 
         reader.reset();
-        expect(reader.usedBytes, equals(0));
+        expect(reader.offset, equals(0));
         expect(reader.readUint32(), equals(100));
       });
 

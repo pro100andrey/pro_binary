@@ -103,65 +103,6 @@ class BinaryWriterBenchmark extends BenchmarkBase {
   }
 }
 
-class FastBinaryWriterBenchmark extends BenchmarkBase {
-  FastBinaryWriterBenchmark() : super('FastBinaryWriter performance test');
-
-  late final FastBinaryWriter writer;
-
-  @override
-  void setup() {
-    writer = FastBinaryWriter();
-  }
-
-  @override
-  void run() {
-    for (var i = 0; i < 1000; i++) {
-      writer
-        ..writeUint8(42)
-        ..writeInt8(-42)
-        ..writeUint16(65535, .little)
-        ..writeUint16(10)
-        ..writeInt16(-32768, .little)
-        ..writeInt16(-10)
-        ..writeUint32(4294967295, .little)
-        ..writeUint32(100)
-        ..writeInt32(-2147483648, .little)
-        ..writeInt32(-100)
-        ..writeUint64(9223372036854775807, .little)
-        ..writeUint64(1000)
-        ..writeInt64(-9223372036854775808, .little)
-        ..writeInt64(-1000)
-        ..writeFloat32(3.14, .little)
-        ..writeFloat32(2.71)
-        ..writeFloat64(3.141592653589793, .little)
-        ..writeFloat64(2.718281828459045)
-        ..writeBytes(listUint8)
-        ..writeBytes(listUint16)
-        ..writeBytes(listUint32)
-        ..writeBytes(listFloat32)
-        ..writeString(shortString)
-        ..writeString(longStringWithEmoji);
-
-      final bytes = writer.takeBytes();
-
-      if (writer.bytesWritten != 0) {
-        throw StateError('bytesWritten should be reset to 0 after takeBytes()');
-      }
-
-      if (bytes.length != 1432) {
-        throw StateError('Unexpected byte length: ${bytes.length}');
-      }
-    }
-  }
-
-  @override
-  void exercise() => run();
-  static void main() {
-    FastBinaryWriterBenchmark().report();
-  }
-}
-
 void main() {
   BinaryWriterBenchmark.main();
-  FastBinaryWriterBenchmark.main();
 }

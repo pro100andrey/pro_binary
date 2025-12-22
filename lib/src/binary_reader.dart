@@ -1,188 +1,160 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'binary_reader_interface.dart';
+extension type const BinaryReader._(_Reader _ctx) {
+  BinaryReader(Uint8List buffer) : this._(_Reader(buffer));
 
-/// A high-performance implementation of [BinaryReaderInterface] for decoding
-/// binary data.
-///
-/// Example:
-/// ```dart
-/// final bytes = Uint8List.fromList([0, 0, 0, 42]);
-/// final reader = BinaryReader(bytes);
-/// final value = reader.readUint32(); // 42
-/// print(reader.availableBytes); // 0
-/// ```
-class BinaryReader implements BinaryReaderInterface {
-  /// Creates a new [BinaryReader] for the given byte buffer.
-  ///
-  /// The [buffer] parameter must be a [Uint8List] containing the data to read.
-  /// The reader starts at position 0 and can read up to the buffer's length.
-  BinaryReader(Uint8List buffer)
-    : _buffer = buffer,
-      _data = ByteData.sublistView(buffer),
-      _length = buffer.length;
-
-  /// The underlying byte buffer being read from.
-  final Uint8List _buffer;
-
-  /// Efficient view for typed data access.
-  final ByteData _data;
-
-  /// Total length of the buffer.
-  final int _length;
-
-  /// Current read position in the buffer.
-  var _offset = 0;
-
-  /// Performs inline bounds check to ensure safe reads.
-  ///
-  /// Throws [AssertionError] if attempting to read beyond buffer boundaries.
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
+  int get availableBytes => _ctx.length - _ctx.offset;
+
+  @pragma('vm:prefer-inline')
+  int get offset => _ctx.offset;
+
+  @pragma('vm:prefer-inline')
+  int get length => _ctx.length;
+
+  @pragma('vm:prefer-inline')
   void _checkBounds(int bytes, String type, [int? offset]) {
     assert(
-      (offset ?? _offset) + bytes <= _length,
+      (offset ?? _ctx.offset) + bytes <= _ctx.length,
       'Not enough bytes to read $type: required $bytes bytes, available '
-      '${_length - _offset} bytes at offset $_offset',
+      '${_ctx.length - _ctx.offset} bytes at offset ${_ctx.offset}',
     );
   }
 
-  @override
-  int get availableBytes => _length - _offset;
-
-  @override
-  int get usedBytes => _offset;
-
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  @override
-  int readUint8() {
-    _checkBounds(1, 'Uint8');
-    return _data.getUint8(_offset++);
+  int readVarInt() {
+    var result = 0;
+    var shift = 0;
+
+    final list = _ctx.list;
+    var offset = _ctx.offset;
+
+    for (var i = 0; i < 10; i++) {
+      assert(offset < _ctx.length, 'VarInt out of bounds');
+      final byte = list[offset++];
+
+      result |= (byte & 0x7f) << shift;
+
+      if ((byte & 0x80) == 0) {
+        _ctx.offset = offset;
+        return result;
+      }
+
+      shift += 7;
+    }
+
+    throw const FormatException('VarInt is too long (more than 10 bytes)');
   }
 
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  @override
+  int readZigZag() {
+    final v = readVarInt();
+    // Decode zig-zag encoding
+    return (v >>> 1) ^ -(v & 1);
+  }
+
+  @pragma('vm:prefer-inline')
+  int readUint8() {
+    _checkBounds(1, 'Uint8');
+
+    return _ctx.data.getUint8(_ctx.offset++);
+  }
+
+  @pragma('vm:prefer-inline')
   int readInt8() {
     _checkBounds(1, 'Int8');
 
-    return _data.getInt8(_offset++);
+    return _ctx.data.getInt8(_ctx.offset++);
   }
 
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  @override
   int readUint16([Endian endian = .big]) {
     _checkBounds(2, 'Uint16');
 
-    final value = _data.getUint16(_offset, endian);
-    _offset += 2;
+    final value = _ctx.data.getUint16(_ctx.offset, endian);
+    _ctx.offset += 2;
 
     return value;
   }
 
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  @override
   int readInt16([Endian endian = .big]) {
     _checkBounds(2, 'Int16');
 
-    final value = _data.getInt16(_offset, endian);
-    _offset += 2;
+    final value = _ctx.data.getInt16(_ctx.offset, endian);
+    _ctx.offset += 2;
 
     return value;
   }
 
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  @override
   int readUint32([Endian endian = .big]) {
     _checkBounds(4, 'Uint32');
 
-    final value = _data.getUint32(_offset, endian);
-    _offset += 4;
-
+    final value = _ctx.data.getUint32(_ctx.offset, endian);
+    _ctx.offset += 4;
     return value;
   }
 
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  @override
   int readInt32([Endian endian = .big]) {
     _checkBounds(4, 'Int32');
-
-    final value = _data.getInt32(_offset, endian);
-    _offset += 4;
-
+    final value = _ctx.data.getInt32(_ctx.offset, endian);
+    _ctx.offset += 4;
     return value;
   }
 
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  @override
   int readUint64([Endian endian = .big]) {
     _checkBounds(8, 'Uint64');
-
-    final value = _data.getUint64(_offset, endian);
-    _offset += 8;
-
+    final value = _ctx.data.getUint64(_ctx.offset, endian);
+    _ctx.offset += 8;
     return value;
   }
 
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  @override
   int readInt64([Endian endian = .big]) {
     _checkBounds(8, 'Int64');
-
-    final value = _data.getInt64(_offset, endian);
-    _offset += 8;
-
+    final value = _ctx.data.getInt64(_ctx.offset, endian);
+    _ctx.offset += 8;
     return value;
   }
 
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  @override
   double readFloat32([Endian endian = .big]) {
     _checkBounds(4, 'Float32');
 
-    final value = _data.getFloat32(_offset, endian);
-    _offset += 4;
+    final value = _ctx.data.getFloat32(_ctx.offset, endian);
+    _ctx.offset += 4;
 
     return value;
   }
 
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  @override
   double readFloat64([Endian endian = .big]) {
     _checkBounds(8, 'Float64');
 
-    final value = _data.getFloat64(_offset, endian);
-    _offset += 8;
-
+    final value = _ctx.data.getFloat64(_ctx.offset, endian);
+    _ctx.offset += 8;
     return value;
   }
 
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  @override
   Uint8List readBytes(int length) {
     assert(length >= 0, 'Length must be non-negative');
     _checkBounds(length, 'Bytes');
 
-    final bytes = Uint8List.sublistView(_buffer, _offset, _offset + length);
-    _offset += length;
+    // Create a view of the underlying buffer without copying.
+    final bOffset = _ctx.baseOffset;
+    final bytes = _ctx.data.buffer.asUint8List(bOffset + _ctx.offset, length);
+
+    _ctx.offset += length;
 
     return bytes;
   }
 
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  @override
   String readString(int length, {bool allowMalformed = false}) {
     if (length == 0) {
       return '';
@@ -190,15 +162,14 @@ class BinaryReader implements BinaryReaderInterface {
 
     _checkBounds(length, 'String');
 
-    final view = Uint8List.sublistView(_buffer, _offset, _offset + length);
-    _offset += length;
+    final bOffset = _ctx.baseOffset;
+    final view = _ctx.data.buffer.asUint8List(bOffset + _ctx.offset, length);
+    _ctx.offset += length;
 
     return utf8.decode(view, allowMalformed: allowMalformed);
   }
 
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  @override
   Uint8List peekBytes(int length, [int? offset]) {
     assert(length >= 0, 'Length must be non-negative');
 
@@ -206,27 +177,48 @@ class BinaryReader implements BinaryReaderInterface {
       return Uint8List(0);
     }
 
-    final peekOffset = offset ?? _offset;
+    final peekOffset = offset ?? _ctx.offset;
     _checkBounds(length, 'Peek Bytes', peekOffset);
 
-    return Uint8List.sublistView(_buffer, peekOffset, peekOffset + length);
+    final bOffset = _ctx.baseOffset;
+
+    return _ctx.data.buffer.asUint8List(bOffset + peekOffset, length);
   }
 
-  @override
   void skip(int length) {
     assert(length >= 0, 'Length must be non-negative');
     _checkBounds(length, 'Skip');
 
-    _offset += length;
+    _ctx.offset += length;
   }
 
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  @override
   void reset() {
-    _offset = 0;
+    _ctx.offset = 0;
   }
+}
 
-  @override
-  int get offset => _offset;
+final class _Reader {
+  _Reader(Uint8List buffer)
+    : list = buffer,
+      data = ByteData.sublistView(buffer).asUnmodifiableView(),
+      buffer = buffer.buffer,
+      length = buffer.length,
+      baseOffset = buffer.offsetInBytes,
+      offset = 0;
+
+  final Uint8List list;
+
+  /// Efficient view for typed data access.
+  final ByteData data;
+
+  final ByteBuffer buffer;
+
+  /// Total length of the buffer.
+  final int length;
+
+  /// Current read position in the buffer.
+  late int offset;
+
+  final int baseOffset;
 }
