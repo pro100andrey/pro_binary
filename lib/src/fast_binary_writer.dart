@@ -1,87 +1,182 @@
 import 'dart:typed_data';
 
-extension type const FastBinaryWriter._(_Buffer _ctx) {
+extension type FastBinaryWriter._(_Buffer _ctx) {
   FastBinaryWriter({int initialBufferSize = 128})
     : this._(_Buffer(initialBufferSize));
 
-  int get bytesWritten => _ctx._offset;
+  int get bytesWritten => _ctx.offset;
 
+  @pragma('vm:prefer-inline')
   void _checkRange(int value, int min, int max, String typeName) {
     if (value < min || value > max) {
       throw RangeError.range(value, min, max, typeName);
     }
   }
 
+  @pragma('vm:prefer-inline')
   void writeUint8(int value) {
     _checkRange(value, 0, 255, 'Uint8');
     _ctx._ensureSize(1);
-    _ctx._data.setUint8(_ctx._offset, value);
-    _ctx._offset += 1;
+    _ctx.list[_ctx.offset++] = value;
   }
 
+  @pragma('vm:prefer-inline')
   void writeInt8(int value) {
     _checkRange(value, -128, 127, 'Int8');
     _ctx._ensureSize(1);
-    _ctx._data.setInt8(_ctx._offset, value);
-    _ctx._offset += 1;
+    _ctx.list[_ctx.offset++] = value & 0xFF;
   }
 
-  void writeUint16(int value, [Endian endian = Endian.big]) {
+  @pragma('vm:prefer-inline')
+  void writeUint16(int value, [Endian endian = .big]) {
     _checkRange(value, 0, 65535, 'Uint16');
     _ctx._ensureSize(2);
-    _ctx._data.setUint16(_ctx._offset, value, endian);
-    _ctx._offset += 2;
+
+    final list = _ctx.list;
+    var offset = _ctx.offset;
+    if (endian == .big) {
+      list[offset++] = (value >> 8) & 0xFF;
+      list[offset++] = value & 0xFF;
+    } else {
+      list[offset++] = value & 0xFF;
+      list[offset++] = (value >> 8) & 0xFF;
+    }
+    _ctx.offset = offset;
   }
 
-  void writeInt16(int value, [Endian endian = Endian.big]) {
+  @pragma('vm:prefer-inline')
+  void writeInt16(int value, [Endian endian = .big]) {
     _checkRange(value, -32768, 32767, 'Int16');
     _ctx._ensureSize(2);
-    _ctx._data.setInt16(_ctx._offset, value, endian);
-    _ctx._offset += 2;
+
+    final list = _ctx.list;
+    var offset = _ctx.offset;
+    if (endian == .big) {
+      list[offset++] = (value >> 8) & 0xFF;
+      list[offset++] = value & 0xFF;
+    } else {
+      list[offset++] = value & 0xFF;
+      list[offset++] = (value >> 8) & 0xFF;
+    }
+    _ctx.offset = offset;
   }
 
-  void writeUint32(int value, [Endian endian = Endian.big]) {
+  @pragma('vm:prefer-inline')
+  void writeUint32(int value, [Endian endian = .big]) {
     _checkRange(value, 0, 4294967295, 'Uint32');
     _ctx._ensureSize(4);
-    _ctx._data.setUint32(_ctx._offset, value, endian);
-    _ctx._offset += 4;
+
+    final list = _ctx.list;
+    var offset = _ctx.offset;
+    if (endian == .big) {
+      list[offset++] = (value >> 24) & 0xFF;
+      list[offset++] = (value >> 16) & 0xFF;
+      list[offset++] = (value >> 8) & 0xFF;
+      list[offset++] = value & 0xFF;
+    } else {
+      list[offset++] = value & 0xFF;
+      list[offset++] = (value >> 8) & 0xFF;
+      list[offset++] = (value >> 16) & 0xFF;
+      list[offset++] = (value >> 24) & 0xFF;
+    }
+    _ctx.offset = offset;
   }
 
-  void writeInt32(int value, [Endian endian = Endian.big]) {
+  @pragma('vm:prefer-inline')
+  void writeInt32(int value, [Endian endian = .big]) {
     _checkRange(value, -2147483648, 2147483647, 'Int32');
     _ctx._ensureSize(4);
-    _ctx._data.setInt32(_ctx._offset, value, endian);
-    _ctx._offset += 4;
+
+    final list = _ctx.list;
+    var offset = _ctx.offset;
+    if (endian == .big) {
+      list[offset++] = (value >> 24) & 0xFF;
+      list[offset++] = (value >> 16) & 0xFF;
+      list[offset++] = (value >> 8) & 0xFF;
+      list[offset++] = value & 0xFF;
+    } else {
+      list[offset++] = value & 0xFF;
+      list[offset++] = (value >> 8) & 0xFF;
+      list[offset++] = (value >> 16) & 0xFF;
+      list[offset++] = (value >> 24) & 0xFF;
+    }
+    _ctx.offset = offset;
   }
 
-  void writeUint64(int value, [Endian endian = Endian.big]) {
+  @pragma('vm:prefer-inline')
+  void writeUint64(int value, [Endian endian = .big]) {
     _checkRange(value, 0, 9223372036854775807, 'Uint64');
     _ctx._ensureSize(8);
-    _ctx._data.setUint64(_ctx._offset, value, endian);
-    _ctx._offset += 8;
+
+    final list = _ctx.list;
+    var offset = _ctx.offset;
+    if (endian == .big) {
+      list[offset++] = (value >> 56) & 0xFF;
+      list[offset++] = (value >> 48) & 0xFF;
+      list[offset++] = (value >> 40) & 0xFF;
+      list[offset++] = (value >> 32) & 0xFF;
+      list[offset++] = (value >> 24) & 0xFF;
+      list[offset++] = (value >> 16) & 0xFF;
+      list[offset++] = (value >> 8) & 0xFF;
+      list[offset++] = value & 0xFF;
+    } else {
+      list[offset++] = value & 0xFF;
+      list[offset++] = (value >> 8) & 0xFF;
+      list[offset++] = (value >> 16) & 0xFF;
+      list[offset++] = (value >> 24) & 0xFF;
+      list[offset++] = (value >> 32) & 0xFF;
+      list[offset++] = (value >> 40) & 0xFF;
+      list[offset++] = (value >> 48) & 0xFF;
+      list[offset++] = (value >> 56) & 0xFF;
+    }
+    _ctx.offset = offset;
   }
 
-  void writeInt64(int value, [Endian endian = Endian.big]) {
+  @pragma('vm:prefer-inline')
+  void writeInt64(int value, [Endian endian = .big]) {
     _checkRange(value, -9223372036854775808, 9223372036854775807, 'Int64');
     _ctx._ensureSize(8);
-    _ctx._data.setInt64(_ctx._offset, value, endian);
-    _ctx._offset += 8;
+
+    final list = _ctx.list;
+    var offset = _ctx.offset;
+    if (endian == .big) {
+      list[offset++] = (value >> 56) & 0xFF;
+      list[offset++] = (value >> 48) & 0xFF;
+      list[offset++] = (value >> 40) & 0xFF;
+      list[offset++] = (value >> 32) & 0xFF;
+      list[offset++] = (value >> 24) & 0xFF;
+      list[offset++] = (value >> 16) & 0xFF;
+      list[offset++] = (value >> 8) & 0xFF;
+      list[offset++] = value & 0xFF;
+    } else {
+      list[offset++] = value & 0xFF;
+      list[offset++] = (value >> 8) & 0xFF;
+      list[offset++] = (value >> 16) & 0xFF;
+      list[offset++] = (value >> 24) & 0xFF;
+      list[offset++] = (value >> 32) & 0xFF;
+      list[offset++] = (value >> 40) & 0xFF;
+      list[offset++] = (value >> 48) & 0xFF;
+      list[offset++] = (value >> 56) & 0xFF;
+    }
+    _ctx.offset = offset;
   }
 
-  void writeFloat32(double value, [Endian endian = Endian.big]) {
+  @pragma('vm:prefer-inline')
+  void writeFloat32(double value, [Endian endian = .big]) {
     _ctx._ensureSize(4);
-    _ctx._data.setFloat32(_ctx._offset, value, endian);
-    _ctx._offset += 4;
+    _ctx.data.setFloat32(_ctx.offset, value, endian);
+    _ctx.offset += 4;
   }
 
-  void writeFloat64(double value, [Endian endian = Endian.big]) {
+  @pragma('vm:prefer-inline')
+  void writeFloat64(double value, [Endian endian = .big]) {
     _ctx._ensureSize(8);
-    _ctx._data.setFloat64(_ctx._offset, value, endian);
-    _ctx._offset += 8;
+    _ctx.data.setFloat64(_ctx.offset, value, endian);
+    _ctx.offset += 8;
   }
 
+  @pragma('vm:prefer-inline')
   void writeBytes(Iterable<int> bytes) {
-    // Early return for empty byte lists
     if (bytes.isEmpty) {
       return;
     }
@@ -89,11 +184,12 @@ extension type const FastBinaryWriter._(_Buffer _ctx) {
     final length = bytes.length;
     _ctx._ensureSize(length);
 
-    final offset = _ctx._offset;
-    _ctx._list.setRange(offset, offset + length, bytes);
-    _ctx._offset = offset + length;
+    final offset = _ctx.offset;
+    _ctx.list.setRange(offset, offset + length, bytes);
+    _ctx.offset = offset + length;
   }
 
+  @pragma('vm:prefer-inline')
   void writeString(String value, {bool allowMalformed = true}) {
     final len = value.length;
     if (len == 0) {
@@ -105,8 +201,8 @@ extension type const FastBinaryWriter._(_Buffer _ctx) {
     // bytes/char avg. Asian chars take 1 char for 3 bytes = 3 bytes/char avg).
     _ctx._ensureSize(len * 3);
 
-    final list = _ctx._list;
-    var offset = _ctx._offset;
+    final list = _ctx.list;
+    var offset = _ctx.offset;
     var i = 0;
 
     while (i < len) {
@@ -185,69 +281,77 @@ extension type const FastBinaryWriter._(_Buffer _ctx) {
       }
     }
 
-    _ctx._offset = offset;
+    _ctx.offset = offset;
   }
 
+  @pragma('vm:prefer-inline')
   Uint8List takeBytes() {
-    final result = Uint8List.sublistView(_ctx._list, 0, _ctx._offset);
+    final result = Uint8List.sublistView(_ctx.list, 0, _ctx.offset);
     _ctx._initializeBuffer();
     return result;
   }
 
-  Uint8List toBytes() => Uint8List.sublistView(_ctx._list, 0, _ctx._offset);
+  @pragma('vm:prefer-inline')
+  Uint8List toBytes() => Uint8List.sublistView(_ctx.list, 0, _ctx.offset);
 
+  @pragma('vm:prefer-inline')
   void reset() => _ctx._initializeBuffer();
 }
 
 final class _Buffer {
   _Buffer(int initialBufferSize)
     : _size = initialBufferSize,
-      _capacity = initialBufferSize,
-      _list = Uint8List(initialBufferSize) {
-    _data = _list.buffer.asByteData();
+      capacity = initialBufferSize,
+      offset = 0,
+      list = Uint8List(initialBufferSize) {
+    data = list.buffer.asByteData();
   }
 
   /// Current write position in the buffer.
-  var _offset = 0;
+  late int offset;
 
   /// Cached buffer capacity to avoid repeated length checks.
-  var _capacity = 0;
+  late int capacity;
 
-  late Uint8List _list;
+  /// Underlying byte buffer.
+  late Uint8List list;
 
-  late ByteData _data;
+  /// ByteData view of the underlying buffer for efficient writes.
+  late ByteData data;
 
+  /// Initial buffer size.
   final int _size;
 
+  @pragma('vm:prefer-inline')
   void _initializeBuffer() {
     final newBuffer = Uint8List(_size);
 
-    _list = newBuffer;
-    _data = newBuffer.buffer.asByteData();
-    _capacity = _size;
-    _offset = 0;
+    list = newBuffer;
+    capacity = _size;
+    offset = 0;
   }
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void _ensureSize(int size) {
-    if (_offset + size <= _capacity) {
+    if (offset + size <= capacity) {
       return;
     }
+    
     _expand(size);
   }
 
   void _expand(int size) {
-    final req = _offset + size;
-    var newCapacity = _capacity * 3 ~/ 2;
+    final req = offset + size;
+    var newCapacity = capacity * 3 ~/ 2;
     if (newCapacity < req) {
       newCapacity = req;
     }
 
-    final newBuffer = Uint8List(newCapacity)..setRange(0, _offset, _list);
+    final list = Uint8List(newCapacity)..setRange(0, offset, this.list);
 
-    _list = newBuffer;
-    _data = newBuffer.buffer.asByteData();
-    _capacity = newCapacity;
+    this.list = list;
+    data = list.buffer.asByteData(0, newCapacity);
+    capacity = newCapacity;
   }
 }

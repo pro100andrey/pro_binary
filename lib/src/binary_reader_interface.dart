@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 /// The [BinaryReaderInterface] class is an abstract base class used to decode
 /// various types of data from a binary format.
-abstract class BinaryReaderInterface {
+abstract interface class BinaryReaderInterface {
   /// Returns the number of bytes available to read from the buffer.
   ///
   /// This getter calculates the difference between the total length of the
@@ -50,14 +50,14 @@ abstract class BinaryReaderInterface {
   ///
   /// Returns an unsigned 16-bit integer (range: 0 to 65535).
   /// The optional [endian] parameter specifies the byte order to use (defaults
-  /// to [Endian.big]).
+  /// to [.big]).
   ///
   /// Example:
   /// ```dart
   /// int value = reader.readUint16(); // Reads two bytes as an unsigned integer in big-endian order.
-  /// int value = reader.readUint16(Endian.little); // Reads two bytes as an unsigned integer in little-endian order.
+  /// int value = reader.readUint16(.little); // Reads two bytes as an unsigned integer in little-endian order.
   /// ```
-  int readUint16([Endian endian = Endian.big]);
+  int readUint16([Endian endian = .big]);
 
   /// Reads a 16-bit signed integer from the buffer.
   ///
@@ -67,14 +67,14 @@ abstract class BinaryReaderInterface {
   ///
   /// Returns a signed 16-bit integer (range: -32768 to 32767).
   /// The optional [endian] parameter specifies the byte order to use (defaults
-  /// to [Endian.big]).
+  /// to [.big]).
   ///
   /// Example:
   /// ```dart
   /// int value = reader.readInt16(); // Reads two bytes as a signed integer in big-endian order.
-  /// int value = reader.readInt16(Endian.little); // Reads two bytes as a signed integer in little-endian order.
+  /// int value = reader.readInt16(.little); // Reads two bytes as a signed integer in little-endian order.
   /// ```
-  int readInt16([Endian endian = Endian.big]);
+  int readInt16([Endian endian = .big]);
 
   /// Reads a 32-bit unsigned integer from the buffer.
   ///
@@ -84,14 +84,14 @@ abstract class BinaryReaderInterface {
   ///
   /// Returns an unsigned 32-bit integer (range: 0 to 4294967295).
   /// The optional [endian] parameter specifies the byte order to use (defaults
-  /// to [Endian.big]).
+  /// to [.big]).
   ///
   /// Example:
   /// ```dart
   /// int value = reader.readUint32(); // Reads four bytes as an unsigned integer in big-endian order.
-  /// int value = reader.readUint32(Endian.little); // Reads four bytes as an unsigned integer in little-endian order.
+  /// int value = reader.readUint32(.little); // Reads four bytes as an unsigned integer in little-endian order.
   /// ```
-  int readUint32([Endian endian = Endian.big]);
+  int readUint32([Endian endian = .big]);
 
   /// Reads a 32-bit signed integer from the buffer.
   ///
@@ -101,14 +101,14 @@ abstract class BinaryReaderInterface {
   ///
   /// Returns a signed 32-bit integer (range: -2147483648 to 2147483647).
   /// The optional [endian] parameter specifies the byte order to use (defaults
-  /// to [Endian.big]).
+  /// to [.big]).
   ///
   /// Example:
   /// ```dart
   /// int value = reader.readInt32(); // Reads four bytes as a signed integer in big-endian order.
-  /// int value = reader.readInt32(Endian.little); // Reads four bytes as a signed integer in little-endian order.
+  /// int value = reader.readInt32(.little); // Reads four bytes as a signed integer in little-endian order.
   /// ```
-  int readInt32([Endian endian = Endian.big]);
+  int readInt32([Endian endian = .big]);
 
   /// Reads a 64-bit unsigned integer from the buffer.
   ///
@@ -118,14 +118,14 @@ abstract class BinaryReaderInterface {
   ///
   /// Returns an unsigned 64-bit integer (range: 0 to 18446744073709551615).
   /// The optional [endian] parameter specifies the byte order to use (defaults
-  /// to [Endian.big]).
+  /// to [.big]).
   ///
   /// Example:
   /// ```dart
   /// int value = reader.readUint64(); // Reads eight bytes as an unsigned integer in big-endian order.
-  /// int value = reader.readUint64(Endian.little); // Reads eight bytes as an unsigned integer in little-endian order.
+  /// int value = reader.readUint64(.little); // Reads eight bytes as an unsigned integer in little-endian order.
   /// ```
-  int readUint64([Endian endian = Endian.big]);
+  int readUint64([Endian endian = .big]);
 
   /// Reads a 64-bit signed integer from the buffer.
   ///
@@ -136,14 +136,14 @@ abstract class BinaryReaderInterface {
   /// Returns a signed 64-bit integer
   /// (range: -9223372036854775808 to 9223372036854775807).
   /// The optional [endian] parameter specifies the byte order to use (defaults
-  /// to [Endian.big]).
+  /// to [.big]).
   ///
   /// Example:
   /// ```dart
   /// int value = reader.readInt64(); // Reads eight bytes as a signed integer in big-endian order.
-  /// int value = reader.readInt64(Endian.little); // Reads eight bytes as a signed integer in little-endian order.
+  /// int value = reader.readInt64(.little); // Reads eight bytes as a signed integer in little-endian order.
   /// ```
-  int readInt64([Endian endian = Endian.big]);
+  int readInt64([Endian endian = .big]);
 
   /// Reads a 32-bit floating point number from the buffer.
   ///
@@ -152,14 +152,14 @@ abstract class BinaryReaderInterface {
   ///
   /// Returns a 32-bit floating point number.
   /// The optional [endian] parameter specifies the byte order to use
-  /// (defaults to [Endian.big]).
+  /// (defaults to [.big]).
   ///
   /// Example:
   /// ```dart
   /// double value = reader.readFloat32(); // Reads four bytes as a float in big-endian order.
-  /// double value = reader.readFloat32(Endian.little); // Reads four bytes as a float in little-endian order.
+  /// double value = reader.readFloat32(.little); // Reads four bytes as a float in little-endian order.
   /// ```
-  double readFloat32([Endian endian = Endian.big]);
+  double readFloat32([Endian endian = .big]);
 
   /// Reads a 64-bit floating point number from the buffer.
   ///
@@ -168,14 +168,14 @@ abstract class BinaryReaderInterface {
   ///
   /// Returns a 64-bit floating point number.
   /// The optional [endian] parameter specifies the byte order to use (defaults
-  /// to [Endian.big]).
+  /// to [.big]).
   ///
   /// Example:
   /// ```dart
   /// double value = reader.readFloat64(); // Reads eight bytes as a float in big-endian order.
-  /// double value = reader.readFloat64(Endian.little); // Reads eight bytes as a float in little-endian order.
+  /// double value = reader.readFloat64(.little); // Reads eight bytes as a float in little-endian order.
   /// ```
-  double readFloat64([Endian endian = Endian.big]);
+  double readFloat64([Endian endian = .big]);
 
   /// Reads a list of bytes from the buffer.
   ///

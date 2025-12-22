@@ -45,11 +45,11 @@ void main() {
         final writer = BinaryWriter();
         const value = 65535;
 
-        writer.writeUint16(value, Endian.little);
+        writer.writeUint16(value, .little);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
-        expect(reader.readUint16(Endian.little), equals(value));
+        expect(reader.readUint16(.little), equals(value));
       });
 
       test('write and read Int16 with big-endian', () {
@@ -67,11 +67,11 @@ void main() {
         final writer = BinaryWriter();
         const value = -32768;
 
-        writer.writeInt16(value, Endian.little);
+        writer.writeInt16(value, .little);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
-        expect(reader.readInt16(Endian.little), equals(value));
+        expect(reader.readInt16(.little), equals(value));
       });
 
       test('write and read Uint32 with big-endian', () {
@@ -89,11 +89,11 @@ void main() {
         final writer = BinaryWriter();
         const value = 4294967295;
 
-        writer.writeUint32(value, Endian.little);
+        writer.writeUint32(value, .little);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
-        expect(reader.readUint32(Endian.little), equals(value));
+        expect(reader.readUint32(.little), equals(value));
       });
 
       test('write and read Int32 with big-endian', () {
@@ -111,11 +111,11 @@ void main() {
         final writer = BinaryWriter();
         const value = -2147483648;
 
-        writer.writeInt32(value, Endian.little);
+        writer.writeInt32(value, .little);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
-        expect(reader.readInt32(Endian.little), equals(value));
+        expect(reader.readInt32(.little), equals(value));
       });
 
       test('write and read Uint64 with big-endian', () {
@@ -133,11 +133,11 @@ void main() {
         final writer = BinaryWriter();
         const value = 9223372036854775807;
 
-        writer.writeUint64(value, Endian.little);
+        writer.writeUint64(value, .little);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
-        expect(reader.readUint64(Endian.little), equals(value));
+        expect(reader.readUint64(.little), equals(value));
       });
 
       test('write and read Int64 with big-endian', () {
@@ -155,11 +155,11 @@ void main() {
         final writer = BinaryWriter();
         const value = -9223372036854775808;
 
-        writer.writeInt64(value, Endian.little);
+        writer.writeInt64(value, .little);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
-        expect(reader.readInt64(Endian.little), equals(value));
+        expect(reader.readInt64(.little), equals(value));
       });
 
       test('write and read Float32 with big-endian', () {
@@ -177,11 +177,11 @@ void main() {
         final writer = BinaryWriter();
         const value = 3.14159;
 
-        writer.writeFloat32(value, Endian.little);
+        writer.writeFloat32(value, .little);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
-        expect(reader.readFloat32(Endian.little), closeTo(value, 0.00001));
+        expect(reader.readFloat32(.little), closeTo(value, 0.00001));
       });
 
       test('write and read Float64 with big-endian', () {
@@ -199,12 +199,12 @@ void main() {
         final writer = BinaryWriter();
         const value = 3.141592653589793;
 
-        writer.writeFloat64(value, Endian.little);
+        writer.writeFloat64(value, .little);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
         expect(
-          reader.readFloat64(Endian.little),
+          reader.readFloat64(.little),
           closeTo(value, 0.000000000000001),
         );
       });
@@ -243,25 +243,25 @@ void main() {
       test('write and read with mixed endianness', () {
         final writer = BinaryWriter()
           ..writeUint16(0x1234)
-          ..writeUint16(0x5678, Endian.little)
+          ..writeUint16(0x5678, .little)
           ..writeUint32(0x9ABCDEF0)
-          ..writeUint32(0x11223344, Endian.little)
+          ..writeUint32(0x11223344, .little)
           ..writeFloat32(3.14)
-          ..writeFloat32(2.71, Endian.little)
+          ..writeFloat32(2.71, .little)
           ..writeFloat64(1.414)
-          ..writeFloat64(1.732, Endian.little);
+          ..writeFloat64(1.732, .little);
 
         final bytes = writer.takeBytes();
         final reader = BinaryReader(bytes);
 
         expect(reader.readUint16(), equals(0x1234));
-        expect(reader.readUint16(Endian.little), equals(0x5678));
+        expect(reader.readUint16(.little), equals(0x5678));
         expect(reader.readUint32(), equals(0x9ABCDEF0));
-        expect(reader.readUint32(Endian.little), equals(0x11223344));
+        expect(reader.readUint32(.little), equals(0x11223344));
         expect(reader.readFloat32(), closeTo(3.14, 0.01));
-        expect(reader.readFloat32(Endian.little), closeTo(2.71, 0.01));
+        expect(reader.readFloat32(.little), closeTo(2.71, 0.01));
         expect(reader.readFloat64(), closeTo(1.414, 0.001));
-        expect(reader.readFloat64(Endian.little), closeTo(1.732, 0.001));
+        expect(reader.readFloat64(.little), closeTo(1.732, 0.001));
       });
 
       test('write and read bytes array', () {
@@ -763,48 +763,48 @@ void main() {
         'all types round-trip correctly with little-endian',
         () {
           final writer = BinaryWriter()
-            ..writeUint16(65535, Endian.little)
-            ..writeInt16(-32768, Endian.little)
-            ..writeUint32(4294967295, Endian.little)
-            ..writeInt32(-2147483648, Endian.little)
-            ..writeUint64(9223372036854775807, Endian.little)
-            ..writeInt64(-9223372036854775808, Endian.little)
-            ..writeFloat32(1.23456, Endian.little)
-            ..writeFloat64(1.2345678901234, Endian.little);
+            ..writeUint16(65535, .little)
+            ..writeInt16(-32768, .little)
+            ..writeUint32(4294967295, .little)
+            ..writeInt32(-2147483648, .little)
+            ..writeUint64(9223372036854775807, .little)
+            ..writeInt64(-9223372036854775808, .little)
+            ..writeFloat32(1.23456, .little)
+            ..writeFloat64(1.2345678901234, .little);
 
           final bytes = writer.takeBytes();
           final reader = BinaryReader(bytes);
 
           expect(
-            reader.readUint16(Endian.little),
+            reader.readUint16(.little),
             equals(65535),
           );
           expect(
-            reader.readInt16(Endian.little),
+            reader.readInt16(.little),
             equals(-32768),
           );
           expect(
-            reader.readUint32(Endian.little),
+            reader.readUint32(.little),
             equals(4294967295),
           );
           expect(
-            reader.readInt32(Endian.little),
+            reader.readInt32(.little),
             equals(-2147483648),
           );
           expect(
-            reader.readUint64(Endian.little),
+            reader.readUint64(.little),
             equals(9223372036854775807),
           );
           expect(
-            reader.readInt64(Endian.little),
+            reader.readInt64(.little),
             equals(-9223372036854775808),
           );
           expect(
-            reader.readFloat32(Endian.little),
+            reader.readFloat32(.little),
             closeTo(1.23456, 0.00001),
           );
           expect(
-            reader.readFloat64(Endian.little),
+            reader.readFloat64(.little),
             closeTo(1.2345678901234, 0.0000001),
           );
           expect(reader.availableBytes, equals(0));

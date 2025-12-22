@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 /// The [BinaryWriterInterface] class is an abstract base class used to encode
 /// various types of data into a binary format.
-abstract class BinaryWriterInterface {
+abstract interface class BinaryWriterInterface {
   /// Returns the number of bytes written to the buffer.
   int get bytesWritten;
 
@@ -48,16 +48,16 @@ abstract class BinaryWriterInterface {
   /// The [value] parameter must be an unsigned 16-bit integer
   /// (range: 0 to 65535).
   /// The optional [endian] parameter specifies the byte order to use (defaults
-  /// to [Endian.big]).
+  /// to [.big]).
   ///
   /// Throws [RangeError] if [value] is out of range.
   ///
   /// Example:
   /// ```dart
   /// writer.writeUint16(500); // Writes the value 500 as two bytes in big-endian order.
-  /// writer.writeUint16(500, Endian.little); // Writes the value 500 as two bytes in little-endian order.
+  /// writer.writeUint16(500, .little); // Writes the value 500 as two bytes in little-endian order.
   /// ```
-  void writeUint16(int value, [Endian endian = Endian.big]);
+  void writeUint16(int value, [Endian endian = .big]);
 
   /// Writes a 16-bit signed integer to the buffer.
   ///
@@ -69,16 +69,16 @@ abstract class BinaryWriterInterface {
   /// The [value] parameter must be a signed 16-bit integer
   /// (range: -32768 to 32767).
   /// The optional [endian] parameter specifies the byte order to use (defaults
-  /// to [Endian.big]).
+  /// to [.big]).
   ///
   /// Throws [RangeError] if [value] is out of range.
   ///
   /// Example:
   /// ```dart
   /// writer.writeInt16(-100); // Writes the value -100 as two bytes in big-endian order.
-  /// writer.writeInt16(-100, Endian.little); // Writes the value -100 as two bytes in little-endian order.
+  /// writer.writeInt16(-100, .little); // Writes the value -100 as two bytes in little-endian order.
   /// ```
-  void writeInt16(int value, [Endian endian = Endian.big]);
+  void writeInt16(int value, [Endian endian = .big]);
 
   /// Writes a 32-bit unsigned integer to the buffer.
   ///
@@ -90,16 +90,16 @@ abstract class BinaryWriterInterface {
   /// The [value] parameter must be an unsigned 32-bit integer
   /// (range: 0 to 4294967295).
   /// The optional [endian] parameter specifies the byte order to use (defaults
-  /// to [Endian.big]).
+  /// to [.big]).
   ///
   /// Throws [RangeError] if [value] is out of range.
   ///
   /// Example:
   /// ```dart
   /// writer.writeUint32(100000); // Writes the value 100000 as four bytes in big-endian order.
-  /// writer.writeUint32(100000, Endian.little); // Writes the value 100000 as four bytes in little-endian order.
+  /// writer.writeUint32(100000, .little); // Writes the value 100000 as four bytes in little-endian order.
   /// ```
-  void writeUint32(int value, [Endian endian = Endian.big]);
+  void writeUint32(int value, [Endian endian = .big]);
 
   /// Writes a 32-bit signed integer to the buffer.
   ///
@@ -111,14 +111,14 @@ abstract class BinaryWriterInterface {
   /// The [value] parameter must be a signed 32-bit integer
   /// (range: -2147483648 to 2147483647).
   /// The optional [endian] parameter specifies the byte order to use (defaults
-  /// to [Endian.big]).
+  /// to [.big]).
   ///
   /// Example:
   /// ```dart
   /// writer.writeInt32(-50000); // Writes the value -50000 as four bytes in big-endian order.
-  /// writer.writeInt32(-50000, Endian.little); // Writes the value -50000 as four bytes in little-endian order.
+  /// writer.writeInt32(-50000, .little); // Writes the value -50000 as four bytes in little-endian order.
   /// ```
-  void writeInt32(int value, [Endian endian = Endian.big]);
+  void writeInt32(int value, [Endian endian = .big]);
 
   /// Writes a 64-bit unsigned integer to the buffer.
   ///
@@ -131,16 +131,16 @@ abstract class BinaryWriterInterface {
   /// The [value] parameter must be an unsigned 64-bit integer
   /// (range: 0 to 18446744073709551615).
   /// The optional [endian] parameter specifies the byte order to use (defaults
-  ///  to [Endian.big]).
+  ///  to [.big]).
   ///
   /// Throws [RangeError] if [value] is out of range.
   ///
   /// Example:
   /// ```dart
   /// writer.writeUint64(10000000000); // Writes the value 10000000000 as eight bytes in big-endian order.
-  /// writer.writeUint64(10000000000, Endian.little); // Writes the value 10000000000 as eight bytes in little-endian order.
+  /// writer.writeUint64(10000000000, .little); // Writes the value 10000000000 as eight bytes in little-endian order.
   /// ```
-  void writeUint64(int value, [Endian endian = Endian.big]);
+  void writeUint64(int value, [Endian endian = .big]);
 
   /// Writes a 64-bit signed integer to the buffer.
   ///
@@ -153,16 +153,16 @@ abstract class BinaryWriterInterface {
   /// The [value] parameter must be a signed 64-bit integer
   /// (range: -9223372036854775808 to 9223372036854775807).
   /// The optional [endian] parameter specifies the byte order to use (defaults
-  ///  to [Endian.big]).
+  ///  to [.big]).
   ///
   /// Throws [RangeError] if [value] is out of range.
   ///
   /// Example:
   /// ```dart
   /// writer.writeInt64(-10000000000); // Writes the value -10000000000 as eight bytes in big-endian order.
-  /// writer.writeInt64(-10000000000, Endian.little); // Writes the value -10000000000 as eight bytes in little-endian order.
+  /// writer.writeInt64(-10000000000, .little); // Writes the value -10000000000 as eight bytes in little-endian order.
   /// ```
-  void writeInt64(int value, [Endian endian = Endian.big]);
+  void writeInt64(int value, [Endian endian = .big]);
 
   /// Writes a 32-bit floating point number to the buffer.
   ///
@@ -173,16 +173,16 @@ abstract class BinaryWriterInterface {
   ///
   /// The [value] parameter must be a 32-bit floating point number.
   /// The optional [endian] parameter specifies the byte order to use
-  /// (defaults to [Endian.big]).
+  /// (defaults to [.big]).
   ///
   /// Throws [RangeError] if [value] is out of range.
   ///
   /// Example:
   /// ```dart
   /// writer.writeFloat32(3.14); // Writes the value 3.14 as four bytes in big-endian order.
-  /// writer.writeFloat32(3.14, Endian.little); // Writes the value 3.14 as four bytes in little-endian order.
+  /// writer.writeFloat32(3.14, .little); // Writes the value 3.14 as four bytes in little-endian order.
   /// ```
-  void writeFloat32(double value, [Endian endian = Endian.big]);
+  void writeFloat32(double value, [Endian endian = .big]);
 
   /// Writes a 64-bit floating point number to the buffer.
   ///
@@ -193,14 +193,14 @@ abstract class BinaryWriterInterface {
   ///
   /// The [value] parameter must be a 64-bit floating point number.
   /// The optional [endian] parameter specifies the byte order to use (defaults
-  /// to [Endian.big]).
+  /// to [.big]).
   ///
   /// Example:
   /// ```dart
   /// writer.writeFloat64(3.14); // Writes the value 3.14 as eight bytes in big-endian order.
-  /// writer.writeFloat64(3.14, Endian.little); // Writes the value 3.14 as eight bytes in little-endian order.
+  /// writer.writeFloat64(3.14, .little); // Writes the value 3.14 as eight bytes in little-endian order.
   /// ```
-  void writeFloat64(double value, [Endian endian = Endian.big]);
+  void writeFloat64(double value, [Endian endian = .big]);
 
   /// Writes a list of bytes to the buffer.
   ///

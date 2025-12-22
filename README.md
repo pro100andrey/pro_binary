@@ -36,7 +36,7 @@ import 'package:pro_binary/pro_binary.dart';
 void main() {
   final writer = BinaryWriter()
     ..writeUint8(42)
-    ..writeUint32(1000000, Endian.little)
+    ..writeUint32(1000000, .little)
     ..writeFloat64(3.14159)
     ..writeString('Hello');
 
@@ -56,7 +56,7 @@ void main() {
   final reader = BinaryReader(data);
 
   final value1 = reader.readUint8();           // 42
-  final value2 = reader.readUint32(Endian.little); // 1000000
+  final value2 = reader.readUint32(.little); // 1000000
   
   print('Read: $value1, $value2');
   print('Remaining: ${reader.availableBytes} bytes');
@@ -73,14 +73,14 @@ final writer = BinaryWriter(initialBufferSize: 64);
 // Write operations
 writer.writeUint8(255);
 writer.writeInt8(-128);
-writer.writeUint16(65535, Endian.big);
-writer.writeInt16(-32768, Endian.big);
-writer.writeUint32(4294967295, Endian.big);
-writer.writeInt32(-1000, Endian.big);
-writer.writeUint64(9223372036854775807, Endian.big);
-writer.writeInt64(-9223372036854775808, Endian.big);
-writer.writeFloat32(3.14, Endian.big);
-writer.writeFloat64(3.14159, Endian.big);
+writer.writeUint16(65535, .big);
+writer.writeInt16(-32768, .big);
+writer.writeUint32(4294967295, .big);
+writer.writeInt32(-1000, .big);
+writer.writeUint64(9223372036854775807, .big);
+writer.writeInt64(-9223372036854775808, .big);
+writer.writeFloat32(3.14, .big);
+writer.writeFloat64(3.14159, .big);
 writer.writeBytes([1, 2, 3]);
 writer.writeString('text');
 
@@ -99,14 +99,14 @@ final reader = BinaryReader(buffer);
 // Read operations
 final u8 = reader.readUint8();
 final i8 = reader.readInt8();
-final u16 = reader.readUint16(Endian.big);
-final i16 = reader.readInt16(Endian.big);
-final u32 = reader.readUint32(Endian.big);
-final i32 = reader.readInt32(Endian.little);
-final u64 = reader.readUint64(Endian.big);
-final i64 = reader.readInt64(Endian.big);
-final f32 = reader.readFloat32(Endian.big);
-final f64 = reader.readFloat64(Endian.big);
+final u16 = reader.readUint16(.big);
+final i16 = reader.readInt16(.big);
+final u32 = reader.readUint32(.big);
+final i32 = reader.readInt32(.little);
+final u64 = reader.readUint64(.big);
+final i64 = reader.readInt64(.big);
+final f32 = reader.readFloat32(.big);
+final f64 = reader.readFloat64(.big);
 final bytes = reader.readBytes(10);
 final text = reader.readString(5);
 

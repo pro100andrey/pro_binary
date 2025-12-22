@@ -5,10 +5,10 @@ import 'package:test/test.dart';
 
 void main() {
   group('BinaryWriter', () {
-    late BinaryWriter writer;
+    late FastBinaryWriter writer;
 
     setUp(() {
-      writer = BinaryWriter();
+      writer = FastBinaryWriter();
     });
 
     test('should return empty list when takeBytes called on empty writer', () {
@@ -31,7 +31,7 @@ void main() {
     });
 
     test('should write Uint16 in little-endian format', () {
-      writer.writeUint16(256, Endian.little);
+      writer.writeUint16(256, .little);
       expect(writer.takeBytes(), [0, 1]);
     });
 
@@ -41,7 +41,7 @@ void main() {
     });
 
     test('should write Int16 in little-endian format', () {
-      writer.writeInt16(-32768, Endian.little);
+      writer.writeInt16(-32768, .little);
       expect(writer.takeBytes(), [0, 128]);
     });
 
@@ -51,7 +51,7 @@ void main() {
     });
 
     test('should write Uint32 in little-endian format', () {
-      writer.writeUint32(65536, Endian.little);
+      writer.writeUint32(65536, .little);
       expect(writer.takeBytes(), [0, 0, 1, 0]);
     });
 
@@ -61,7 +61,7 @@ void main() {
     });
 
     test('should write Int32 in little-endian format', () {
-      writer.writeInt32(-2147483648, Endian.little);
+      writer.writeInt32(-2147483648, .little);
       expect(writer.takeBytes(), [0, 0, 0, 128]);
     });
 
@@ -71,7 +71,7 @@ void main() {
     });
 
     test('should write Uint64 in little-endian format', () {
-      writer.writeUint64(4294967296, Endian.little);
+      writer.writeUint64(4294967296, .little);
       expect(writer.takeBytes(), [0, 0, 0, 0, 1, 0, 0, 0]);
     });
 
@@ -81,7 +81,7 @@ void main() {
     });
 
     test('should write Int64 in little-endian format', () {
-      writer.writeInt64(-9223372036854775808, Endian.little);
+      writer.writeInt64(-9223372036854775808, .little);
       expect(writer.takeBytes(), [0, 0, 0, 0, 0, 0, 0, 128]);
     });
 
@@ -91,7 +91,7 @@ void main() {
     });
 
     test('should write Float32 in little-endian format', () {
-      writer.writeFloat32(3.1415927, Endian.little);
+      writer.writeFloat32(3.1415927, .little);
       expect(writer.takeBytes(), [219, 15, 73, 64]);
     });
 
@@ -101,7 +101,7 @@ void main() {
     });
 
     test('should write Float64 in little-endian format', () {
-      writer.writeFloat64(3.141592653589793, Endian.little);
+      writer.writeFloat64(3.141592653589793, .little);
       expect(writer.takeBytes(), [24, 45, 68, 84, 251, 33, 9, 64]);
     });
 
@@ -1023,11 +1023,11 @@ void main() {
 
       test('writeUint64 with large value in little-endian', () {
         const largeValue = 123456789012345; // Safe for JS: < 2^53
-        writer.writeUint64(largeValue, Endian.little);
+        writer.writeUint64(largeValue, .little);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
-        expect(reader.readUint64(Endian.little), equals(largeValue));
+        expect(reader.readUint64(.little), equals(largeValue));
       });
     });
 
@@ -1179,12 +1179,12 @@ void main() {
           ..writeUint8(255)
           ..writeInt8(-128)
           ..writeUint16(65535)
-          ..writeInt16(-32768, Endian.little)
-          ..writeUint32(4294967295, Endian.little)
+          ..writeInt16(-32768, .little)
+          ..writeUint32(4294967295, .little)
           ..writeInt32(-2147483648)
           ..writeUint64(9223372036854775807)
-          ..writeInt64(-9223372036854775808, Endian.little)
-          ..writeFloat32(3.14159, Endian.little)
+          ..writeInt64(-9223372036854775808, .little)
+          ..writeFloat32(3.14159, .little)
           ..writeFloat64(2.718281828)
           ..writeString('Hello, 世界! 🌍')
           ..writeBytes([1, 2, 3, 4, 5]);
@@ -1195,12 +1195,12 @@ void main() {
         expect(reader.readUint8(), equals(255));
         expect(reader.readInt8(), equals(-128));
         expect(reader.readUint16(), equals(65535));
-        expect(reader.readInt16(Endian.little), equals(-32768));
-        expect(reader.readUint32(Endian.little), equals(4294967295));
+        expect(reader.readInt16(.little), equals(-32768));
+        expect(reader.readUint32(.little), equals(4294967295));
         expect(reader.readInt32(), equals(-2147483648));
         expect(reader.readUint64(), equals(9223372036854775807));
-        expect(reader.readInt64(Endian.little), equals(-9223372036854775808));
-        expect(reader.readFloat32(Endian.little), closeTo(3.14159, 0.00001));
+        expect(reader.readInt64(.little), equals(-9223372036854775808));
+        expect(reader.readFloat32(.little), closeTo(3.14159, 0.00001));
         expect(reader.readFloat64(), closeTo(2.718281828, 0.000000001));
 
         reader.skip(reader.availableBytes - 5);
