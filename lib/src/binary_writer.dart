@@ -190,7 +190,7 @@ class BinaryWriter implements BinaryWriterInterface {
   // Instance-level temporary buffers for float conversion (thread-safe)
   final _tempU8 = Uint8List(8);
   final _tempU4 = Uint8List(4);
-  
+
   late final _tempF32 = Float32List.view(_tempU4.buffer);
   late final _tempF64 = Float64List.view(_tempU8.buffer);
 

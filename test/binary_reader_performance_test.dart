@@ -139,7 +139,64 @@ class FastBinaryReaderBenchmark extends BenchmarkBase {
   }
 }
 
+class VarIntReaderBenchmark extends BenchmarkBase {
+  VarIntReaderBenchmark() : super('VarIntReader performance test');
+
+  late final FastBinaryReader reader;
+
+  @override
+  void setup() {
+    const string = 'Hello, World!';
+    const longString =
+        'Some more data to increase buffer usage. '
+        'The quick brown fox jumps over the lazy dog.';
+
+    final writer = FastBinaryWriter()
+      ..writeVarInt(1)
+      ..writeVarInt(300)
+      ..writeVarInt(70000)
+      ..writeVarInt(1 << 20)
+      ..writeVarInt(1 << 30)
+      ..writeInt8(string.length)
+      ..writeInt32(longString.length);
+
+    final buffer = writer.takeBytes();
+    reader = FastBinaryReader(buffer);
+  }
+
+  @override
+  void exercise() => run();
+
+  @override
+  void run() {
+    for (var i = 0; i < 1000; i++) {
+      final v1 = reader.readVarInt();
+      final v2 = reader.readVarInt();
+      final v3 = reader.readVarInt();
+      final v4 = reader.readVarInt();
+      final v5 = reader.readVarInt();
+      final length = reader.readInt8();
+      final longLength = reader.readInt32();
+      assert(v1 == 1, 'Unexpected VarInt value: $v1');
+      assert(v2 == 300, 'Unexpected VarInt value: $v2');
+      assert(v3 == 70000, 'Unexpected VarInt value: $v3');
+      assert(v4 == 1 << 20, 'Unexpected VarInt value: $v4');
+      assert(v5 == 1 << 30, 'Unexpected VarInt value: $v5');
+      assert(length == 13, 'Unexpected string length: $length');
+      assert(longLength == 85, 'Unexpected long string length: $longLength');
+
+      assert(reader.availableBytes == 0, 'Not all bytes were read');
+      reader.reset();
+    }
+  }
+
+  static void main() {
+    VarIntReaderBenchmark().report();
+  }
+}
+
 void main() {
   BinaryReaderBenchmark.main();
   FastBinaryReaderBenchmark.main();
+  VarIntReaderBenchmark.main();
 }

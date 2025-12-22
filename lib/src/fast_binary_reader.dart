@@ -1,14 +1,11 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-extension type const FastBinaryReader._(_Buffer _ctx) {
-  FastBinaryReader(Uint8List buffer) : this._(_Buffer(buffer));
+extension type const FastBinaryReader._(_Reader _ctx) {
+  FastBinaryReader(Uint8List buffer) : this._(_Reader(buffer));
 
   @pragma('vm:prefer-inline')
   int get availableBytes => _ctx.length - _ctx.offset;
-
-  @pragma('vm:prefer-inline')
-  int get lengthInBytes => _ctx.lengthInBytes;
 
   @pragma('vm:prefer-inline')
   int get offset => _ctx.offset;
@@ -17,45 +14,66 @@ extension type const FastBinaryReader._(_Buffer _ctx) {
   int get length => _ctx.length;
 
   @pragma('vm:prefer-inline')
-  int get _offset => _ctx.offset;
-
-  @pragma('vm:prefer-inline')
-  set _offset(int value) {
-    _ctx.offset = value;
+  void _checkBounds(int bytes, String type, [int? offset]) {
+    assert(
+      (offset ?? _ctx.offset) + bytes <= _ctx.length,
+      'Not enough bytes to read $type: required $bytes bytes, available '
+      '${_ctx.length - _ctx.offset} bytes at offset ${_ctx.offset}',
+    );
   }
 
   @pragma('vm:prefer-inline')
-  ByteData get _data => _ctx.data;
+  int readVarInt() {
+    var result = 0;
+    var shift = 0;
+
+    final list = _ctx.list;
+    var offset = _ctx.offset;
+
+    for (var i = 0; i < 10; i++) {
+      assert(offset < _ctx.length, 'VarInt out of bounds');
+      final byte = list[offset++];
+
+      result |= (byte & 0x7f) << shift;
+
+      if ((byte & 0x80) == 0) {
+        _ctx.offset = offset;
+        return result;
+      }
+
+      shift += 7;
+    }
+
+    throw const FormatException('VarInt is too long (more than 10 bytes)');
+  }
 
   @pragma('vm:prefer-inline')
-  void _checkBounds(int bytes, String type, [int? offset]) {
-    assert(
-      (offset ?? _offset) + bytes <= _ctx.length,
-      'Not enough bytes to read $type: required $bytes bytes, available '
-      '${_ctx.length - _offset} bytes at offset $_offset',
-    );
+  int readZigZag() {
+    final v = readVarInt();
+    // Decode zig-zag encoding
+    return (v >>> 1) ^ -(v & 1);
   }
 
   @pragma('vm:prefer-inline')
   int readUint8() {
     _checkBounds(1, 'Uint8');
 
-    return _data.getUint8(_offset++);
+    return _ctx.data.getUint8(_ctx.offset++);
   }
 
   @pragma('vm:prefer-inline')
   int readInt8() {
     _checkBounds(1, 'Int8');
 
-    return _data.getInt8(_offset++);
+    return _ctx.data.getInt8(_ctx.offset++);
   }
 
   @pragma('vm:prefer-inline')
   int readUint16([Endian endian = .big]) {
     _checkBounds(2, 'Uint16');
 
-    final value = _data.getUint16(_offset, endian);
-    _offset += 2;
+    final value = _ctx.data.getUint16(_ctx.offset, endian);
+    _ctx.offset += 2;
 
     return value;
   }
@@ -64,8 +82,8 @@ extension type const FastBinaryReader._(_Buffer _ctx) {
   int readInt16([Endian endian = .big]) {
     _checkBounds(2, 'Int16');
 
-    final value = _data.getInt16(_offset, endian);
-    _offset += 2;
+    final value = _ctx.data.getInt16(_ctx.offset, endian);
+    _ctx.offset += 2;
 
     return value;
   }
@@ -74,32 +92,32 @@ extension type const FastBinaryReader._(_Buffer _ctx) {
   int readUint32([Endian endian = .big]) {
     _checkBounds(4, 'Uint32');
 
-    final value = _data.getUint32(_offset, endian);
-    _offset += 4;
+    final value = _ctx.data.getUint32(_ctx.offset, endian);
+    _ctx.offset += 4;
     return value;
   }
 
   @pragma('vm:prefer-inline')
   int readInt32([Endian endian = .big]) {
     _checkBounds(4, 'Int32');
-    final value = _data.getInt32(_offset, endian);
-    _offset += 4;
+    final value = _ctx.data.getInt32(_ctx.offset, endian);
+    _ctx.offset += 4;
     return value;
   }
 
   @pragma('vm:prefer-inline')
   int readUint64([Endian endian = .big]) {
     _checkBounds(8, 'Uint64');
-    final value = _data.getUint64(_offset, endian);
-    _offset += 8;
+    final value = _ctx.data.getUint64(_ctx.offset, endian);
+    _ctx.offset += 8;
     return value;
   }
 
   @pragma('vm:prefer-inline')
   int readInt64([Endian endian = .big]) {
     _checkBounds(8, 'Int64');
-    final value = _data.getInt64(_offset, endian);
-    _offset += 8;
+    final value = _ctx.data.getInt64(_ctx.offset, endian);
+    _ctx.offset += 8;
     return value;
   }
 
@@ -107,8 +125,8 @@ extension type const FastBinaryReader._(_Buffer _ctx) {
   double readFloat32([Endian endian = .big]) {
     _checkBounds(4, 'Float32');
 
-    final value = _data.getFloat32(_offset, endian);
-    _offset += 4;
+    final value = _ctx.data.getFloat32(_ctx.offset, endian);
+    _ctx.offset += 4;
 
     return value;
   }
@@ -117,8 +135,8 @@ extension type const FastBinaryReader._(_Buffer _ctx) {
   double readFloat64([Endian endian = .big]) {
     _checkBounds(8, 'Float64');
 
-    final value = _data.getFloat64(_offset, endian);
-    _offset += 8;
+    final value = _ctx.data.getFloat64(_ctx.offset, endian);
+    _ctx.offset += 8;
     return value;
   }
 
@@ -127,8 +145,11 @@ extension type const FastBinaryReader._(_Buffer _ctx) {
     assert(length >= 0, 'Length must be non-negative');
     _checkBounds(length, 'Bytes');
 
-    final bytes = _data.buffer.asUint8List(_offset, length);
-    _offset += length;
+    // Create a view of the underlying buffer without copying.
+    final bOffset = _ctx.baseOffset;
+    final bytes = _ctx.data.buffer.asUint8List(bOffset + _ctx.offset, length);
+
+    _ctx.offset += length;
 
     return bytes;
   }
@@ -141,12 +162,12 @@ extension type const FastBinaryReader._(_Buffer _ctx) {
 
     _checkBounds(length, 'String');
 
-    final view = _data.buffer.asUint8List(_offset, length);
-    _offset += length;
+    final bOffset = _ctx.baseOffset;
+    final view = _ctx.data.buffer.asUint8List(bOffset + _ctx.offset, length);
+    _ctx.offset += length;
 
     return utf8.decode(view, allowMalformed: allowMalformed);
   }
-  
 
   @pragma('vm:prefer-inline')
   Uint8List peekBytes(int length, [int? offset]) {
@@ -156,34 +177,42 @@ extension type const FastBinaryReader._(_Buffer _ctx) {
       return Uint8List(0);
     }
 
-    final peekOffset = offset ?? _offset;
+    final peekOffset = offset ?? _ctx.offset;
     _checkBounds(length, 'Peek Bytes', peekOffset);
 
-    return _data.buffer.asUint8List(peekOffset, length);
+    final bOffset = _ctx.baseOffset;
+
+    return _ctx.data.buffer.asUint8List(bOffset + peekOffset, length);
   }
 
   void skip(int length) {
     assert(length >= 0, 'Length must be non-negative');
     _checkBounds(length, 'Skip');
 
-    _offset += length;
+    _ctx.offset += length;
   }
 
   @pragma('vm:prefer-inline')
   void reset() {
-    _offset = 0;
+    _ctx.offset = 0;
   }
 }
 
-final class _Buffer {
-  _Buffer(Uint8List buffer)
-    : data = ByteData.sublistView(buffer).asUnmodifiableView(),
+final class _Reader {
+  _Reader(Uint8List buffer)
+    : list = buffer,
+      data = ByteData.sublistView(buffer).asUnmodifiableView(),
+      buffer = buffer.buffer,
       length = buffer.length,
-      lengthInBytes = buffer.lengthInBytes,
+      baseOffset = buffer.offsetInBytes,
       offset = 0;
+
+  final Uint8List list;
 
   /// Efficient view for typed data access.
   final ByteData data;
+
+  final ByteBuffer buffer;
 
   /// Total length of the buffer.
   final int length;
@@ -191,5 +220,6 @@ final class _Buffer {
   /// Current read position in the buffer.
   late int offset;
 
-  final int lengthInBytes;
+
+  final int baseOffset;
 }

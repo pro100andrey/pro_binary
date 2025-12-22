@@ -210,6 +210,178 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
+    test('readVarInt single byte (0)', () {
+      final buffer = Uint8List.fromList([0]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readVarInt(), equals(0));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readVarInt single byte (127)', () {
+      final buffer = Uint8List.fromList([127]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readVarInt(), equals(127));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readVarInt two bytes (128)', () {
+      final buffer = Uint8List.fromList([0x80, 0x01]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readVarInt(), equals(128));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readVarInt two bytes (300)', () {
+      final buffer = Uint8List.fromList([0xAC, 0x02]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readVarInt(), equals(300));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readVarInt three bytes (16384)', () {
+      final buffer = Uint8List.fromList([0x80, 0x80, 0x01]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readVarInt(), equals(16384));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readVarInt four bytes (2097151)', () {
+      final buffer = Uint8List.fromList([0xFF, 0xFF, 0x7F]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readVarInt(), equals(2097151));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readVarInt five bytes (268435455)', () {
+      final buffer = Uint8List.fromList([0xFF, 0xFF, 0xFF, 0x7F]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readVarInt(), equals(268435455));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readVarInt large value', () {
+      final buffer = Uint8List.fromList([0x80, 0x80, 0x80, 0x80, 0x04]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readVarInt(), equals(1 << 30));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readVarInt roundtrip with writeVarInt', () {
+      final writer = FastBinaryWriter()
+        ..writeVarInt(0)
+        ..writeVarInt(1)
+        ..writeVarInt(127)
+        ..writeVarInt(128)
+        ..writeVarInt(300)
+        ..writeVarInt(70000)
+        ..writeVarInt(1 << 20)
+        ..writeVarInt(1 << 30);
+
+      final buffer = writer.takeBytes();
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readVarInt(), equals(0));
+      expect(reader.readVarInt(), equals(1));
+      expect(reader.readVarInt(), equals(127));
+      expect(reader.readVarInt(), equals(128));
+      expect(reader.readVarInt(), equals(300));
+      expect(reader.readVarInt(), equals(70000));
+      expect(reader.readVarInt(), equals(1 << 20));
+      expect(reader.readVarInt(), equals(1 << 30));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readZigZag encoding for zero', () {
+      final buffer = Uint8List.fromList([0]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readZigZag(), equals(0));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readZigZag encoding for positive value 1', () {
+      final buffer = Uint8List.fromList([2]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readZigZag(), equals(1));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readZigZag encoding for negative value -1', () {
+      final buffer = Uint8List.fromList([1]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readZigZag(), equals(-1));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readZigZag encoding for positive value 2', () {
+      final buffer = Uint8List.fromList([4]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readZigZag(), equals(2));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readZigZag encoding for negative value -2', () {
+      final buffer = Uint8List.fromList([3]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readZigZag(), equals(-2));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readZigZag encoding for large positive value', () {
+      final buffer = Uint8List.fromList([0xFE, 0xFF, 0xFF, 0xFF, 0x0F]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readZigZag(), equals(2147483647));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readZigZag encoding for large negative value', () {
+      final buffer = Uint8List.fromList([0xFF, 0xFF, 0xFF, 0xFF, 0x0F]);
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readZigZag(), equals(-2147483648));
+      expect(reader.availableBytes, equals(0));
+    });
+
+    test('readZigZag roundtrip with writeZigZag', () {
+      final writer = FastBinaryWriter()
+        ..writeZigZag(0)
+        ..writeZigZag(1)
+        ..writeZigZag(-1)
+        ..writeZigZag(2)
+        ..writeZigZag(-2)
+        ..writeZigZag(100)
+        ..writeZigZag(-100)
+        ..writeZigZag(2147483647)
+        ..writeZigZag(-2147483648);
+
+      final buffer = writer.takeBytes();
+      final reader = FastBinaryReader(buffer);
+
+      expect(reader.readZigZag(), equals(0));
+      expect(reader.readZigZag(), equals(1));
+      expect(reader.readZigZag(), equals(-1));
+      expect(reader.readZigZag(), equals(2));
+      expect(reader.readZigZag(), equals(-2));
+      expect(reader.readZigZag(), equals(100));
+      expect(reader.readZigZag(), equals(-100));
+      expect(reader.readZigZag(), equals(2147483647));
+      expect(reader.readZigZag(), equals(-2147483648));
+      expect(reader.availableBytes, equals(0));
+    });
+
     test('readBytes', () {
       final data = [0x01, 0x02, 0x03, 0x04, 0x05];
       final buffer = Uint8List.fromList(data);
@@ -955,6 +1127,138 @@ void main() {
         expect(reader.readUint16(), equals(0x0304));
         expect(reader.readUint16(), equals(0x0506));
         expect(reader.availableBytes, equals(0));
+      });
+    });
+
+    group('baseOffset handling', () {
+      test('readBytes works correctly with non-zero baseOffset', () {
+        // Create a larger buffer and take a sublist
+        // (which will have non-zero baseOffset)
+        final largeBuffer = Uint8List(100);
+        for (var i = 0; i < 100; i++) {
+          largeBuffer[i] = i;
+        }
+
+        // Create a view starting at offset 50
+        final subBuffer = Uint8List.sublistView(largeBuffer, 50, 60);
+        final reader = FastBinaryReader(subBuffer);
+
+        // Read bytes and verify they match the expected values (50-59)
+        final bytes = reader.readBytes(5);
+        expect(bytes, equals([50, 51, 52, 53, 54]));
+        expect(reader.availableBytes, equals(5));
+      });
+
+      test('readString works correctly with non-zero baseOffset', () {
+        // Create a buffer with text data
+        const text = 'Hello, World!';
+        final encoded = utf8.encode(text);
+
+        // Create a larger buffer and copy the text at an offset
+        final largeBuffer = Uint8List(100)
+          ..setRange(30, 30 + encoded.length, encoded);
+
+        // Create a view of just the text portion
+        final subBuffer = Uint8List.sublistView(
+          largeBuffer,
+          30,
+          30 + encoded.length,
+        );
+        final reader = FastBinaryReader(subBuffer);
+
+        final result = reader.readString(encoded.length);
+        expect(result, equals(text));
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('peekBytes works correctly with non-zero baseOffset', () {
+        final largeBuffer = Uint8List(50);
+        for (var i = 0; i < 50; i++) {
+          largeBuffer[i] = i;
+        }
+
+        // Create a view starting at offset 20
+        final subBuffer = Uint8List.sublistView(largeBuffer, 20, 30);
+        final reader = FastBinaryReader(subBuffer);
+
+        // Peek at bytes without consuming them
+        final peeked = reader.peekBytes(5);
+        expect(peeked, equals([20, 21, 22, 23, 24]));
+        expect(reader.offset, equals(0));
+
+        // Now read and verify
+        final read = reader.readBytes(5);
+        expect(read, equals([20, 21, 22, 23, 24]));
+        expect(reader.offset, equals(5));
+      });
+
+      test('readUint16/32/64 work correctly with non-zero baseOffset', () {
+        final largeBuffer = Uint8List(100);
+
+        // Write some values at offset 40
+        final writer = FastBinaryWriter()
+          ..writeUint16(0x1234)
+          ..writeUint32(0x56789ABC)
+          // disabling lint for large integer literal
+          // ignore: avoid_js_rounded_ints
+          ..writeUint64(0x0FEDCBA987654321);
+
+        final data = writer.takeBytes();
+        largeBuffer.setRange(40, 40 + data.length, data);
+
+        // Create a view starting at offset 40
+        final subBuffer = Uint8List.sublistView(
+          largeBuffer,
+          40,
+          40 + data.length,
+        );
+        final reader = FastBinaryReader(subBuffer);
+
+        expect(reader.readUint16(), equals(0x1234));
+        expect(reader.readUint32(), equals(0x56789ABC));
+        // disabling lint for large integer literal
+        // ignore: avoid_js_rounded_ints
+        expect(reader.readUint64(), equals(0x0FEDCBA987654321));
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('multiple readers from different offsets', () {
+        final largeBuffer = Uint8List(100);
+        for (var i = 0; i < 100; i++) {
+          largeBuffer[i] = i;
+        }
+
+        // Create two readers from different offsets
+        final reader1 = FastBinaryReader(
+          Uint8List.sublistView(largeBuffer, 10, 20),
+        );
+        final reader2 = FastBinaryReader(
+          Uint8List.sublistView(largeBuffer, 50, 60),
+        );
+
+        expect(reader1.readUint8(), equals(10));
+        expect(reader2.readUint8(), equals(50));
+
+        expect(reader1.readBytes(3), equals([11, 12, 13]));
+        expect(reader2.readBytes(3), equals([51, 52, 53]));
+      });
+
+      test('baseOffset with readString containing multi-byte UTF-8', () {
+        const text = 'Привет мир! 🌍';
+        final encoded = utf8.encode(text);
+
+        final largeBuffer = Uint8List(200)
+          ..setRange(75, 75 + encoded.length, encoded);
+
+        final subBuffer = Uint8List.sublistView(
+          largeBuffer,
+          75,
+          75 + encoded.length,
+        );
+        final reader = FastBinaryReader(subBuffer);
+
+        final result = reader.readString(encoded.length);
+        expect(result, equals(text));
       });
     });
   });

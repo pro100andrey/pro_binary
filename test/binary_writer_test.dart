@@ -105,6 +105,81 @@ void main() {
       expect(writer.takeBytes(), [24, 45, 68, 84, 251, 33, 9, 64]);
     });
 
+    test('should write VarInt single byte (0)', () {
+      writer.writeVarInt(0);
+      expect(writer.takeBytes(), [0]);
+    });
+
+    test('should write VarInt single byte (127)', () {
+      writer.writeVarInt(127);
+      expect(writer.takeBytes(), [127]);
+    });
+
+    test('should write VarInt two bytes (128)', () {
+      writer.writeVarInt(128);
+      expect(writer.takeBytes(), [0x80, 0x01]);
+    });
+
+    test('should write VarInt two bytes (300)', () {
+      writer.writeVarInt(300);
+      expect(writer.takeBytes(), [0xAC, 0x02]);
+    });
+
+    test('should write VarInt three bytes (16384)', () {
+      writer.writeVarInt(16384);
+      expect(writer.takeBytes(), [0x80, 0x80, 0x01]);
+    });
+
+    test('should write VarInt four bytes (2097151)', () {
+      writer.writeVarInt(2097151);
+      expect(writer.takeBytes(), [0xFF, 0xFF, 0x7F]);
+    });
+
+    test('should write VarInt five bytes (268435455)', () {
+      writer.writeVarInt(268435455);
+      expect(writer.takeBytes(), [0xFF, 0xFF, 0xFF, 0x7F]);
+    });
+
+    test('should write VarInt large value', () {
+      writer.writeVarInt(1 << 30);
+      expect(writer.takeBytes(), [0x80, 0x80, 0x80, 0x80, 0x04]);
+    });
+
+    test('should write ZigZag encoding for positive values', () {
+      writer.writeZigZag(0);
+      expect(writer.takeBytes(), [0]);
+    });
+
+    test('should write ZigZag encoding for positive value 1', () {
+      writer.writeZigZag(1);
+      expect(writer.takeBytes(), [2]);
+    });
+
+    test('should write ZigZag encoding for negative value -1', () {
+      writer.writeZigZag(-1);
+      expect(writer.takeBytes(), [1]);
+    });
+
+    test('should write ZigZag encoding for positive value 2', () {
+      writer.writeZigZag(2);
+      expect(writer.takeBytes(), [4]);
+    });
+
+    test('should write ZigZag encoding for negative value -2', () {
+      writer.writeZigZag(-2);
+      expect(writer.takeBytes(), [3]);
+    });
+
+    test('should write ZigZag encoding for large positive value', () {
+      writer.writeZigZag(2147483647);
+      expect(writer.takeBytes(), [0xFE, 0xFF, 0xFF, 0xFF, 0x0F]);
+    });
+
+    test('should write ZigZag encoding for large negative value', () {
+      writer.writeZigZag(-2147483648);
+      expect(writer.takeBytes(), [0xFF, 0xFF, 0xFF, 0xFF, 0x0F]);
+    });
+
     test('should write byte array correctly', () {
       writer.writeBytes([1, 2, 3, 4, 5]);
       expect(writer.takeBytes(), [1, 2, 3, 4, 5]);
