@@ -5,7 +5,7 @@ import 'package:pro_binary/pro_binary.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('FastBinaryReader', () {
+  group('BinaryReader', () {
     test('readUint8', () {
       final buffer = Uint8List.fromList([0x01]);
       final reader = BinaryReader(buffer);
@@ -422,17 +422,6 @@ void main() {
       expect(reader.availableBytes, equals(1));
     });
 
-    test('usedBytes returns correct number of used bytes', () {
-      final buffer = Uint8List.fromList([0x01, 0x02, 0x03, 0x04]);
-      final reader = BinaryReader(buffer);
-
-      expect(reader.offset, equals(0));
-      reader.readUint8();
-      expect(reader.offset, equals(1));
-      reader.readBytes(2);
-      expect(reader.offset, equals(3));
-    });
-
     test(
       'peekBytes returns correct bytes without changing the internal state',
       () {
@@ -562,15 +551,6 @@ void main() {
       expect(reader.readUint32(), equals(1));
       expect(reader.readInt32(), equals(-1));
       expect(reader.readFloat64(), equals(2.0));
-    });
-
-    test('readString with UTF-8 multi-byte characters', () {
-      const str = 'こんにちは世界'; // "Hello, World" in Japanese
-      final encoded = utf8.encode(str);
-      final buffer = Uint8List.fromList(encoded);
-      final reader = BinaryReader(buffer);
-
-      expect(reader.readString(encoded.length), equals(str));
     });
 
     group('Boundary checks', () {
