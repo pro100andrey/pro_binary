@@ -1243,6 +1243,148 @@ void main() {
         expect(reader2.readBytes(3), equals([51, 52, 53]));
       });
 
+      test('readVarBytes basic usage', () {
+        final writer = BinaryWriter()..writeVarBytes([1, 2, 3, 4]);
+        final reader = BinaryReader(writer.takeBytes());
+
+        expect(reader.readVarBytes(), equals([1, 2, 3, 4]));
+      });
+
+      test('readVarBytes with empty array', () {
+        final writer = BinaryWriter()..writeVarBytes([]);
+        final reader = BinaryReader(writer.takeBytes());
+
+        expect(reader.readVarBytes(), equals([]));
+      });
+
+      test('readVarBytes multiple arrays', () {
+        final writer = BinaryWriter()
+          ..writeVarBytes([10, 20])
+          ..writeVarBytes([30, 40, 50])
+          ..writeVarBytes([60]);
+        final reader = BinaryReader(writer.takeBytes());
+
+        expect(reader.readVarBytes(), equals([10, 20]));
+        expect(reader.readVarBytes(), equals([30, 40, 50]));
+        expect(reader.readVarBytes(), equals([60]));
+      });
+
+      test('readVarBytes with large array', () {
+        final writer = BinaryWriter();
+        final data = List.generate(500, (i) => (i * 3) & 0xFF);
+        writer.writeVarBytes(data);
+        final reader = BinaryReader(writer.takeBytes());
+
+        final result = reader.readVarBytes();
+        expect(result, equals(data));
+        expect(result.length, equals(500));
+      });
+
+      test('readVarBytes throws on truncated length', () {
+        final bytes = Uint8List.fromList([0x85]); // Incomplete VarUint
+        final reader = BinaryReader(bytes);
+
+        expect(
+          reader.readVarBytes,
+          throwsA(isA<AssertionError>()),
+        );
+      });
+
+      test('readVarBytes throws when not enough data', () {
+        final bytes = Uint8List.fromList([5, 1, 2]); // Length=5, only 2 bytes
+        final reader = BinaryReader(bytes);
+
+        expect(
+          reader.readVarBytes,
+          throwsA(isA<AssertionError>()),
+        );
+      });
+
+      test('readVarBytes preserves binary data', () {
+        final writer = BinaryWriter();
+        // Test with all byte values 0-255
+        final allBytes = List.generate(256, (i) => i);
+        writer.writeVarBytes(allBytes);
+
+        final reader = BinaryReader(writer.takeBytes());
+        final result = reader.readVarBytes();
+
+        expect(result, equals(allBytes));
+        for (var i = 0; i < 256; i++) {
+          expect(result[i], equals(i), reason: 'Byte $i mismatch');
+        }
+      });
+
+      test('readVarString basic usage', () {
+        final writer = BinaryWriter()..writeVarString('Hello');
+        final reader = BinaryReader(writer.takeBytes());
+
+        expect(reader.readVarString(), equals('Hello'));
+      });
+
+      test('readVarString with UTF-8 multi-byte', () {
+        final writer = BinaryWriter()..writeVarString('世界');
+        final reader = BinaryReader(writer.takeBytes());
+
+        expect(reader.readVarString(), equals('世界'));
+      });
+
+      test('readVarString with emoji', () {
+        final writer = BinaryWriter()..writeVarString('🌍🎉');
+        final reader = BinaryReader(writer.takeBytes());
+
+        expect(reader.readVarString(), equals('🌍🎉'));
+      });
+
+      test('readVarString with empty string', () {
+        final writer = BinaryWriter()..writeVarString('');
+        final reader = BinaryReader(writer.takeBytes());
+
+        expect(reader.readVarString(), equals(''));
+      });
+
+      test('readVarString multiple strings', () {
+        final writer = BinaryWriter()
+          ..writeVarString('First')
+          ..writeVarString('Second 测试')
+          ..writeVarString('Third 🎉');
+        final reader = BinaryReader(writer.takeBytes());
+
+        expect(reader.readVarString(), equals('First'));
+        expect(reader.readVarString(), equals('Second 测试'));
+        expect(reader.readVarString(), equals('Third 🎉'));
+      });
+
+      test('readVarString with allowMalformed=false on valid data', () {
+        final writer = BinaryWriter()..writeVarString('Valid UTF-8');
+        final reader = BinaryReader(writer.takeBytes());
+
+        expect(
+          reader.readVarString,
+          returnsNormally,
+        );
+      });
+
+      test('readVarString throws on truncated length', () {
+        final bytes = Uint8List.fromList([0x85]); // Incomplete VarUint
+        final reader = BinaryReader(bytes);
+
+        expect(
+          reader.readVarString,
+          throwsA(isA<AssertionError>()),
+        );
+      });
+
+      test('readVarString throws when not enough data for string', () {
+        final bytes = Uint8List.fromList([5, 65, 66]); // Length=5, only 2 bytes
+        final reader = BinaryReader(bytes);
+
+        expect(
+          reader.readVarString,
+          throwsA(isA<AssertionError>()),
+        );
+      });
+
       test('baseOffset with readString containing multi-byte UTF-8', () {
         const text = 'Привет мир! 🌍';
         final encoded = utf8.encode(text);
@@ -1259,6 +1401,55 @@ void main() {
 
         final result = reader.readString(encoded.length);
         expect(result, equals(text));
+      });
+    });
+
+    group('Getter properties', () {
+      test('offset getter returns current read position', () {
+        final writer = BinaryWriter()
+          ..writeUint8(1)
+          ..writeUint16(2)
+          ..writeUint32(3);
+        final bytes = writer.takeBytes();
+        final reader = BinaryReader(bytes);
+
+        expect(reader.offset, equals(0));
+        reader.readUint8();
+        expect(reader.offset, equals(1));
+        reader.readUint16();
+        expect(reader.offset, equals(3));
+        reader.readUint32();
+        expect(reader.offset, equals(7));
+      });
+
+      test('length getter returns total buffer length', () {
+        final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(bytes);
+
+        expect(reader.length, equals(5));
+        reader.readUint8();
+        expect(reader.length, equals(5)); // Length doesn't change
+        reader.readUint32();
+        expect(reader.length, equals(5));
+      });
+
+      test('offset and length used together to calculate availableBytes', () {
+        final bytes = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
+        final reader = BinaryReader(bytes);
+
+        expect(reader.length, equals(8));
+        expect(reader.offset, equals(0));
+        expect(reader.availableBytes, equals(8));
+
+        reader.readUint32();
+        expect(reader.offset, equals(4));
+        expect(reader.length, equals(8));
+        expect(reader.availableBytes, equals(4));
+
+        reader.readUint32();
+        expect(reader.offset, equals(8));
+        expect(reader.length, equals(8));
+        expect(reader.availableBytes, equals(0));
       });
     });
   });

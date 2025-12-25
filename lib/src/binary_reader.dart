@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../pro_binary.dart' show BinaryWriter;
+import 'binary_writer.dart' show BinaryWriter;
+
 /// A high-performance binary reader for decoding data from a byte buffer.
 ///
 /// Provides methods for reading various data types including:
@@ -15,8 +18,14 @@ import 'dart:typed_data';
 /// Example:
 /// ```dart
 /// final reader = BinaryReader(bytes);
-/// final value = reader.readUint32();
-/// final text = reader.readString(10);
+/// // Read various data types
+/// final id = reader.readUint32();
+/// final value = reader.readFloat64();
+/// // Read length-prefixed string
+/// final stringLength = reader.readVarUint();
+/// final text = reader.readString(stringLength);
+/// // Check remaining data
+/// print('Bytes left: ${reader.availableBytes}');
 /// ```
 extension type const BinaryReader._(_ReaderState _ctx) {
   /// Creates a new [BinaryReader] from the given byte buffer.
@@ -48,7 +57,19 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// 2. If the 8th bit is set, continue reading
   /// 3. Shift and combine all 7-bit chunks
   ///
-  /// For signed integers with efficient negative encoding, use [readVarInt].
+  /// **Use this for:** Lengths, counts, sizes, unsigned IDs.
+  ///
+  /// For signed integers (especially with negative values), use [readVarInt]
+  /// which uses ZigZag decoding for better compression of negative numbers.
+  ///
+  /// Example:
+  /// ```dart
+  /// final count = reader.readVarUint();        // Read array length
+  /// for (var i = 0; i < count; i++) {
+  ///   // Process array elements
+  /// }
+  /// ```
+  ///
   /// Throws [FormatException] if the VarInt exceeds 10 bytes (malformed data).
   /// Asserts bounds in debug mode if attempting to read past buffer end.
   @pragma('vm:prefer-inline')
@@ -88,6 +109,14 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// First reads an unsigned VarInt, then applies ZigZag decoding.
   /// Decoding formula: (n >>> 1) ^ -(n & 1)
   /// This reverses the encoding: (n << 1) ^ (n >> 63)
+  ///
+  /// **Use this for:** Signed values, deltas, offsets, coordinates.
+  ///
+  /// Example:
+  /// ```dart
+  /// final delta = reader.readVarInt();  // Can be positive or negative
+  /// final position = lastPosition + delta;
+  /// ```
   @pragma('vm:prefer-inline')
   int readVarInt() {
     final v = readVarUint();
@@ -96,6 +125,11 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   }
 
   /// Reads an 8-bit unsigned integer (0-255).
+  ///
+  /// Example:
+  /// ```dart
+  /// final version = reader.readUint8();  // Protocol version
+  /// ```
   ///
   /// Asserts bounds in debug mode if insufficient bytes are available.
   @pragma('vm:prefer-inline')
@@ -106,6 +140,11 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   }
 
   /// Reads an 8-bit signed integer (-128 to 127).
+  ///
+  /// Example:
+  /// ```dart
+  /// final offset = reader.readInt8();  // Small delta value
+  /// ```
   ///
   /// Asserts bounds in debug mode if insufficient bytes are available.
   @pragma('vm:prefer-inline')
@@ -118,6 +157,12 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// Reads a 16-bit unsigned integer (0-65535).
   ///
   /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Example:
+  /// ```dart
+  /// final port = reader.readUint16();  // Network port number
+  /// ```
+  ///
   /// Asserts bounds in debug mode if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   int readUint16([Endian endian = .big]) {
@@ -132,6 +177,12 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// Reads a 16-bit signed integer (-32768 to 32767).
   ///
   /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Example:
+  /// ```dart
+  /// final temperature = reader.readInt16();  // -100 to 100°C
+  /// ```
+  ///
   /// Asserts bounds in debug mode if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   int readInt16([Endian endian = .big]) {
@@ -146,6 +197,12 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// Reads a 32-bit unsigned integer (0 to 4,294,967,295).
   ///
   /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Example:
+  /// ```dart
+  /// final timestamp = reader.readUint32();  // Unix timestamp
+  /// ```
+  ///
   /// Asserts bounds in debug mode if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   int readUint32([Endian endian = .big]) {
@@ -159,6 +216,12 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// Reads a 32-bit signed integer (-2,147,483,648 to 2,147,483,647).
   ///
   /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Example:
+  /// ```dart
+  /// final coordinate = reader.readInt32();  // GPS coordinate
+  /// ```
+  ///
   /// Asserts bounds in debug mode if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   int readInt32([Endian endian = .big]) {
@@ -171,7 +234,14 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// Reads a 64-bit unsigned integer.
   ///
   /// Note: Dart's integer precision is limited to 2^53 on web targets.
+  ///
   /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Example:
+  /// ```dart
+  /// final id = reader.readUint64();  // Large unique identifier
+  /// ```
+  ///
   /// Asserts bounds in debug mode if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   int readUint64([Endian endian = .big]) {
@@ -184,7 +254,14 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// Reads a 64-bit signed integer.
   ///
   /// Note: Dart's integer precision is limited to 2^53 on web targets.
+  ///
   /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Example:
+  /// ```dart
+  /// final nanoseconds = reader.readInt64();  // High-precision time
+  /// ```
+  ///
   /// Asserts bounds in debug mode if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   int readInt64([Endian endian = .big]) {
@@ -197,6 +274,12 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// Reads a 32-bit floating-point number (IEEE 754 single precision).
   ///
   /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Example:
+  /// ```dart
+  /// final temperature = reader.readFloat32();  // 25.5°C
+  /// ```
+  ///
   /// Asserts bounds in debug mode if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   double readFloat32([Endian endian = .big]) {
@@ -211,6 +294,12 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// Reads a 64-bit floating-point number (IEEE 754 double precision).
   ///
   /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Example:
+  /// ```dart
+  /// final price = reader.readFloat64();  // $123.45
+  /// ```
+  ///
   /// Asserts bounds in debug mode if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   double readFloat64([Endian endian = .big]) {
@@ -227,6 +316,15 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// which is efficient for large byte sequences.
   ///
   /// [length] specifies the number of bytes to read.
+  ///
+  /// Example:
+  /// ```dart
+  /// final header = reader.readBytes(4);  // Read 4-byte header
+  /// final payload = reader.readBytes(256);  // Read payload
+  /// ```
+  ///
+  /// **Performance:** Zero-copy operation using buffer views.
+  ///
   /// Asserts bounds in debug mode if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   Uint8List readBytes(int length) {
@@ -242,19 +340,55 @@ extension type const BinaryReader._(_ReaderState _ctx) {
     return bytes;
   }
 
+  /// Reads a length-prefixed byte array.
+  ///
+  /// First reads the length as a VarUint, then reads that many bytes.
+  /// Returns a view of the underlying buffer without copying data.
+  ///
+  /// This is the counterpart to [BinaryWriter.writeVarBytes].
+  ///
+  /// Example:
+  /// ```dart
+  /// final data = reader.readVarBytes();
+  /// print('Read ${data.length} bytes');
+  /// ```
+  ///
+  /// This is equivalent to:
+  /// ```dart
+  /// final length = reader.readVarUint();
+  /// final data = reader.readBytes(length);
+  /// ```
+  ///
+  /// **Performance:** Zero-copy operation using buffer views.
+  ///
+  /// Asserts bounds in debug mode if insufficient bytes are available.
+  @pragma('vm:prefer-inline')
+  Uint8List readVarBytes() {
+    final length = readVarUint();
+    return readBytes(length);
+  }
+
   /// Reads a UTF-8 encoded string of the specified byte length.
   ///
   /// [length] is the number of UTF-8 bytes to read (not the number of
-  /// characters).
-  /// The string is decoded directly from the buffer without copying.
+  /// characters). The string is decoded directly from the buffer without
+  /// copying.
   ///
   /// [allowMalformed] controls how invalid UTF-8 sequences are handled:
   /// - If true: replaces malformed sequences with U+FFFD (�)
   /// - If false (default): throws [FormatException] on invalid UTF-8
   ///
-  /// Note: This reads a fixed number of bytes. For length-prefixed strings,
-  /// first read the byte length (e.g., with [readVarUint] or [readVarInt]),
-  /// then call this method.
+  /// **Common pattern:** Read length first, then string:
+  ///
+  /// ```dart
+  /// // Length-prefixed string
+  /// final byteLength = reader.readVarUint();
+  /// final text = reader.readString(byteLength);
+  /// // Fixed-length magic string
+  /// final magic = reader.readString(4);  // e.g., "PNG\n"
+  /// ```
+  ///
+  /// **Performance:** Zero-copy operation using buffer views.
   @pragma('vm:prefer-inline')
   String readString(int length, {bool allowMalformed = false}) {
     if (length == 0) {
@@ -270,6 +404,30 @@ extension type const BinaryReader._(_ReaderState _ctx) {
     return utf8.decode(view, allowMalformed: allowMalformed);
   }
 
+  /// Reads a length-prefixed UTF-8 encoded string.
+  ///
+  /// First reads the UTF-8 byte length as a VarUint, then reads and decodes
+  /// the UTF-8 string data.
+  ///
+  /// [allowMalformed] controls how invalid UTF-8 sequences are handled:
+  /// - If true: replaces invalid sequences with U+FFFD (�)
+  /// - If false (default): throws [FormatException] on malformed UTF-8
+  ///
+  /// This is the counterpart to [BinaryWriter.writeVarString].
+  ///
+  /// Example:
+  /// ```dart
+  /// final text = reader.readVarString();
+  /// print(text); // 'Hello, 世界! 🌍'
+  /// ```
+  ///
+  /// Throws [AssertionError] if attempting to read past buffer end.
+  @pragma('vm:prefer-inline')
+  String readVarString({bool allowMalformed = false}) {
+    final length = readVarUint();
+    return readString(length, allowMalformed: allowMalformed);
+  }
+
   /// Reads bytes without advancing the read position.
   ///
   /// This allows inspecting upcoming data without consuming it.
@@ -280,6 +438,16 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   ///
   /// Returns a view of the buffer without copying data.
   /// Asserts bounds in debug mode if peeking past buffer end.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Check message type without consuming the byte
+  /// final typeBytes = reader.peekBytes(1);
+  /// if (typeBytes[0] == 0x42) {
+  ///   // Handle type 0x42
+  /// }
+  /// final actualType = reader.readUint8();  // Now read it
+  /// ```
   @pragma('vm:prefer-inline')
   Uint8List peekBytes(int length, [int? offset]) {
     assert(length >= 0, 'Length must be non-negative');
@@ -302,6 +470,15 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// More efficient than reading and discarding data.
   ///
   /// Asserts bounds in debug mode if skipping past buffer end.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Skip optional padding or reserved fields
+  /// reader.skip(4);  // Skip 4 bytes of padding
+  /// // Skip unknown message payload
+  /// final payloadSize = reader.readUint32();
+  /// reader.skip(payloadSize);
+  /// ```
   void skip(int length) {
     assert(length >= 0, 'Length must be non-negative');
     _checkBounds(length, 'Skip');

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:pro_binary/pro_binary.dart';
@@ -1360,6 +1361,232 @@ void main() {
         expect(writer.bytesWritten, equals(50));
         final bytes = writer.toBytes();
         expect(bytes.length, equals(50));
+      });
+    });
+
+    group('VarBytes operations', () {
+      test('writeVarBytes with empty array', () {
+        final writer = BinaryWriter()..writeVarBytes([]);
+        final bytes = writer.takeBytes();
+
+        expect(bytes, equals([0])); // Just length 0
+      });
+
+      test('writeVarBytes with small array', () {
+        final writer = BinaryWriter()..writeVarBytes([1, 2, 3, 4]);
+        final bytes = writer.takeBytes();
+
+        expect(bytes[0], equals(4)); // VarUint length
+        expect(bytes.sublist(1), equals([1, 2, 3, 4]));
+      });
+
+      test('writeVarBytes with 127 bytes (single-byte VarUint)', () {
+        final writer = BinaryWriter();
+        final data = List.generate(127, (i) => i);
+        writer.writeVarBytes(data);
+        final bytes = writer.takeBytes();
+
+        expect(bytes[0], equals(127)); // Single-byte VarUint
+        expect(bytes.length, equals(128)); // 1 (length) + 127 (data)
+      });
+
+      test('writeVarBytes with 128 bytes (two-byte VarUint)', () {
+        final writer = BinaryWriter();
+        final data = List.generate(128, (i) => i & 0xFF);
+        writer.writeVarBytes(data);
+        final bytes = writer.takeBytes();
+
+        expect(bytes[0], equals(0x80)); // First byte of VarUint 128
+        expect(bytes[1], equals(0x01)); // Second byte of VarUint 128
+        expect(bytes.length, equals(130)); // 2 (length) + 128 (data)
+      });
+
+      test('writeVarBytes with large array', () {
+        final writer = BinaryWriter();
+        final data = List.generate(1000, (i) => (i * 7) & 0xFF);
+        writer.writeVarBytes(data);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final length = reader.readVarUint();
+        expect(length, equals(1000));
+
+        final readData = reader.readBytes(1000);
+        expect(readData, equals(data));
+      });
+
+      test('writeVarBytes multiple arrays', () {
+        final writer = BinaryWriter()
+          ..writeVarBytes([1, 2])
+          ..writeVarBytes([3, 4, 5])
+          ..writeVarBytes([6]);
+
+        final reader = BinaryReader(writer.toBytes());
+        expect(reader.readVarBytes(), equals([1, 2]));
+        expect(reader.readVarBytes(), equals([3, 4, 5]));
+        expect(reader.readVarBytes(), equals([6]));
+      });
+
+      test('writeVarBytes round-trip', () {
+        final writer = BinaryWriter();
+        final original = List.generate(256, (i) => i);
+        writer.writeVarBytes(original);
+
+        final reader = BinaryReader(writer.takeBytes());
+        final result = reader.readVarBytes();
+
+        expect(result, equals(original));
+      });
+    });
+
+    group('VarString operations', () {
+      test('writeVarString with ASCII string', () {
+        final writer = BinaryWriter()..writeVarString('Hello');
+        final bytes = writer.takeBytes();
+
+        expect(bytes[0], equals(5)); // VarUint length
+        expect(bytes.sublist(1), equals([72, 101, 108, 108, 111])); // 'Hello'
+      });
+
+      test('writeVarString with UTF-8 multi-byte characters', () {
+        final writer = BinaryWriter()
+          ..writeVarString('世界'); // 2 characters, 6 bytes in UTF-8
+        final bytes = writer.takeBytes();
+
+        expect(bytes[0], equals(6)); // VarUint length (6 bytes)
+        expect(bytes.length, equals(7)); // 1 (length) + 6 (data)
+      });
+
+      test('writeVarString with emoji', () {
+        final writer = BinaryWriter()
+          ..writeVarString('🌍'); // 1 character, 4 bytes in UTF-8
+        final bytes = writer.takeBytes();
+
+        expect(bytes[0], equals(4)); // VarUint length
+        expect(bytes.length, equals(5)); // 1 (length) + 4 (data)
+      });
+
+      test('writeVarString with empty string', () {
+        final writer = BinaryWriter()..writeVarString('');
+        final bytes = writer.takeBytes();
+
+        expect(bytes, equals([0])); // Just length 0
+      });
+
+      test('writeVarString with mixed content', () {
+        final writer = BinaryWriter()..writeVarString('Hi 世界 🌍!');
+        final bytes = writer.takeBytes();
+
+        // 'Hi ' = 3, '世界' = 6, ' ' = 1, '🌍' = 4, '!' = 1 => 15 bytes
+        expect(bytes[0], equals(15)); // VarUint length
+        expect(bytes.length, equals(16)); // 1 + 15
+      });
+
+      test('writeVarString round-trip with reader', () {
+        final writer = BinaryWriter();
+        const testString = 'Test 测试 🎉';
+        writer.writeVarString(testString);
+
+        final reader = BinaryReader(writer.toBytes());
+        final result = reader.readVarString();
+
+        expect(result, equals(testString));
+      });
+
+      test('writeVarString with malformed handling', () {
+        final writer = BinaryWriter();
+        // Lone high surrogate (U+D800)
+        final malformed = String.fromCharCode(0xD800);
+
+        // Default allowMalformed=true should handle it
+        expect(
+          () => writer.writeVarString(malformed),
+          returnsNormally,
+        );
+      });
+    });
+
+    group('getUtf8Length function', () {
+      test('getUtf8Length with ASCII only', () {
+        expect(getUtf8Length('Hello'), equals(5));
+        expect(getUtf8Length('ABCDEFGH'), equals(8)); // Fast path
+      });
+
+      test('getUtf8Length with empty string', () {
+        expect(getUtf8Length(''), equals(0));
+      });
+
+      test('getUtf8Length with 2-byte UTF-8 chars', () {
+        expect(getUtf8Length('café'), equals(5)); // 'caf' = 3, 'é' = 2
+        expect(getUtf8Length('Привет'), equals(12)); // Each Cyrillic = 2 bytes
+      });
+
+      test('getUtf8Length with 3-byte UTF-8 chars', () {
+        expect(getUtf8Length('世界'), equals(6)); // Each Chinese = 3 bytes
+        expect(getUtf8Length('你好'), equals(6));
+      });
+
+      test('getUtf8Length with 4-byte UTF-8 chars (emoji)', () {
+        expect(getUtf8Length('🌍'), equals(4));
+        expect(getUtf8Length('🎉'), equals(4));
+        expect(getUtf8Length('😀'), equals(4));
+      });
+
+      test('getUtf8Length with mixed content', () {
+        // 'Hello' = 5, ', ' = 2, '世界' = 6, '! ' = 2, '🌍' = 4
+        expect(getUtf8Length('Hello, 世界! 🌍'), equals(19));
+      });
+
+      test('getUtf8Length matches actual UTF-8 encoding', () {
+        final strings = [
+          'Test',
+          'Тест',
+          '测试',
+          '🧪',
+          'Mix テスト 123',
+          'A' * 100, // Long ASCII for fast path
+        ];
+
+        for (final str in strings) {
+          final calculated = getUtf8Length(str);
+          final actual = utf8.encode(str).length;
+          expect(
+            calculated,
+            equals(actual),
+            reason: 'Failed for string: "$str"',
+          );
+        }
+      });
+
+      test('getUtf8Length with surrogate pairs', () {
+        // Valid surrogate pair forms emoji
+        final emoji = String.fromCharCodes([0xD83C, 0xDF0D]); // 🌍
+        expect(getUtf8Length(emoji), equals(4));
+      });
+
+      test('getUtf8Length with malformed high surrogate', () {
+        // High surrogate (0xD800-0xDBFF) not followed by low surrogate
+        // This triggers the malformed surrogate pair path in getUtf8Length
+        final malformed = String.fromCharCodes([
+          0xD800,
+          0x0041,
+        ]); // High surrogate + 'A'
+        expect(
+          getUtf8Length(malformed),
+          equals(4),
+        ); // 3 bytes (replacement) + 1 byte (A)
+      });
+
+      test('getUtf8Length with lone high surrogate at end', () {
+        // High surrogate at the end of string (also malformed)
+        final malformed = String.fromCharCodes([
+          0x0041,
+          0xD800,
+        ]); // 'A' + high surrogate
+        expect(
+          getUtf8Length(malformed),
+          equals(4),
+        ); // 1 byte (A) + 3 bytes (replacement)
       });
     });
 

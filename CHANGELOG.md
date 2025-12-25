@@ -1,3 +1,18 @@
+## 3.0.0
+
+**Improvements:**
+
+- **docs**: Comprehensive documentation overhaul
+  - Added detailed API documentation with usage examples for all methods
+  - Documented `writeVarString()`, `readVarString()`, and `getUtf8Length()`
+  - Included performance notes and best practices
+  - Added inline comments explaining complex encoding algorithms
+  - Improved README with real-world examples and migration guide
+- **test**: Added 23 new comprehensive tests
+  - 7 tests for `writeVarString()` (ASCII, UTF-8, emoji, empty, mixed, round-trip, malformed)
+  - 8 tests for `getUtf8Length()` (ASCII, empty, 2-byte, 3-byte, 4-byte, mixed, validation, surrogates)
+  - 8 tests for `readVarString()` (basic, UTF-8, emoji, empty, multiple, error handling)
+
 ## 2.2.0
 
  **test**: Added integration tests for new error handling features
