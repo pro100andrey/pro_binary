@@ -1,8 +1,5 @@
 import 'dart:typed_data';
 
-import '../pro_binary.dart' show BinaryReader;
-import 'binary_reader.dart' show BinaryReader;
-
 /// A high-performance binary writer for encoding data into a byte buffer.
 ///
 /// Provides methods for writing various data types including:
@@ -30,7 +27,7 @@ import 'binary_reader.dart' show BinaryReader;
 /// final bytes = writer.takeBytes(); // Resets writer for reuse
 /// // or: final bytes = writer.toBytes(); // Keeps writer state
 /// ```
-extension type BinaryWriter._(_WriterState _ctx) {
+extension type BinaryWriter._(_WriterState _ws) {
   /// Creates a new [BinaryWriter] with the specified initial buffer size.
   ///
   /// The buffer will automatically expand as needed when writing data.
@@ -42,7 +39,7 @@ extension type BinaryWriter._(_WriterState _ctx) {
     : this._(_WriterState(initialBufferSize));
 
   /// Returns the total number of bytes written to the buffer.
-  int get bytesWritten => _ctx.offset;
+  int get bytesWritten => _ws.offset;
 
   /// Writes an unsigned variable-length integer using VarInt encoding.
   ///
@@ -70,16 +67,16 @@ extension type BinaryWriter._(_WriterState _ctx) {
   void writeVarUint(int value) {
     // Fast path for single-byte VarInt
     if (value < 0x80 && value >= 0) {
-      _ctx.ensureOneByte();
-      _ctx.list[_ctx.offset++] = value;
+      _ws.ensureOneByte();
+      _ws.list[_ws.offset++] = value;
       return;
     }
 
-    _ctx.ensureSize(10);
+    _ws.ensureSize(10);
 
     var v = value;
-    final list = _ctx.list;
-    var offset = _ctx.offset;
+    final list = _ws.list;
+    var offset = _ws.offset;
 
     while (v >= 0x80) {
       list[offset++] = (v & 0x7F) | 0x80;
@@ -87,7 +84,7 @@ extension type BinaryWriter._(_WriterState _ctx) {
     }
 
     list[offset++] = v & 0x7F;
-    _ctx.offset = offset;
+    _ws.offset = offset;
   }
 
   /// Writes a signed variable-length integer using ZigZag encoding.
@@ -116,7 +113,7 @@ extension type BinaryWriter._(_WriterState _ctx) {
   void writeVarInt(int value) {
     // ZigZag: (n << 1) ^ (n >> 63)
     // Maps: 0=>0, -1=>1, 1=>2, -2=>3, 2=>4, -3=>5, 3=>6
-    final encoded = (value << 1) ^ (value >> 63);
+    final encoded = (value << 1) ^ (value >> value.bitLength);
     writeVarUint(encoded);
   }
 
@@ -131,9 +128,9 @@ extension type BinaryWriter._(_WriterState _ctx) {
   @pragma('vm:prefer-inline')
   void writeUint8(int value) {
     _checkRange(value, 0, 255, 'Uint8');
-    _ctx.ensureOneByte();
+    _ws.ensureOneByte();
 
-    _ctx.list[_ctx.offset++] = value;
+    _ws.list[_ws.offset++] = value;
   }
 
   /// Writes an 8-bit signed integer (-128 to 127).
@@ -147,9 +144,9 @@ extension type BinaryWriter._(_WriterState _ctx) {
   @pragma('vm:prefer-inline')
   void writeInt8(int value) {
     _checkRange(value, -128, 127, 'Int8');
-    _ctx.ensureOneByte();
+    _ws.ensureOneByte();
 
-    _ctx.list[_ctx.offset++] = value & 0xFF;
+    _ws.list[_ws.offset++] = value & 0xFF;
   }
 
   /// Writes a 16-bit unsigned integer (0-65535).
@@ -165,10 +162,10 @@ extension type BinaryWriter._(_WriterState _ctx) {
   @pragma('vm:prefer-inline')
   void writeUint16(int value, [Endian endian = .big]) {
     _checkRange(value, 0, 65535, 'Uint16');
-    _ctx.ensureTwoBytes();
+    _ws.ensureTwoBytes();
 
-    _ctx.data.setUint16(_ctx.offset, value, endian);
-    _ctx.offset += 2;
+    _ws.data.setUint16(_ws.offset, value, endian);
+    _ws.offset += 2;
   }
 
   /// Writes a 16-bit signed integer (-32768 to 32767).
@@ -184,10 +181,10 @@ extension type BinaryWriter._(_WriterState _ctx) {
   @pragma('vm:prefer-inline')
   void writeInt16(int value, [Endian endian = .big]) {
     _checkRange(value, -32768, 32767, 'Int16');
-    _ctx.ensureTwoBytes();
+    _ws.ensureTwoBytes();
 
-    _ctx.data.setInt16(_ctx.offset, value, endian);
-    _ctx.offset += 2;
+    _ws.data.setInt16(_ws.offset, value, endian);
+    _ws.offset += 2;
   }
 
   /// Writes a 32-bit unsigned integer (0 to 4,294,967,295).
@@ -203,10 +200,10 @@ extension type BinaryWriter._(_WriterState _ctx) {
   @pragma('vm:prefer-inline')
   void writeUint32(int value, [Endian endian = .big]) {
     _checkRange(value, 0, 4294967295, 'Uint32');
-    _ctx.ensureFourBytes();
+    _ws.ensureFourBytes();
 
-    _ctx.data.setUint32(_ctx.offset, value, endian);
-    _ctx.offset += 4;
+    _ws.data.setUint32(_ws.offset, value, endian);
+    _ws.offset += 4;
   }
 
   /// Writes a 32-bit signed integer (-2,147,483,648 to 2,147,483,647).
@@ -222,15 +219,19 @@ extension type BinaryWriter._(_WriterState _ctx) {
   @pragma('vm:prefer-inline')
   void writeInt32(int value, [Endian endian = .big]) {
     _checkRange(value, -2147483648, 2147483647, 'Int32');
-    _ctx.ensureFourBytes();
+    _ws.ensureFourBytes();
 
-    _ctx.data.setInt32(_ctx.offset, value, endian);
-    _ctx.offset += 4;
+    _ws.data.setInt32(_ws.offset, value, endian);
+    _ws.offset += 4;
   }
 
-  /// Writes a 64-bit unsigned integer (0 to 9,223,372,036,854,775,807).
+  /// Writes a 64-bit unsigned integer.
   ///
-  /// Note: Dart's integer precision is limited to 2^53 for web targets.
+  /// **Note:** Since Dart's `int` type is a signed 64-bit integer, this method
+  /// is limited to the range 0 to 2^63 - 1 (9,223,372,036,854,775,807).
+  /// Values above this cannot be represented as positive integers in Dart.
+  ///
+  /// On web targets, precision is further limited to 2^53.
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
@@ -243,10 +244,10 @@ extension type BinaryWriter._(_WriterState _ctx) {
   @pragma('vm:prefer-inline')
   void writeUint64(int value, [Endian endian = .big]) {
     _checkRange(value, 0, 9223372036854775807, 'Uint64');
-    _ctx.ensureEightBytes();
+    _ws.ensureEightBytes();
 
-    _ctx.data.setUint64(_ctx.offset, value, endian);
-    _ctx.offset += 8;
+    _ws.data.setUint64(_ws.offset, value, endian);
+    _ws.offset += 8;
   }
 
   /// Writes a 64-bit signed integer.
@@ -264,10 +265,10 @@ extension type BinaryWriter._(_WriterState _ctx) {
   @pragma('vm:prefer-inline')
   void writeInt64(int value, [Endian endian = .big]) {
     _checkRange(value, -9223372036854775808, 9223372036854775807, 'Int64');
-    _ctx.ensureEightBytes();
+    _ws.ensureEightBytes();
 
-    _ctx.data.setInt64(_ctx.offset, value, endian);
-    _ctx.offset += 8;
+    _ws.data.setInt64(_ws.offset, value, endian);
+    _ws.offset += 8;
   }
 
   /// Writes a 32-bit floating-point number (IEEE 754 single precision).
@@ -280,9 +281,9 @@ extension type BinaryWriter._(_WriterState _ctx) {
   /// ```
   @pragma('vm:prefer-inline')
   void writeFloat32(double value, [Endian endian = .big]) {
-    _ctx.ensureFourBytes();
-    _ctx.data.setFloat32(_ctx.offset, value, endian);
-    _ctx.offset += 4;
+    _ws.ensureFourBytes();
+    _ws.data.setFloat32(_ws.offset, value, endian);
+    _ws.offset += 4;
   }
 
   /// Writes a 64-bit floating-point number (IEEE 754 double precision).
@@ -295,9 +296,9 @@ extension type BinaryWriter._(_WriterState _ctx) {
   /// ```
   @pragma('vm:prefer-inline')
   void writeFloat64(double value, [Endian endian = .big]) {
-    _ctx.ensureEightBytes();
-    _ctx.data.setFloat64(_ctx.offset, value, endian);
-    _ctx.offset += 8;
+    _ws.ensureEightBytes();
+    _ws.data.setFloat64(_ws.offset, value, endian);
+    _ws.offset += 8;
   }
 
   /// Writes a sequence of bytes from the given list.
@@ -315,10 +316,10 @@ extension type BinaryWriter._(_WriterState _ctx) {
   @pragma('vm:prefer-inline')
   void writeBytes(List<int> bytes, [int offset = 0, int? length]) {
     final len = length ?? (bytes.length - offset);
-    _ctx.ensureSize(len);
+    _ws.ensureSize(len);
 
-    _ctx.list.setRange(_ctx.offset, _ctx.offset + len, bytes, offset);
-    _ctx.offset += len;
+    _ws.list.setRange(_ws.offset, _ws.offset + len, bytes, offset);
+    _ws.offset += len;
   }
 
   /// Writes a length-prefixed byte array.
@@ -326,7 +327,7 @@ extension type BinaryWriter._(_WriterState _ctx) {
   /// First writes the length as a VarUint, followed by the byte data.
   /// This is useful for serializing binary blobs of unknown size.
   ///
-  /// This is the counterpart to [BinaryReader.readVarBytes].
+  /// This is the counterpart to `BinaryReader.readVarBytes`.
   ///
   /// Example:
   /// ```dart
@@ -382,10 +383,10 @@ extension type BinaryWriter._(_WriterState _ctx) {
     // Pre-allocate buffer: worst case is 3 bytes per UTF-16 code unit
     // Most common case: 1 byte/char (ASCII) or 2-3 bytes/char (non-ASCII)
     // Surrogate pairs: 2 units -> 4 bytes UTF-8 (2 bytes per unit average)
-    _ctx.ensureSize(len * 3);
+    _ws.ensureSize(len * 3);
 
-    final list = _ctx.list;
-    var offset = _ctx.offset;
+    final list = _ws.list;
+    var offset = _ws.offset;
     var i = 0;
 
     while (i < len) {
@@ -479,7 +480,7 @@ extension type BinaryWriter._(_WriterState _ctx) {
       }
     }
 
-    _ctx.offset = offset;
+    _ws.offset = offset;
   }
 
   /// Writes a length-prefixed UTF-8 encoded string.
@@ -528,8 +529,8 @@ extension type BinaryWriter._(_WriterState _ctx) {
   /// ```
   @pragma('vm:prefer-inline')
   Uint8List takeBytes() {
-    final result = Uint8List.sublistView(_ctx.list, 0, _ctx.offset);
-    _ctx._initializeBuffer();
+    final result = Uint8List.sublistView(_ws.list, 0, _ws.offset);
+    _ws._initializeBuffer();
     return result;
   }
 
@@ -549,11 +550,11 @@ extension type BinaryWriter._(_WriterState _ctx) {
   /// final final = writer.takeBytes();   // Get all data
   /// ```
   @pragma('vm:prefer-inline')
-  Uint8List toBytes() => Uint8List.sublistView(_ctx.list, 0, _ctx.offset);
+  Uint8List toBytes() => Uint8List.sublistView(_ws.list, 0, _ws.offset);
 
   /// Resets the writer to its initial state, discarding all written data.
   @pragma('vm:prefer-inline')
-  void reset() => _ctx._initializeBuffer();
+  void reset() => _ws._initializeBuffer();
 
   /// Handles malformed UTF-16 sequences (lone surrogates).
   ///
@@ -566,7 +567,7 @@ extension type BinaryWriter._(_WriterState _ctx) {
       throw FormatException('Invalid UTF-16: lone surrogate at index $i', v, i);
     }
     // Write UTF-8 encoding of U+FFFD replacement character (�)
-    final list = _ctx.list;
+    final list = _ws.list;
     list[offset] = 0xEF;
     list[offset + 1] = 0xBF;
     list[offset + 2] = 0xBD;

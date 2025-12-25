@@ -1,9 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import '../pro_binary.dart' show BinaryWriter;
-import 'binary_writer.dart' show BinaryWriter;
-
 /// A high-performance binary reader for decoding data from a byte buffer.
 ///
 /// Provides methods for reading various data types including:
@@ -27,7 +24,7 @@ import 'binary_writer.dart' show BinaryWriter;
 /// // Check remaining data
 /// print('Bytes left: ${reader.availableBytes}');
 /// ```
-extension type const BinaryReader._(_ReaderState _ctx) {
+extension type const BinaryReader._(_ReaderState _rs) {
   /// Creates a new [BinaryReader] from the given byte buffer.
   ///
   /// The reader will start at position 0 and can read up to `buffer.length`
@@ -36,15 +33,15 @@ extension type const BinaryReader._(_ReaderState _ctx) {
 
   /// Returns the number of bytes remaining to be read.
   @pragma('vm:prefer-inline')
-  int get availableBytes => _ctx.length - _ctx.offset;
+  int get availableBytes => _rs.length - _rs.offset;
 
   /// Returns the current read position in the buffer.
   @pragma('vm:prefer-inline')
-  int get offset => _ctx.offset;
+  int get offset => _rs.offset;
 
   /// Returns the total length of the buffer in bytes.
   @pragma('vm:prefer-inline')
-  int get length => _ctx.length;
+  int get length => _rs.length;
 
   /// Reads an unsigned variable-length integer encoded using VarInt format.
   ///
@@ -77,12 +74,12 @@ extension type const BinaryReader._(_ReaderState _ctx) {
     var result = 0;
     var shift = 0;
 
-    final list = _ctx.list;
-    var offset = _ctx.offset;
+    final list = _rs.list;
+    var offset = _rs.offset;
 
     // VarInt uses up to 10 bytes for 64-bit integers
     for (var i = 0; i < 10; i++) {
-      assert(offset < _ctx.length, 'VarInt out of bounds');
+      assert(offset < _rs.length, 'VarInt out of bounds');
       final byte = list[offset++];
 
       // Extract lower 7 bits and shift into position
@@ -90,7 +87,7 @@ extension type const BinaryReader._(_ReaderState _ctx) {
 
       // If MSB is 0, we've reached the last byte
       if ((byte & 0x80) == 0) {
-        _ctx.offset = offset;
+        _rs.offset = offset;
         return result;
       }
 
@@ -136,7 +133,7 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   int readUint8() {
     _checkBounds(1, 'Uint8');
 
-    return _ctx.data.getUint8(_ctx.offset++);
+    return _rs.data.getUint8(_rs.offset++);
   }
 
   /// Reads an 8-bit signed integer (-128 to 127).
@@ -151,7 +148,7 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   int readInt8() {
     _checkBounds(1, 'Int8');
 
-    return _ctx.data.getInt8(_ctx.offset++);
+    return _rs.data.getInt8(_rs.offset++);
   }
 
   /// Reads a 16-bit unsigned integer (0-65535).
@@ -168,8 +165,8 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   int readUint16([Endian endian = .big]) {
     _checkBounds(2, 'Uint16');
 
-    final value = _ctx.data.getUint16(_ctx.offset, endian);
-    _ctx.offset += 2;
+    final value = _rs.data.getUint16(_rs.offset, endian);
+    _rs.offset += 2;
 
     return value;
   }
@@ -188,8 +185,8 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   int readInt16([Endian endian = .big]) {
     _checkBounds(2, 'Int16');
 
-    final value = _ctx.data.getInt16(_ctx.offset, endian);
-    _ctx.offset += 2;
+    final value = _rs.data.getInt16(_rs.offset, endian);
+    _rs.offset += 2;
 
     return value;
   }
@@ -208,8 +205,8 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   int readUint32([Endian endian = .big]) {
     _checkBounds(4, 'Uint32');
 
-    final value = _ctx.data.getUint32(_ctx.offset, endian);
-    _ctx.offset += 4;
+    final value = _rs.data.getUint32(_rs.offset, endian);
+    _rs.offset += 4;
     return value;
   }
 
@@ -226,14 +223,17 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   @pragma('vm:prefer-inline')
   int readInt32([Endian endian = .big]) {
     _checkBounds(4, 'Int32');
-    final value = _ctx.data.getInt32(_ctx.offset, endian);
-    _ctx.offset += 4;
+    final value = _rs.data.getInt32(_rs.offset, endian);
+    _rs.offset += 4;
     return value;
   }
 
   /// Reads a 64-bit unsigned integer.
   ///
-  /// Note: Dart's integer precision is limited to 2^53 on web targets.
+  /// **Note:** Since Dart's `int` type is a signed 64-bit integer, this method
+  /// will return negative values for numbers greater than 2^63 - 1.
+  ///
+  /// On web targets, precision is limited to 2^53.
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
@@ -246,8 +246,8 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   @pragma('vm:prefer-inline')
   int readUint64([Endian endian = .big]) {
     _checkBounds(8, 'Uint64');
-    final value = _ctx.data.getUint64(_ctx.offset, endian);
-    _ctx.offset += 8;
+    final value = _rs.data.getUint64(_rs.offset, endian);
+    _rs.offset += 8;
     return value;
   }
 
@@ -266,8 +266,8 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   @pragma('vm:prefer-inline')
   int readInt64([Endian endian = .big]) {
     _checkBounds(8, 'Int64');
-    final value = _ctx.data.getInt64(_ctx.offset, endian);
-    _ctx.offset += 8;
+    final value = _rs.data.getInt64(_rs.offset, endian);
+    _rs.offset += 8;
     return value;
   }
 
@@ -285,8 +285,8 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   double readFloat32([Endian endian = .big]) {
     _checkBounds(4, 'Float32');
 
-    final value = _ctx.data.getFloat32(_ctx.offset, endian);
-    _ctx.offset += 4;
+    final value = _rs.data.getFloat32(_rs.offset, endian);
+    _rs.offset += 4;
 
     return value;
   }
@@ -305,8 +305,8 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   double readFloat64([Endian endian = .big]) {
     _checkBounds(8, 'Float64');
 
-    final value = _ctx.data.getFloat64(_ctx.offset, endian);
-    _ctx.offset += 8;
+    final value = _rs.data.getFloat64(_rs.offset, endian);
+    _rs.offset += 8;
     return value;
   }
 
@@ -332,10 +332,10 @@ extension type const BinaryReader._(_ReaderState _ctx) {
     _checkBounds(length, 'Bytes');
 
     // Create a view of the underlying buffer without copying
-    final bOffset = _ctx.baseOffset;
-    final bytes = _ctx.data.buffer.asUint8List(bOffset + _ctx.offset, length);
+    final bOffset = _rs.baseOffset;
+    final bytes = _rs.data.buffer.asUint8List(bOffset + _rs.offset, length);
 
-    _ctx.offset += length;
+    _rs.offset += length;
 
     return bytes;
   }
@@ -345,7 +345,7 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// First reads the length as a VarUint, then reads that many bytes.
   /// Returns a view of the underlying buffer without copying data.
   ///
-  /// This is the counterpart to [BinaryWriter.writeVarBytes].
+  /// This is the counterpart to `BinaryWriter.writeVarBytes`.
   ///
   /// Example:
   /// ```dart
@@ -397,9 +397,9 @@ extension type const BinaryReader._(_ReaderState _ctx) {
 
     _checkBounds(length, 'String');
 
-    final bOffset = _ctx.baseOffset;
-    final view = _ctx.data.buffer.asUint8List(bOffset + _ctx.offset, length);
-    _ctx.offset += length;
+    final bOffset = _rs.baseOffset;
+    final view = _rs.data.buffer.asUint8List(bOffset + _rs.offset, length);
+    _rs.offset += length;
 
     return utf8.decode(view, allowMalformed: allowMalformed);
   }
@@ -413,7 +413,7 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// - If true: replaces invalid sequences with U+FFFD (�)
   /// - If false (default): throws [FormatException] on malformed UTF-8
   ///
-  /// This is the counterpart to [BinaryWriter.writeVarString].
+  /// This is the counterpart to `BinaryWriter.writeVarString`.
   ///
   /// Example:
   /// ```dart
@@ -456,12 +456,12 @@ extension type const BinaryReader._(_ReaderState _ctx) {
       return Uint8List(0);
     }
 
-    final peekOffset = offset ?? _ctx.offset;
+    final peekOffset = offset ?? _rs.offset;
     _checkBounds(length, 'Peek Bytes', peekOffset);
 
-    final bOffset = _ctx.baseOffset;
+    final bOffset = _rs.baseOffset;
 
-    return _ctx.data.buffer.asUint8List(bOffset + peekOffset, length);
+    return _rs.data.buffer.asUint8List(bOffset + peekOffset, length);
   }
 
   /// Advances the read position by the specified number of bytes.
@@ -483,7 +483,7 @@ extension type const BinaryReader._(_ReaderState _ctx) {
     assert(length >= 0, 'Length must be non-negative');
     _checkBounds(length, 'Skip');
 
-    _ctx.offset += length;
+    _rs.offset += length;
   }
 
   /// Resets the read position to the beginning of the buffer.
@@ -491,7 +491,7 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// This allows re-reading the same data without creating a new reader.
   @pragma('vm:prefer-inline')
   void reset() {
-    _ctx.offset = 0;
+    _rs.offset = 0;
   }
 
   /// Internal method to check if enough bytes are available to read.
@@ -500,9 +500,9 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   @pragma('vm:prefer-inline')
   void _checkBounds(int bytes, String type, [int? offset]) {
     assert(
-      (offset ?? _ctx.offset) + bytes <= _ctx.length,
+      (offset ?? _rs.offset) + bytes <= _rs.length,
       'Not enough bytes to read $type: required $bytes bytes, available '
-      '${_ctx.length - _ctx.offset} bytes at offset ${_ctx.offset}',
+      '${_rs.length - _rs.offset} bytes at offset ${_rs.offset}',
     );
   }
 }
