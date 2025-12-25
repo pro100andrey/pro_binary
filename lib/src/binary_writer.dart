@@ -32,16 +32,16 @@ extension type BinaryWriter._(_WriterState _ctx) {
   /// Returns the total number of bytes written to the buffer.
   int get bytesWritten => _ctx.offset;
 
-  /// Writes a variable-length integer using VarInt encoding.
+  /// Writes an unsigned variable-length integer using VarInt encoding.
   ///
   /// VarInt encoding uses the lower 7 bits of each byte for data and the
   /// highest bit as a continuation flag. This is more space-efficient for
-  /// small numbers (1-5 bytes for typical 32-bit values).
+  /// small unsigned numbers (1-5 bytes for typical 32-bit values).
   ///
-  /// Only non-negative integers are supported. For signed integers, use
-  /// [writeZigZag] instead.
+  /// Only non-negative integers are supported. For signed integers with
+  /// efficient negative number encoding, use [writeVarInt] instead.
   @pragma('vm:prefer-inline')
-  void writeVarInt(int value) {
+  void writeVarUint(int value) {
     // Fast path for single-byte VarInt
     if (value < 0x80 && value >= 0) {
       _ctx.ensureOneByte();
@@ -64,18 +64,19 @@ extension type BinaryWriter._(_WriterState _ctx) {
     _ctx.offset = offset;
   }
 
-  /// Writes a signed integer using ZigZag encoding followed by VarInt.
+  /// Writes a signed variable-length integer using ZigZag encoding.
   ///
   /// ZigZag encoding maps signed integers to unsigned integers in a way that
   /// small absolute values (both positive and negative) use fewer bytes:
   /// - 0 => 0, -1 => 1, 1 => 2, -2 => 3, 2 => 4, etc.
   ///
-  /// This is more efficient than VarInt for signed values that may be negative.
-  void writeZigZag(int value) {
+  /// The encoded value is then written using VarInt format. This is more
+  /// efficient than [writeVarUint] for signed values that may be negative.
+  void writeVarInt(int value) {
     // ZigZag: (n << 1) ^ (n >> 63)
     // Maps: 0=>0, -1=>1, 1=>2, -2=>3, 2=>4, -3=>5, 3=>6
     final encoded = (value << 1) ^ (value >> 63);
-    writeVarInt(encoded);
+    writeVarUint(encoded);
   }
 
   /// Writes an 8-bit unsigned integer (0-255).
@@ -225,7 +226,8 @@ extension type BinaryWriter._(_WriterState _ctx) {
   /// - If false: throws [FormatException] on malformed input
   ///
   /// Note: This does NOT write the string length. For length-prefixed strings,
-  /// call [writeVarInt] with the length before calling this method.
+  /// first call [writeVarUint] or [writeVarInt] with the byte length, then
+  /// call this method.
   @pragma('vm:prefer-inline')
   void writeString(String value, {bool allowMalformed = true}) {
     final len = value.length;

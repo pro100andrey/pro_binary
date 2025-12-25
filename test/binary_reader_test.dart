@@ -214,7 +214,7 @@ void main() {
       final buffer = Uint8List.fromList([0]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readVarInt(), equals(0));
+      expect(reader.readVarUint(), equals(0));
       expect(reader.availableBytes, equals(0));
     });
 
@@ -222,7 +222,7 @@ void main() {
       final buffer = Uint8List.fromList([127]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readVarInt(), equals(127));
+      expect(reader.readVarUint(), equals(127));
       expect(reader.availableBytes, equals(0));
     });
 
@@ -230,7 +230,7 @@ void main() {
       final buffer = Uint8List.fromList([0x80, 0x01]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readVarInt(), equals(128));
+      expect(reader.readVarUint(), equals(128));
       expect(reader.availableBytes, equals(0));
     });
 
@@ -238,7 +238,7 @@ void main() {
       final buffer = Uint8List.fromList([0xAC, 0x02]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readVarInt(), equals(300));
+      expect(reader.readVarUint(), equals(300));
       expect(reader.availableBytes, equals(0));
     });
 
@@ -246,7 +246,7 @@ void main() {
       final buffer = Uint8List.fromList([0x80, 0x80, 0x01]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readVarInt(), equals(16384));
+      expect(reader.readVarUint(), equals(16384));
       expect(reader.availableBytes, equals(0));
     });
 
@@ -254,7 +254,7 @@ void main() {
       final buffer = Uint8List.fromList([0xFF, 0xFF, 0x7F]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readVarInt(), equals(2097151));
+      expect(reader.readVarUint(), equals(2097151));
       expect(reader.availableBytes, equals(0));
     });
 
@@ -262,7 +262,7 @@ void main() {
       final buffer = Uint8List.fromList([0xFF, 0xFF, 0xFF, 0x7F]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readVarInt(), equals(268435455));
+      expect(reader.readVarUint(), equals(268435455));
       expect(reader.availableBytes, equals(0));
     });
 
@@ -270,32 +270,32 @@ void main() {
       final buffer = Uint8List.fromList([0x80, 0x80, 0x80, 0x80, 0x04]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readVarInt(), equals(1 << 30));
+      expect(reader.readVarUint(), equals(1 << 30));
       expect(reader.availableBytes, equals(0));
     });
 
     test('readVarInt roundtrip with writeVarInt', () {
       final writer = BinaryWriter()
-        ..writeVarInt(0)
-        ..writeVarInt(1)
-        ..writeVarInt(127)
-        ..writeVarInt(128)
-        ..writeVarInt(300)
-        ..writeVarInt(70000)
-        ..writeVarInt(1 << 20)
-        ..writeVarInt(1 << 30);
+        ..writeVarUint(0)
+        ..writeVarUint(1)
+        ..writeVarUint(127)
+        ..writeVarUint(128)
+        ..writeVarUint(300)
+        ..writeVarUint(70000)
+        ..writeVarUint(1 << 20)
+        ..writeVarUint(1 << 30);
 
       final buffer = writer.takeBytes();
       final reader = BinaryReader(buffer);
 
-      expect(reader.readVarInt(), equals(0));
-      expect(reader.readVarInt(), equals(1));
-      expect(reader.readVarInt(), equals(127));
-      expect(reader.readVarInt(), equals(128));
-      expect(reader.readVarInt(), equals(300));
-      expect(reader.readVarInt(), equals(70000));
-      expect(reader.readVarInt(), equals(1 << 20));
-      expect(reader.readVarInt(), equals(1 << 30));
+      expect(reader.readVarUint(), equals(0));
+      expect(reader.readVarUint(), equals(1));
+      expect(reader.readVarUint(), equals(127));
+      expect(reader.readVarUint(), equals(128));
+      expect(reader.readVarUint(), equals(300));
+      expect(reader.readVarUint(), equals(70000));
+      expect(reader.readVarUint(), equals(1 << 20));
+      expect(reader.readVarUint(), equals(1 << 30));
       expect(reader.availableBytes, equals(0));
     });
 
@@ -303,7 +303,7 @@ void main() {
       final buffer = Uint8List.fromList([0]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readZigZag(), equals(0));
+      expect(reader.readVarInt(), equals(0));
       expect(reader.availableBytes, equals(0));
     });
 
@@ -311,7 +311,7 @@ void main() {
       final buffer = Uint8List.fromList([2]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readZigZag(), equals(1));
+      expect(reader.readVarInt(), equals(1));
       expect(reader.availableBytes, equals(0));
     });
 
@@ -319,7 +319,7 @@ void main() {
       final buffer = Uint8List.fromList([1]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readZigZag(), equals(-1));
+      expect(reader.readVarInt(), equals(-1));
       expect(reader.availableBytes, equals(0));
     });
 
@@ -327,7 +327,7 @@ void main() {
       final buffer = Uint8List.fromList([4]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readZigZag(), equals(2));
+      expect(reader.readVarInt(), equals(2));
       expect(reader.availableBytes, equals(0));
     });
 
@@ -335,7 +335,7 @@ void main() {
       final buffer = Uint8List.fromList([3]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readZigZag(), equals(-2));
+      expect(reader.readVarInt(), equals(-2));
       expect(reader.availableBytes, equals(0));
     });
 
@@ -343,7 +343,7 @@ void main() {
       final buffer = Uint8List.fromList([0xFE, 0xFF, 0xFF, 0xFF, 0x0F]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readZigZag(), equals(2147483647));
+      expect(reader.readVarInt(), equals(2147483647));
       expect(reader.availableBytes, equals(0));
     });
 
@@ -351,34 +351,34 @@ void main() {
       final buffer = Uint8List.fromList([0xFF, 0xFF, 0xFF, 0xFF, 0x0F]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readZigZag(), equals(-2147483648));
+      expect(reader.readVarInt(), equals(-2147483648));
       expect(reader.availableBytes, equals(0));
     });
 
     test('readZigZag roundtrip with writeZigZag', () {
       final writer = BinaryWriter()
-        ..writeZigZag(0)
-        ..writeZigZag(1)
-        ..writeZigZag(-1)
-        ..writeZigZag(2)
-        ..writeZigZag(-2)
-        ..writeZigZag(100)
-        ..writeZigZag(-100)
-        ..writeZigZag(2147483647)
-        ..writeZigZag(-2147483648);
+        ..writeVarInt(0)
+        ..writeVarInt(1)
+        ..writeVarInt(-1)
+        ..writeVarInt(2)
+        ..writeVarInt(-2)
+        ..writeVarInt(100)
+        ..writeVarInt(-100)
+        ..writeVarInt(2147483647)
+        ..writeVarInt(-2147483648);
 
       final buffer = writer.takeBytes();
       final reader = BinaryReader(buffer);
 
-      expect(reader.readZigZag(), equals(0));
-      expect(reader.readZigZag(), equals(1));
-      expect(reader.readZigZag(), equals(-1));
-      expect(reader.readZigZag(), equals(2));
-      expect(reader.readZigZag(), equals(-2));
-      expect(reader.readZigZag(), equals(100));
-      expect(reader.readZigZag(), equals(-100));
-      expect(reader.readZigZag(), equals(2147483647));
-      expect(reader.readZigZag(), equals(-2147483648));
+      expect(reader.readVarInt(), equals(0));
+      expect(reader.readVarInt(), equals(1));
+      expect(reader.readVarInt(), equals(-1));
+      expect(reader.readVarInt(), equals(2));
+      expect(reader.readVarInt(), equals(-2));
+      expect(reader.readVarInt(), equals(100));
+      expect(reader.readVarInt(), equals(-100));
+      expect(reader.readVarInt(), equals(2147483647));
+      expect(reader.readVarInt(), equals(-2147483648));
       expect(reader.availableBytes, equals(0));
     });
 

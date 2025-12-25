@@ -37,21 +37,22 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   @pragma('vm:prefer-inline')
   int get length => _ctx.length;
 
-  /// Reads a variable-length integer encoded using VarInt format.
+  /// Reads an unsigned variable-length integer encoded using VarInt format.
   ///
   /// VarInt encoding uses the lower 7 bits of each byte for data and the
   /// highest bit as a continuation flag. This format is space-efficient
-  /// for small numbers (1-5 bytes for typical 32-bit values).
+  /// for small unsigned numbers (1-5 bytes for typical 32-bit values).
   ///
   /// The algorithm:
   /// 1. Read a byte and extract the lower 7 bits
   /// 2. If the 8th bit is set, continue reading
   /// 3. Shift and combine all 7-bit chunks
   ///
+  /// For signed integers with efficient negative encoding, use [readVarInt].
   /// Throws [FormatException] if the VarInt exceeds 10 bytes (malformed data).
   /// Asserts bounds in debug mode if attempting to read past buffer end.
   @pragma('vm:prefer-inline')
-  int readVarInt() {
+  int readVarUint() {
     var result = 0;
     var shift = 0;
 
@@ -78,17 +79,18 @@ extension type const BinaryReader._(_ReaderState _ctx) {
     throw const FormatException('VarInt is too long (more than 10 bytes)');
   }
 
-  /// Reads a ZigZag-encoded signed integer.
+  /// Reads a signed variable-length integer using ZigZag decoding.
   ///
   /// ZigZag encoding maps signed integers to unsigned values such that
   /// small absolute values (both positive and negative) use fewer bytes:
   /// - 0 => 0, -1 => 1, 1 => 2, -2 => 3, 2 => 4, etc.
   ///
+  /// First reads an unsigned VarInt, then applies ZigZag decoding.
   /// Decoding formula: (n >>> 1) ^ -(n & 1)
   /// This reverses the encoding: (n << 1) ^ (n >> 63)
   @pragma('vm:prefer-inline')
-  int readZigZag() {
-    final v = readVarInt();
+  int readVarInt() {
+    final v = readVarUint();
     // Decode: right shift by 1, XOR with sign-extended LSB
     return (v >>> 1) ^ -(v & 1);
   }
@@ -251,7 +253,8 @@ extension type const BinaryReader._(_ReaderState _ctx) {
   /// - If false (default): throws [FormatException] on invalid UTF-8
   ///
   /// Note: This reads a fixed number of bytes. For length-prefixed strings,
-  /// read the length first (e.g., with [readVarInt]) then call this method.
+  /// first read the byte length (e.g., with [readVarUint] or [readVarInt]),
+  /// then call this method.
   @pragma('vm:prefer-inline')
   String readString(int length, {bool allowMalformed = false}) {
     if (length == 0) {
