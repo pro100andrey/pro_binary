@@ -1488,6 +1488,19 @@ void main() {
         reader.readBool();
         expect(reader.offset, equals(3));
       });
+
+      test('throws when reading from empty buffer', () {
+        final buffer = Uint8List.fromList([]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readBool, throwsA(isA<AssertionError>()));
+      });
+
+      test('throws when no bytes available', () {
+        final buffer = Uint8List.fromList([0x01]);
+        final reader = BinaryReader(buffer)..readBool(); // Consume the byte
+        expect(reader.readBool, throwsA(isA<AssertionError>()));
+      });
     });
 
     group('readRemainingBytes', () {
@@ -1502,7 +1515,10 @@ void main() {
 
       test('reads remaining bytes after partial read', () {
         final buffer = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
-        final reader = BinaryReader(buffer)..readUint16(); // Read first 2 bytes
+        final reader = BinaryReader(buffer)
+          // Read first 2 bytes
+          ..readUint16();
+
         final remaining = reader.readRemainingBytes();
         expect(remaining, equals([3, 4, 5, 6, 7, 8]));
         expect(reader.availableBytes, equals(0));
@@ -1525,13 +1541,34 @@ void main() {
         expect(reader.availableBytes, equals(0));
       });
 
-      test('returns view without copying', () {
+      test('is zero-copy operation', () {
         final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
-        final reader = BinaryReader(buffer)..readUint8(); // Skip first byte
-        final remaining = reader.readRemainingBytes();
+        final reader = BinaryReader(buffer)
+          // Skip first byte
+          ..readUint8();
 
+        final remaining = reader.readRemainingBytes();
         // Verify it's a view by checking buffer reference
         expect(remaining.buffer, equals(buffer.buffer));
+      });
+
+      test('can be called multiple times at end', () {
+        final buffer = Uint8List.fromList([1, 2, 3]);
+        final reader = BinaryReader(buffer)..readBytes(3);
+
+        final first = reader.readRemainingBytes();
+        final second = reader.readRemainingBytes();
+
+        expect(first, isEmpty);
+        expect(second, isEmpty);
+      });
+
+      test('works correctly after seek', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)..seek(2);
+
+        final remaining = reader.readRemainingBytes();
+        expect(remaining, equals([3, 4, 5]));
       });
     });
 
@@ -1599,6 +1636,25 @@ void main() {
         reader.hasBytes(10);
         expect(reader.offset, equals(0)); // Still unchanged
       });
+
+      test('works correctly after seek', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)..seek(3);
+
+        expect(reader.hasBytes(2), isTrue);
+        expect(reader.hasBytes(3), isFalse);
+        expect(reader.offset, equals(3)); // Unchanged
+      });
+
+      test('works correctly after rewind', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)
+          ..readBytes(4)
+          ..rewind(2);
+
+        expect(reader.hasBytes(3), isTrue);
+        expect(reader.hasBytes(4), isFalse);
+      });
     });
 
     group('seek', () {
@@ -1661,6 +1717,21 @@ void main() {
           ..seek(2)
           ..seek(2);
         expect(reader.offset, equals(2));
+      });
+
+      test('throws on negative position', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer);
+
+        expect(() => reader.seek(-1), throwsA(isA<AssertionError>()));
+      });
+
+      test('throws when seeking beyond buffer', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer);
+
+        expect(() => reader.seek(6), throwsA(isA<AssertionError>()));
+        expect(() => reader.seek(100), throwsA(isA<AssertionError>()));
       });
     });
 
@@ -1736,6 +1807,27 @@ void main() {
 
         reader.rewind(3);
         expect(reader.offset, equals(0));
+      });
+
+      test('throws when rewinding beyond start', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)..readUint16(); // offset = 2
+
+        expect(() => reader.rewind(3), throwsA(isA<AssertionError>()));
+      });
+
+      test('throws when rewinding from start', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer);
+
+        expect(() => reader.rewind(1), throwsA(isA<AssertionError>()));
+      });
+
+      test('throws on negative length', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)..readBytes(3);
+
+        expect(() => reader.rewind(-1), throwsA(isA<AssertionError>()));
       });
     });
   });

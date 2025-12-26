@@ -1718,6 +1718,27 @@ void main() {
           ..writeBool(false);
         expect(writer.takeBytes(), equals([0x00]));
       });
+
+      test('works correctly with toBytes', () {
+        writer.writeBool(true);
+        final snapshot1 = writer.toBytes();
+        expect(snapshot1, equals([0x01]));
+
+        writer.writeBool(false);
+        final snapshot2 = writer.toBytes();
+        expect(snapshot2, equals([0x01, 0x00]));
+      });
+
+      test('works correctly with reset', () {
+        writer
+          ..writeBool(true)
+          ..writeBool(false)
+          ..reset()
+          ..writeBool(false)
+          ..writeBool(true);
+
+        expect(writer.toBytes(), equals([0x00, 0x01]));
+      });
     });
   });
 }
