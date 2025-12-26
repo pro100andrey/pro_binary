@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:pro_binary/pro_binary.dart';
@@ -11,113 +12,188 @@ void main() {
       writer = BinaryWriter();
     });
 
-    test('should return empty list when takeBytes called on empty writer', () {
+    test('return empty list when takeBytes called on empty writer', () {
       expect(writer.takeBytes(), isEmpty);
     });
 
-    test('should write single Uint8 value correctly', () {
+    test('write single Uint8 value correctly', () {
       writer.writeUint8(1);
       expect(writer.takeBytes(), [1]);
     });
 
-    test('should write negative Int8 value correctly', () {
+    test('write negative Int8 value correctly', () {
       writer.writeInt8(-1);
       expect(writer.takeBytes(), [255]);
     });
 
-    test('should write Uint16 in big-endian format', () {
+    test('write Uint16 in big-endian format', () {
       writer.writeUint16(256);
       expect(writer.takeBytes(), [1, 0]);
     });
 
-    test('should write Uint16 in little-endian format', () {
-      writer.writeUint16(256, Endian.little);
+    test('write Uint16 in little-endian format', () {
+      writer.writeUint16(256, .little);
       expect(writer.takeBytes(), [0, 1]);
     });
 
-    test('should write Int16 in big-endian format', () {
+    test('write Int16 in big-endian format', () {
       writer.writeInt16(-1);
       expect(writer.takeBytes(), [255, 255]);
     });
 
-    test('should write Int16 in little-endian format', () {
-      writer.writeInt16(-32768, Endian.little);
+    test('write Int16 in little-endian format', () {
+      writer.writeInt16(-32768, .little);
       expect(writer.takeBytes(), [0, 128]);
     });
 
-    test('should write Uint32 in big-endian format', () {
+    test('write Uint32 in big-endian format', () {
       writer.writeUint32(65536);
       expect(writer.takeBytes(), [0, 1, 0, 0]);
     });
 
-    test('should write Uint32 in little-endian format', () {
-      writer.writeUint32(65536, Endian.little);
+    test('write Uint32 in little-endian format', () {
+      writer.writeUint32(65536, .little);
       expect(writer.takeBytes(), [0, 0, 1, 0]);
     });
 
-    test('should write Int32 in big-endian format', () {
+    test('write Int32 in big-endian format', () {
       writer.writeInt32(-1);
       expect(writer.takeBytes(), [255, 255, 255, 255]);
     });
 
-    test('should write Int32 in little-endian format', () {
-      writer.writeInt32(-2147483648, Endian.little);
+    test('write Int32 in little-endian format', () {
+      writer.writeInt32(-2147483648, .little);
       expect(writer.takeBytes(), [0, 0, 0, 128]);
     });
 
-    test('should write Uint64 in big-endian format', () {
+    test('write Uint64 in big-endian format', () {
       writer.writeUint64(4294967296);
       expect(writer.takeBytes(), [0, 0, 0, 1, 0, 0, 0, 0]);
     });
 
-    test('should write Uint64 in little-endian format', () {
-      writer.writeUint64(4294967296, Endian.little);
+    test('write Uint64 in little-endian format', () {
+      writer.writeUint64(4294967296, .little);
       expect(writer.takeBytes(), [0, 0, 0, 0, 1, 0, 0, 0]);
     });
 
-    test('should write Int64 in big-endian format', () {
+    test('write Int64 in big-endian format', () {
       writer.writeInt64(-1);
       expect(writer.takeBytes(), [255, 255, 255, 255, 255, 255, 255, 255]);
     });
 
-    test('should write Int64 in little-endian format', () {
-      writer.writeInt64(-9223372036854775808, Endian.little);
+    test('write Int64 in little-endian format', () {
+      writer.writeInt64(-9223372036854775808, .little);
       expect(writer.takeBytes(), [0, 0, 0, 0, 0, 0, 0, 128]);
     });
 
-    test('should write Float32 in big-endian format', () {
+    test('write Float32 in big-endian format', () {
       writer.writeFloat32(3.1415927);
       expect(writer.takeBytes(), [64, 73, 15, 219]);
     });
 
-    test('should write Float32 in little-endian format', () {
-      writer.writeFloat32(3.1415927, Endian.little);
+    test('write Float32 in little-endian format', () {
+      writer.writeFloat32(3.1415927, .little);
       expect(writer.takeBytes(), [219, 15, 73, 64]);
     });
 
-    test('should write Float64 in big-endian format', () {
+    test('write Float64 in big-endian format', () {
       writer.writeFloat64(3.141592653589793);
       expect(writer.takeBytes(), [64, 9, 33, 251, 84, 68, 45, 24]);
     });
 
-    test('should write Float64 in little-endian format', () {
-      writer.writeFloat64(3.141592653589793, Endian.little);
+    test('write Float64 in little-endian format', () {
+      writer.writeFloat64(3.141592653589793, .little);
       expect(writer.takeBytes(), [24, 45, 68, 84, 251, 33, 9, 64]);
     });
 
-    test('should write byte array correctly', () {
+    test('write VarInt single byte (0)', () {
+      writer.writeVarUint(0);
+      expect(writer.takeBytes(), [0]);
+    });
+
+    test('write VarInt single byte (127)', () {
+      writer.writeVarUint(127);
+      expect(writer.takeBytes(), [127]);
+    });
+
+    test('write VarInt two bytes (128)', () {
+      writer.writeVarUint(128);
+      expect(writer.takeBytes(), [0x80, 0x01]);
+    });
+
+    test('write VarInt two bytes (300)', () {
+      writer.writeVarUint(300);
+      expect(writer.takeBytes(), [0xAC, 0x02]);
+    });
+
+    test('write VarInt three bytes (16384)', () {
+      writer.writeVarUint(16384);
+      expect(writer.takeBytes(), [0x80, 0x80, 0x01]);
+    });
+
+    test('write VarInt four bytes (2097151)', () {
+      writer.writeVarUint(2097151);
+      expect(writer.takeBytes(), [0xFF, 0xFF, 0x7F]);
+    });
+
+    test('write VarInt five bytes (268435455)', () {
+      writer.writeVarUint(268435455);
+      expect(writer.takeBytes(), [0xFF, 0xFF, 0xFF, 0x7F]);
+    });
+
+    test('write VarInt large value', () {
+      writer.writeVarUint(1 << 30);
+      expect(writer.takeBytes(), [0x80, 0x80, 0x80, 0x80, 0x04]);
+    });
+
+    test('write ZigZag encoding for positive values', () {
+      writer.writeVarInt(0);
+      expect(writer.takeBytes(), [0]);
+    });
+
+    test('write ZigZag encoding for positive value 1', () {
+      writer.writeVarInt(1);
+      expect(writer.takeBytes(), [2]);
+    });
+
+    test('write ZigZag encoding for negative value -1', () {
+      writer.writeVarInt(-1);
+      expect(writer.takeBytes(), [1]);
+    });
+
+    test('write ZigZag encoding for positive value 2', () {
+      writer.writeVarInt(2);
+      expect(writer.takeBytes(), [4]);
+    });
+
+    test('write ZigZag encoding for negative value -2', () {
+      writer.writeVarInt(-2);
+      expect(writer.takeBytes(), [3]);
+    });
+
+    test('write ZigZag encoding for large positive value', () {
+      writer.writeVarInt(2147483647);
+      expect(writer.takeBytes(), [0xFE, 0xFF, 0xFF, 0xFF, 0x0F]);
+    });
+
+    test('write ZigZag encoding for large negative value', () {
+      writer.writeVarInt(-2147483648);
+      expect(writer.takeBytes(), [0xFF, 0xFF, 0xFF, 0xFF, 0x0F]);
+    });
+
+    test('write byte array correctly', () {
       writer.writeBytes([1, 2, 3, 4, 5]);
       expect(writer.takeBytes(), [1, 2, 3, 4, 5]);
     });
 
-    test('should encode string to UTF-8 bytes correctly', () {
+    test('encode string to UTF-8 bytes correctly', () {
       writer.writeString('Hello, World!');
       expect(writer.takeBytes(), [
         72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33, // ASCII
       ]);
     });
 
-    test('should handle complex sequence of different data types', () {
+    test('handle complex sequence of different data types', () {
       final writer = BinaryWriter()
         ..writeUint8(42)
         ..writeInt8(-42)
@@ -167,7 +243,7 @@ void main() {
       },
     );
 
-    test('should allow reusing writer after takeBytes', () {
+    test('allow reusing writer after takeBytes', () {
       writer.writeUint8(1);
       expect(writer.takeBytes(), [1]);
 
@@ -175,7 +251,7 @@ void main() {
       expect(writer.takeBytes(), [2]);
     });
 
-    test('should handle writing large data sets efficiently', () {
+    test('handle writing large data sets efficiently', () {
       final largeData = Uint8List.fromList(
         List.generate(10000, (i) => i % 256),
       );
@@ -188,7 +264,7 @@ void main() {
       expect(result, equals(largeData));
     });
 
-    test('should track bytesWritten correctly', () {
+    test('track bytesWritten correctly', () {
       writer.writeUint8(1);
       expect(writer.bytesWritten, equals(1));
 
@@ -207,7 +283,7 @@ void main() {
     });
 
     group('Input validation', () {
-      test('should throw AssertionError when Uint8 value is negative', () {
+      test('throw AssertionError when Uint8 value is negative', () {
         expect(
           () => writer.writeUint8(-1),
           throwsA(
@@ -219,7 +295,7 @@ void main() {
         );
       });
 
-      test('should throw AssertionError when Uint8 value exceeds 255', () {
+      test('throw AssertionError when Uint8 value exceeds 255', () {
         expect(
           () => writer.writeUint8(256),
           throwsA(
@@ -231,7 +307,7 @@ void main() {
         );
       });
 
-      test('should throw AssertionError when Int8 value is less than -128', () {
+      test('throw AssertionError when Int8 value is less than -128', () {
         expect(
           () => writer.writeInt8(-129),
           throwsA(
@@ -243,7 +319,7 @@ void main() {
         );
       });
 
-      test('should throw AssertionError when Int8 value exceeds 127', () {
+      test('throw AssertionError when Int8 value exceeds 127', () {
         expect(
           () => writer.writeInt8(128),
           throwsA(
@@ -255,7 +331,7 @@ void main() {
         );
       });
 
-      test('should throw AssertionError when Uint16 value is negative', () {
+      test('throw AssertionError when Uint16 value is negative', () {
         expect(
           () => writer.writeUint16(-1),
           throwsA(
@@ -267,7 +343,7 @@ void main() {
         );
       });
 
-      test('should throw AssertionError when Uint16 value exceeds 65535', () {
+      test('throw AssertionError when Uint16 value exceeds 65535', () {
         expect(
           () => writer.writeUint16(65536),
           throwsA(
@@ -294,7 +370,7 @@ void main() {
         },
       );
 
-      test('should throw AssertionError when Int16 value exceeds 32767', () {
+      test('throw AssertionError when Int16 value exceeds 32767', () {
         expect(
           () => writer.writeInt16(32768),
           throwsA(
@@ -306,7 +382,7 @@ void main() {
         );
       });
 
-      test('should throw AssertionError when Uint32 value is negative', () {
+      test('throw AssertionError when Uint32 value is negative', () {
         expect(
           () => writer.writeUint32(-1),
           throwsA(
@@ -365,7 +441,7 @@ void main() {
     });
 
     group('toBytes', () {
-      test('should return current buffer without resetting writer state', () {
+      test('return current buffer without resetting writer state', () {
         writer
           ..writeUint8(42)
           ..writeUint8(100);
@@ -400,14 +476,14 @@ void main() {
         },
       );
 
-      test('should return empty list when called on empty writer', () {
+      test('return empty list when called on empty writer', () {
         final bytes = writer.toBytes();
         expect(bytes, isEmpty);
       });
     });
 
     group('clear', () {
-      test('should reset writer state without returning bytes', () {
+      test('reset writer state without returning bytes', () {
         writer
           ..writeUint8(42)
           ..writeUint8(100)
@@ -417,7 +493,7 @@ void main() {
         expect(writer.toBytes(), isEmpty);
       });
 
-      test('should allow writing new data after reset', () {
+      test('allow writing new data after reset', () {
         writer
           ..writeUint8(42)
           ..reset()
@@ -426,26 +502,26 @@ void main() {
         expect(writer.toBytes(), equals([100]));
       });
 
-      test('should be safe to call on empty writer', () {
+      test('be safe to call on empty writer', () {
         writer.reset();
         expect(writer.bytesWritten, equals(0));
       });
     });
 
     group('Edge cases', () {
-      test('should handle empty string correctly', () {
+      test('handle empty string correctly', () {
         writer.writeString('');
         expect(writer.bytesWritten, equals(0));
         expect(writer.toBytes(), isEmpty);
       });
 
-      test('should handle empty byte array correctly', () {
+      test('handle empty byte array correctly', () {
         writer.writeBytes([]);
         expect(writer.bytesWritten, equals(0));
         expect(writer.toBytes(), isEmpty);
       });
 
-      test('should encode emoji characters correctly', () {
+      test('encode emoji characters correctly', () {
         const str = '🚀👨‍👩‍👧‍👦';
         writer.writeString(str);
         final bytes = writer.takeBytes();
@@ -454,7 +530,7 @@ void main() {
         expect(reader.readString(bytes.length), equals(str));
       });
 
-      test('should handle Float32 NaN value correctly', () {
+      test('handle Float32 NaN value correctly', () {
         writer.writeFloat32(double.nan);
         final bytes = writer.takeBytes();
 
@@ -462,7 +538,7 @@ void main() {
         expect(reader.readFloat32().isNaN, isTrue);
       });
 
-      test('should handle Float32 positive Infinity correctly', () {
+      test('handle Float32 positive Infinity correctly', () {
         writer.writeFloat32(double.infinity);
         final bytes = writer.takeBytes();
 
@@ -470,7 +546,7 @@ void main() {
         expect(reader.readFloat32(), equals(double.infinity));
       });
 
-      test('should handle Float32 negative Infinity correctly', () {
+      test('handle Float32 negative Infinity correctly', () {
         writer.writeFloat32(double.negativeInfinity);
         final bytes = writer.takeBytes();
 
@@ -478,7 +554,7 @@ void main() {
         expect(reader.readFloat32(), equals(double.negativeInfinity));
       });
 
-      test('should handle Float64 NaN value correctly', () {
+      test('handle Float64 NaN value correctly', () {
         writer.writeFloat64(double.nan);
         final bytes = writer.takeBytes();
 
@@ -486,7 +562,7 @@ void main() {
         expect(reader.readFloat64().isNaN, isTrue);
       });
 
-      test('should handle Float64 positive Infinity correctly', () {
+      test('handle Float64 positive Infinity correctly', () {
         writer.writeFloat64(double.infinity);
         final bytes = writer.takeBytes();
 
@@ -494,7 +570,7 @@ void main() {
         expect(reader.readFloat64(), equals(double.infinity));
       });
 
-      test('should handle Float64 negative Infinity correctly', () {
+      test('handle Float64 negative Infinity correctly', () {
         writer.writeFloat64(double.negativeInfinity);
         final bytes = writer.takeBytes();
 
@@ -502,7 +578,7 @@ void main() {
         expect(reader.readFloat64(), equals(double.negativeInfinity));
       });
 
-      test('should preserve negative zero in Float64', () {
+      test('preserve negative zero in Float64', () {
         writer.writeFloat64(-0);
         final bytes = writer.takeBytes();
 
@@ -512,7 +588,7 @@ void main() {
         expect(value.isNegative, isTrue);
       });
 
-      test('should throw AssertionError when Uint64 value is negative', () {
+      test('throw AssertionError when Uint64 value is negative', () {
         expect(
           () => writer.writeUint64(-1),
           throwsA(
@@ -542,7 +618,7 @@ void main() {
         },
       );
 
-      test('should handle multiple consecutive reset calls', () {
+      test('handle multiple consecutive reset calls', () {
         writer
           ..writeUint8(42)
           ..reset()
@@ -552,7 +628,7 @@ void main() {
         expect(writer.bytesWritten, equals(0));
       });
 
-      test('should support method chaining after reset', () {
+      test('support method chaining after reset', () {
         writer
           ..writeUint8(1)
           ..reset()
@@ -564,42 +640,42 @@ void main() {
     });
 
     group('Boundary values - Maximum', () {
-      test('should handle Uint8 maximum value (255)', () {
+      test('handle Uint8 maximum value (255)', () {
         writer.writeUint8(255);
         expect(writer.takeBytes(), equals([255]));
       });
 
-      test('should handle Int8 maximum positive value (127)', () {
+      test('handle Int8 maximum positive value (127)', () {
         writer.writeInt8(127);
         expect(writer.takeBytes(), equals([127]));
       });
 
-      test('should handle Int8 minimum negative value (-128)', () {
+      test('handle Int8 minimum negative value (-128)', () {
         writer.writeInt8(-128);
         expect(writer.takeBytes(), equals([128]));
       });
 
-      test('should handle Uint16 maximum value (65535)', () {
+      test('handle Uint16 maximum value (65535)', () {
         writer.writeUint16(65535);
         expect(writer.takeBytes(), equals([255, 255]));
       });
 
-      test('should handle Int16 maximum positive value (32767)', () {
+      test('handle Int16 maximum positive value (32767)', () {
         writer.writeInt16(32767);
         expect(writer.takeBytes(), equals([127, 255]));
       });
 
-      test('should handle Uint32 maximum value (4294967295)', () {
+      test('handle Uint32 maximum value (4294967295)', () {
         writer.writeUint32(4294967295);
         expect(writer.takeBytes(), equals([255, 255, 255, 255]));
       });
 
-      test('should handle Int32 maximum positive value (2147483647)', () {
+      test('handle Int32 maximum positive value (2147483647)', () {
         writer.writeInt32(2147483647);
         expect(writer.takeBytes(), equals([127, 255, 255, 255]));
       });
 
-      test('should handle Uint64 maximum value (9223372036854775807)', () {
+      test('handle Uint64 maximum value (9223372036854775807)', () {
         writer.writeUint64(9223372036854775807);
         expect(
           writer.takeBytes(),
@@ -620,49 +696,49 @@ void main() {
     });
 
     group('Boundary values - Minimum', () {
-      test('should handle Uint8 minimum value (0)', () {
+      test('handle Uint8 minimum value (0)', () {
         writer.writeUint8(0);
         expect(writer.takeBytes(), equals([0]));
       });
 
-      test('should handle Int8 zero value', () {
+      test('handle Int8 zero value', () {
         writer.writeInt8(0);
         expect(writer.takeBytes(), equals([0]));
       });
 
-      test('should handle Uint16 minimum value (0)', () {
+      test('handle Uint16 minimum value (0)', () {
         writer.writeUint16(0);
         expect(writer.takeBytes(), equals([0, 0]));
       });
 
-      test('should handle Int16 zero value', () {
+      test('handle Int16 zero value', () {
         writer.writeInt16(0);
         expect(writer.takeBytes(), equals([0, 0]));
       });
 
-      test('should handle Uint32 minimum value (0)', () {
+      test('handle Uint32 minimum value (0)', () {
         writer.writeUint32(0);
         expect(writer.takeBytes(), equals([0, 0, 0, 0]));
       });
 
-      test('should handle Int32 zero value', () {
+      test('handle Int32 zero value', () {
         writer.writeInt32(0);
         expect(writer.takeBytes(), equals([0, 0, 0, 0]));
       });
 
-      test('should handle Uint64 minimum value (0)', () {
+      test('handle Uint64 minimum value (0)', () {
         writer.writeUint64(0);
         expect(writer.takeBytes(), equals([0, 0, 0, 0, 0, 0, 0, 0]));
       });
 
-      test('should handle Int64 zero value', () {
+      test('handle Int64 zero value', () {
         writer.writeInt64(0);
         expect(writer.takeBytes(), equals([0, 0, 0, 0, 0, 0, 0, 0]));
       });
     });
 
     group('Multiple operations', () {
-      test('should handle multiple consecutive takeBytes calls', () {
+      test('handle multiple consecutive takeBytes calls', () {
         writer.writeUint8(1);
         expect(writer.takeBytes(), equals([1]));
 
@@ -673,7 +749,7 @@ void main() {
         expect(writer.takeBytes(), equals([3]));
       });
 
-      test('should handle toBytes followed by reset', () {
+      test('handle toBytes followed by reset', () {
         writer
           ..writeUint8(42)
           ..writeUint8(100);
@@ -686,7 +762,7 @@ void main() {
         expect(writer.bytesWritten, equals(0));
       });
 
-      test('should handle multiple toBytes calls without modification', () {
+      test('handle multiple toBytes calls without modification', () {
         writer
           ..writeUint8(1)
           ..writeUint8(2);
@@ -702,19 +778,19 @@ void main() {
     });
 
     group('Byte array types', () {
-      test('should accept Uint8List in writeBytes', () {
+      test('accept Uint8List in writeBytes', () {
         final data = Uint8List.fromList([1, 2, 3, 4, 5]);
         writer.writeBytes(data);
         expect(writer.takeBytes(), equals([1, 2, 3, 4, 5]));
       });
 
-      test('should accept regular List<int> in writeBytes', () {
+      test('accept regular List<int> in writeBytes', () {
         final data = <int>[10, 20, 30, 40, 50];
         writer.writeBytes(data);
         expect(writer.takeBytes(), equals([10, 20, 30, 40, 50]));
       });
 
-      test('should handle mixed types in sequence', () {
+      test('handle mixed types in sequence', () {
         writer
           ..writeBytes(Uint8List.fromList([1, 2]))
           ..writeBytes([3, 4])
@@ -722,10 +798,67 @@ void main() {
 
         expect(writer.takeBytes(), equals([1, 2, 3, 4, 5]));
       });
+
+      test('writeBytes with offset parameter', () {
+        final data = [1, 2, 3, 4, 5];
+        writer.writeBytes(data, 2); // Write from index 2: [3, 4, 5]
+        expect(writer.takeBytes(), equals([3, 4, 5]));
+      });
+
+      test('writeBytes with offset and length parameters', () {
+        final data = [1, 2, 3, 4, 5];
+        writer.writeBytes(data, 1, 3); // Write [2, 3, 4]
+        expect(writer.takeBytes(), equals([2, 3, 4]));
+      });
+
+      test('writeBytes with offset at end', () {
+        final data = [1, 2, 3, 4, 5];
+        writer.writeBytes(data, 5); // Write from end (empty)
+        expect(writer.takeBytes(), equals([]));
+      });
+
+      test('writeBytes with zero length', () {
+        final data = [1, 2, 3, 4, 5];
+        writer.writeBytes(data, 0, 0); // Write 0 bytes
+        expect(writer.takeBytes(), equals([]));
+      });
+
+      test('writeBytes throws on negative offset', () {
+        final data = [1, 2, 3, 4, 5];
+        expect(
+          () => writer.writeBytes(data, -1),
+          throwsA(isA<AssertionError>()),
+        );
+      });
+
+      test('writeBytes throws on negative length', () {
+        final data = [1, 2, 3, 4, 5];
+        expect(
+          () => writer.writeBytes(data, 0, -1),
+          throwsA(isA<AssertionError>()),
+        );
+      });
+
+      test('writeBytes throws when offset exceeds list length', () {
+        final data = [1, 2, 3];
+        expect(
+          () => writer.writeBytes(data, 4),
+          throwsA(isA<AssertionError>()),
+        );
+      });
+
+      test('writeBytes throws when offset + length exceeds list', () {
+        final data = [1, 2, 3, 4, 5];
+        expect(
+          // offset 2 + length 5 > list length 5
+          () => writer.writeBytes(data, 2, 5),
+          throwsA(isA<AssertionError>()),
+        );
+      });
     });
 
     group('Float precision', () {
-      test('should handle Float32 minimum positive subnormal value', () {
+      test('handle Float32 minimum positive subnormal value', () {
         const minFloat32 = 1.4e-45; // Approximate minimum positive Float32
         writer.writeFloat32(minFloat32);
         final bytes = writer.takeBytes();
@@ -735,7 +868,7 @@ void main() {
         expect(value, greaterThan(0));
       });
 
-      test('should handle Float64 minimum positive subnormal value', () {
+      test('handle Float64 minimum positive subnormal value', () {
         const minFloat64 = 5e-324; // Approximate minimum positive Float64
         writer.writeFloat64(minFloat64);
         final bytes = writer.takeBytes();
@@ -745,7 +878,7 @@ void main() {
         expect(value, greaterThan(0));
       });
 
-      test('should handle Float32 maximum value', () {
+      test('handle Float32 maximum value', () {
         const maxFloat32 = 3.4028235e38; // Approximate maximum Float32
         writer.writeFloat32(maxFloat32);
         final bytes = writer.takeBytes();
@@ -754,7 +887,7 @@ void main() {
         expect(reader.readFloat32(), closeTo(maxFloat32, maxFloat32 * 0.01));
       });
 
-      test('should handle Float64 maximum value', () {
+      test('handle Float64 maximum value', () {
         const maxFloat64 = 1.7976931348623157e308; // Maximum Float64
         writer.writeFloat64(maxFloat64);
         final bytes = writer.takeBytes();
@@ -765,12 +898,12 @@ void main() {
     });
 
     group('UTF-8 encoding', () {
-      test('should encode ASCII characters correctly', () {
+      test('encode ASCII characters correctly', () {
         writer.writeString('ABC123');
         expect(writer.takeBytes(), equals([65, 66, 67, 49, 50, 51]));
       });
 
-      test('should encode Cyrillic characters correctly', () {
+      test('encode Cyrillic characters correctly', () {
         writer.writeString('Привет');
         final bytes = writer.takeBytes();
 
@@ -778,7 +911,7 @@ void main() {
         expect(reader.readString(bytes.length), equals('Привет'));
       });
 
-      test('should encode Chinese characters correctly', () {
+      test('encode Chinese characters correctly', () {
         const str = '你好世界';
         writer.writeString(str);
         final bytes = writer.takeBytes();
@@ -787,7 +920,7 @@ void main() {
         expect(reader.readString(bytes.length), equals(str));
       });
 
-      test('should encode mixed Unicode string correctly', () {
+      test('encode mixed Unicode string correctly', () {
         const str = 'Hello мир 世界 🌍';
         writer.writeString(str);
         final bytes = writer.takeBytes();
@@ -798,7 +931,7 @@ void main() {
     });
 
     group('Buffer growth strategy', () {
-      test('should use 1.5x growth strategy', () {
+      test('use 1.5x growth strategy', () {
         final writer = BinaryWriter(initialBufferSize: 4)
           // Fill initial 4 bytes
           ..writeUint32(0);
@@ -830,7 +963,7 @@ void main() {
     });
 
     group('State preservation', () {
-      test('should preserve written data across toBytes calls', () {
+      test('preserve written data across toBytes calls', () {
         writer.writeUint32(0x12345678);
 
         final bytes1 = writer.toBytes();
@@ -1023,11 +1156,11 @@ void main() {
 
       test('writeUint64 with large value in little-endian', () {
         const largeValue = 123456789012345; // Safe for JS: < 2^53
-        writer.writeUint64(largeValue, Endian.little);
+        writer.writeUint64(largeValue, .little);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
-        expect(reader.readUint64(Endian.little), equals(largeValue));
+        expect(reader.readUint64(.little), equals(largeValue));
       });
     });
 
@@ -1179,12 +1312,12 @@ void main() {
           ..writeUint8(255)
           ..writeInt8(-128)
           ..writeUint16(65535)
-          ..writeInt16(-32768, Endian.little)
-          ..writeUint32(4294967295, Endian.little)
+          ..writeInt16(-32768, .little)
+          ..writeUint32(4294967295, .little)
           ..writeInt32(-2147483648)
           ..writeUint64(9223372036854775807)
-          ..writeInt64(-9223372036854775808, Endian.little)
-          ..writeFloat32(3.14159, Endian.little)
+          ..writeInt64(-9223372036854775808, .little)
+          ..writeFloat32(3.14159, .little)
           ..writeFloat64(2.718281828)
           ..writeString('Hello, 世界! 🌍')
           ..writeBytes([1, 2, 3, 4, 5]);
@@ -1195,12 +1328,12 @@ void main() {
         expect(reader.readUint8(), equals(255));
         expect(reader.readInt8(), equals(-128));
         expect(reader.readUint16(), equals(65535));
-        expect(reader.readInt16(Endian.little), equals(-32768));
-        expect(reader.readUint32(Endian.little), equals(4294967295));
+        expect(reader.readInt16(.little), equals(-32768));
+        expect(reader.readUint32(.little), equals(4294967295));
         expect(reader.readInt32(), equals(-2147483648));
         expect(reader.readUint64(), equals(9223372036854775807));
-        expect(reader.readInt64(Endian.little), equals(-9223372036854775808));
-        expect(reader.readFloat32(Endian.little), closeTo(3.14159, 0.00001));
+        expect(reader.readInt64(.little), equals(-9223372036854775808));
+        expect(reader.readFloat32(.little), closeTo(3.14159, 0.00001));
         expect(reader.readFloat64(), closeTo(2.718281828, 0.000000001));
 
         reader.skip(reader.availableBytes - 5);
@@ -1288,6 +1421,232 @@ void main() {
       });
     });
 
+    group('VarBytes operations', () {
+      test('writeVarBytes with empty array', () {
+        final writer = BinaryWriter()..writeVarBytes([]);
+        final bytes = writer.takeBytes();
+
+        expect(bytes, equals([0])); // Just length 0
+      });
+
+      test('writeVarBytes with small array', () {
+        final writer = BinaryWriter()..writeVarBytes([1, 2, 3, 4]);
+        final bytes = writer.takeBytes();
+
+        expect(bytes[0], equals(4)); // VarUint length
+        expect(bytes.sublist(1), equals([1, 2, 3, 4]));
+      });
+
+      test('writeVarBytes with 127 bytes (single-byte VarUint)', () {
+        final writer = BinaryWriter();
+        final data = List.generate(127, (i) => i);
+        writer.writeVarBytes(data);
+        final bytes = writer.takeBytes();
+
+        expect(bytes[0], equals(127)); // Single-byte VarUint
+        expect(bytes.length, equals(128)); // 1 (length) + 127 (data)
+      });
+
+      test('writeVarBytes with 128 bytes (two-byte VarUint)', () {
+        final writer = BinaryWriter();
+        final data = List.generate(128, (i) => i & 0xFF);
+        writer.writeVarBytes(data);
+        final bytes = writer.takeBytes();
+
+        expect(bytes[0], equals(0x80)); // First byte of VarUint 128
+        expect(bytes[1], equals(0x01)); // Second byte of VarUint 128
+        expect(bytes.length, equals(130)); // 2 (length) + 128 (data)
+      });
+
+      test('writeVarBytes with large array', () {
+        final writer = BinaryWriter();
+        final data = List.generate(1000, (i) => (i * 7) & 0xFF);
+        writer.writeVarBytes(data);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final length = reader.readVarUint();
+        expect(length, equals(1000));
+
+        final readData = reader.readBytes(1000);
+        expect(readData, equals(data));
+      });
+
+      test('writeVarBytes multiple arrays', () {
+        final writer = BinaryWriter()
+          ..writeVarBytes([1, 2])
+          ..writeVarBytes([3, 4, 5])
+          ..writeVarBytes([6]);
+
+        final reader = BinaryReader(writer.toBytes());
+        expect(reader.readVarBytes(), equals([1, 2]));
+        expect(reader.readVarBytes(), equals([3, 4, 5]));
+        expect(reader.readVarBytes(), equals([6]));
+      });
+
+      test('writeVarBytes round-trip', () {
+        final writer = BinaryWriter();
+        final original = List.generate(256, (i) => i);
+        writer.writeVarBytes(original);
+
+        final reader = BinaryReader(writer.takeBytes());
+        final result = reader.readVarBytes();
+
+        expect(result, equals(original));
+      });
+    });
+
+    group('VarString operations', () {
+      test('writeVarString with ASCII string', () {
+        final writer = BinaryWriter()..writeVarString('Hello');
+        final bytes = writer.takeBytes();
+
+        expect(bytes[0], equals(5)); // VarUint length
+        expect(bytes.sublist(1), equals([72, 101, 108, 108, 111])); // 'Hello'
+      });
+
+      test('writeVarString with UTF-8 multi-byte characters', () {
+        final writer = BinaryWriter()
+          ..writeVarString('世界'); // 2 characters, 6 bytes in UTF-8
+        final bytes = writer.takeBytes();
+
+        expect(bytes[0], equals(6)); // VarUint length (6 bytes)
+        expect(bytes.length, equals(7)); // 1 (length) + 6 (data)
+      });
+
+      test('writeVarString with emoji', () {
+        final writer = BinaryWriter()
+          ..writeVarString('🌍'); // 1 character, 4 bytes in UTF-8
+        final bytes = writer.takeBytes();
+
+        expect(bytes[0], equals(4)); // VarUint length
+        expect(bytes.length, equals(5)); // 1 (length) + 4 (data)
+      });
+
+      test('writeVarString with empty string', () {
+        final writer = BinaryWriter()..writeVarString('');
+        final bytes = writer.takeBytes();
+
+        expect(bytes, equals([0])); // Just length 0
+      });
+
+      test('writeVarString with mixed content', () {
+        final writer = BinaryWriter()..writeVarString('Hi 世界 🌍!');
+        final bytes = writer.takeBytes();
+
+        // 'Hi ' = 3, '世界' = 6, ' ' = 1, '🌍' = 4, '!' = 1 => 15 bytes
+        expect(bytes[0], equals(15)); // VarUint length
+        expect(bytes.length, equals(16)); // 1 + 15
+      });
+
+      test('writeVarString round-trip with reader', () {
+        final writer = BinaryWriter();
+        const testString = 'Test 测试 🎉';
+        writer.writeVarString(testString);
+
+        final reader = BinaryReader(writer.toBytes());
+        final result = reader.readVarString();
+
+        expect(result, equals(testString));
+      });
+
+      test('writeVarString with malformed handling', () {
+        final writer = BinaryWriter();
+        // Lone high surrogate (U+D800)
+        final malformed = String.fromCharCode(0xD800);
+
+        // Default allowMalformed=true should handle it
+        expect(
+          () => writer.writeVarString(malformed),
+          returnsNormally,
+        );
+      });
+    });
+
+    group('getUtf8Length function', () {
+      test('with ASCII only', () {
+        expect(getUtf8Length('Hello'), equals(5));
+        expect(getUtf8Length('ABCDEFGH'), equals(8)); // Fast path
+      });
+
+      test('with empty string', () {
+        expect(getUtf8Length(''), equals(0));
+      });
+
+      test('with 2-byte UTF-8 chars', () {
+        expect(getUtf8Length('café'), equals(5)); // 'caf' = 3, 'é' = 2
+        expect(getUtf8Length('Привет'), equals(12)); // Each Cyrillic = 2 bytes
+      });
+
+      test('with 3-byte UTF-8 chars', () {
+        expect(getUtf8Length('世界'), equals(6)); // Each Chinese = 3 bytes
+        expect(getUtf8Length('你好'), equals(6));
+      });
+
+      test('with 4-byte UTF-8 chars (emoji)', () {
+        expect(getUtf8Length('🌍'), equals(4));
+        expect(getUtf8Length('🎉'), equals(4));
+        expect(getUtf8Length('😀'), equals(4));
+      });
+
+      test('with mixed content', () {
+        // 'Hello' = 5, ', ' = 2, '世界' = 6, '! ' = 2, '🌍' = 4
+        expect(getUtf8Length('Hello, 世界! 🌍'), equals(19));
+      });
+
+      test('matches actual UTF-8 encoding', () {
+        final strings = [
+          'Test',
+          'Тест',
+          '测试',
+          '🧪',
+          'Mix テスト 123',
+          'A' * 100, // Long ASCII for fast path
+        ];
+
+        for (final str in strings) {
+          final calculated = getUtf8Length(str);
+          final actual = utf8.encode(str).length;
+          expect(
+            calculated,
+            equals(actual),
+            reason: 'Failed for string: "$str"',
+          );
+        }
+      });
+
+      test('with surrogate pairs', () {
+        // Valid surrogate pair forms emoji
+        final emoji = String.fromCharCodes([0xD83C, 0xDF0D]); // 🌍
+        expect(getUtf8Length(emoji), equals(4));
+      });
+
+      test('with malformed high surrogate', () {
+        // High surrogate (0xD800-0xDBFF) not followed by low surrogate
+        // This triggers the malformed surrogate pair path in getUtf8Length
+        final malformed = String.fromCharCodes([
+          0xD800,
+          0x0041,
+        ]); // High surrogate + 'A'
+        expect(
+          getUtf8Length(malformed),
+          equals(4),
+        ); // 3 bytes (replacement) + 1 byte (A)
+      });
+
+      test('with lone high surrogate at end', () {
+        // High surrogate at the end of string (also malformed)
+        final malformed = String.fromCharCodes([
+          0x0041,
+          0xD800,
+        ]); // 'A' + high surrogate
+        expect(
+          getUtf8Length(malformed),
+          equals(4),
+        ); // 1 byte (A) + 3 bytes (replacement)
+      });
+    });
+
     group('Special UTF-8 cases', () {
       test('writeString with only ASCII (fast path)', () {
         const str = 'OnlyASCII123';
@@ -1324,6 +1683,118 @@ void main() {
 
         final bytes = writer.takeBytes();
         expect(bytes, equals([42, 43]));
+      });
+    });
+
+    group('writeBool', () {
+      test('writes true as 0x01', () {
+        writer.writeBool(true);
+        expect(writer.takeBytes(), equals([0x01]));
+      });
+
+      test('writes false as 0x00', () {
+        writer.writeBool(false);
+        expect(writer.takeBytes(), equals([0x00]));
+      });
+
+      test('writes multiple boolean values correctly', () {
+        writer
+          ..writeBool(true)
+          ..writeBool(false)
+          ..writeBool(true)
+          ..writeBool(true)
+          ..writeBool(false);
+
+        expect(writer.takeBytes(), equals([0x01, 0x00, 0x01, 0x01, 0x00]));
+      });
+
+      test('can be read back with readBool', () {
+        writer
+          ..writeBool(true)
+          ..writeBool(false)
+          ..writeBool(true);
+
+        final bytes = writer.takeBytes();
+        final reader = BinaryReader(bytes);
+
+        expect(reader.readBool(), isTrue);
+        expect(reader.readBool(), isFalse);
+        expect(reader.readBool(), isTrue);
+      });
+
+      test('updates bytesWritten correctly', () {
+        expect(writer.bytesWritten, equals(0));
+
+        writer.writeBool(true);
+        expect(writer.bytesWritten, equals(1));
+
+        writer.writeBool(false);
+        expect(writer.bytesWritten, equals(2));
+
+        writer.writeBool(true);
+        expect(writer.bytesWritten, equals(3));
+      });
+
+      test('can be mixed with other write operations', () {
+        writer
+          ..writeUint8(42)
+          ..writeBool(true)
+          ..writeUint16(1000)
+          ..writeBool(false)
+          ..writeInt32(-500);
+
+        final bytes = writer.takeBytes();
+        final reader = BinaryReader(bytes);
+
+        expect(reader.readUint8(), equals(42));
+        expect(reader.readBool(), isTrue);
+        expect(reader.readUint16(), equals(1000));
+        expect(reader.readBool(), isFalse);
+        expect(reader.readInt32(), equals(-500));
+      });
+
+      test('expands buffer when needed', () {
+        // Write many booleans to trigger buffer expansion
+        for (var i = 0; i < 200; i++) {
+          writer.writeBool(i.isEven);
+        }
+
+        final bytes = writer.takeBytes();
+        expect(bytes.length, equals(200));
+
+        final reader = BinaryReader(bytes);
+        for (var i = 0; i < 200; i++) {
+          expect(reader.readBool(), equals(i.isEven));
+        }
+      });
+
+      test('resets correctly after takeBytes', () {
+        writer
+          ..writeBool(true)
+          ..takeBytes()
+          ..writeBool(false);
+        expect(writer.takeBytes(), equals([0x00]));
+      });
+
+      test('works correctly with toBytes', () {
+        writer.writeBool(true);
+        final snapshot1 = writer.toBytes();
+        expect(snapshot1, equals([0x01]));
+
+        writer.writeBool(false);
+        final snapshot2 = writer.toBytes();
+        expect(snapshot2, equals([0x01, 0x00]));
+      });
+
+      test('works correctly with reset', () {
+        writer
+          ..writeBool(true)
+          ..writeBool(false)
+          ..reset()
+          ..writeBool(false)
+          ..writeBool(true);
+
+        expect(writer.toBytes(), equals([0x00, 0x01]));
       });
     });
   });

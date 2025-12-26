@@ -1,7 +1,7 @@
 name: pro_binary
 description: Efficient binary serialization library for Dart. Encodes and decodes various data types.
 
-version: 2.2.0
+version: 3.0.0
 
 repository: https://github.com/pro100andrey/pro_binary
 issue_tracker: https://github.com/pro100andrey/pro_binary/issues
@@ -28,4 +28,6 @@ dev_dependencies:
   benchmark_harness: ^2.4.0
   pro_lints: ^5.1.0
   test: ^1.28.0
+dependencies:
+  meta: ^1.17.0
 
