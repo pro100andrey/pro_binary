@@ -519,7 +519,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// writer.writeBool(true);   // Writes byte 0x01
   /// writer.writeBool(false);  // Writes byte 0x00
   /// ```
-  /// 
+  ///
   @pragma('vm:prefer-inline')
   // Disable lint to allow positional boolean parameter for simplicity
   // ignore: avoid_positional_boolean_parameters

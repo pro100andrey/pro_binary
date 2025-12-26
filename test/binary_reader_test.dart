@@ -382,6 +382,42 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
+    test('readVarUint throws on truncated varint', () {
+      // VarInt with continuation bit set but no following byte
+      final buffer = Uint8List.fromList([0x80]); // MSB=1, expects more bytes
+      final reader = BinaryReader(buffer);
+
+      expect(reader.readVarUint, throwsA(isA<AssertionError>()));
+    });
+
+    test('readVarUint throws on incomplete multi-byte varint', () {
+      // Two-byte VarInt with only first byte
+      final buffer = Uint8List.fromList([0xFF]); // All continuation bits set
+      final reader = BinaryReader(buffer);
+
+      expect(reader.readVarUint, throwsA(isA<AssertionError>()));
+    });
+
+    test('readVarUint throws FormatException on too long varint', () {
+      // 11 bytes with all continuation bits set (exceeds 10-byte limit)
+      final buffer = Uint8List.fromList([
+        0x80, 0x80, 0x80, 0x80, 0x80, //
+        0x80, 0x80, 0x80, 0x80, 0x80, //
+        0x80, // 11th byte
+      ]);
+      final reader = BinaryReader(buffer);
+
+      expect(reader.readVarUint, throwsA(isA<FormatException>()));
+    });
+
+    test('readVarInt throws on truncated zigzag', () {
+      // Truncated VarInt (continuation bit set but no next byte)
+      final buffer = Uint8List.fromList([0x80]);
+      final reader = BinaryReader(buffer);
+
+      expect(reader.readVarInt, throwsA(isA<AssertionError>()));
+    });
+
     test('readBytes', () {
       final data = [0x01, 0x02, 0x03, 0x04, 0x05];
       final buffer = Uint8List.fromList(data);
