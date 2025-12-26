@@ -315,7 +315,14 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// ```
   @pragma('vm:prefer-inline')
   void writeBytes(List<int> bytes, [int offset = 0, int? length]) {
+    assert(offset >= 0, 'Offset must be non-negative');
+    assert(offset <= bytes.length, 'Offset exceeds list length');
+
     final len = length ?? (bytes.length - offset);
+
+    assert(len >= 0, 'Length must be non-negative');
+    assert(offset + len <= bytes.length, 'Offset + length exceeds list length');
+
     _ws.ensureSize(len);
 
     _ws.list.setRange(_ws.offset, _ws.offset + len, bytes, offset);
@@ -605,7 +612,8 @@ extension type BinaryWriter._(_WriterState _ws) {
 /// Separated from the extension type to allow efficient inline operations.
 final class _WriterState {
   _WriterState(int initialBufferSize)
-    : _size = initialBufferSize,
+    : assert(initialBufferSize > 0, 'Initial buffer size must be positive'),
+      _size = initialBufferSize,
       capacity = initialBufferSize,
       offset = 0,
       list = Uint8List(initialBufferSize) {

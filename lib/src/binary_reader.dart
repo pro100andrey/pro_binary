@@ -472,7 +472,10 @@ extension type const BinaryReader._(_ReaderState _rs) {
   /// }
   /// ```
   @pragma('vm:prefer-inline')
-  bool hasBytes(int length) => (_rs.offset + length) <= _rs.length;
+  bool hasBytes(int length) {
+    assert(length >= 0, 'Length must be non-negative');
+    return (_rs.offset + length) <= _rs.length;
+  }
 
   /// Reads bytes without advancing the read position.
   ///

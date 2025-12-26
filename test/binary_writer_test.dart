@@ -798,6 +798,63 @@ void main() {
 
         expect(writer.takeBytes(), equals([1, 2, 3, 4, 5]));
       });
+
+      test('writeBytes with offset parameter', () {
+        final data = [1, 2, 3, 4, 5];
+        writer.writeBytes(data, 2); // Write from index 2: [3, 4, 5]
+        expect(writer.takeBytes(), equals([3, 4, 5]));
+      });
+
+      test('writeBytes with offset and length parameters', () {
+        final data = [1, 2, 3, 4, 5];
+        writer.writeBytes(data, 1, 3); // Write [2, 3, 4]
+        expect(writer.takeBytes(), equals([2, 3, 4]));
+      });
+
+      test('writeBytes with offset at end', () {
+        final data = [1, 2, 3, 4, 5];
+        writer.writeBytes(data, 5); // Write from end (empty)
+        expect(writer.takeBytes(), equals([]));
+      });
+
+      test('writeBytes with zero length', () {
+        final data = [1, 2, 3, 4, 5];
+        writer.writeBytes(data, 0, 0); // Write 0 bytes
+        expect(writer.takeBytes(), equals([]));
+      });
+
+      test('writeBytes throws on negative offset', () {
+        final data = [1, 2, 3, 4, 5];
+        expect(
+          () => writer.writeBytes(data, -1),
+          throwsA(isA<AssertionError>()),
+        );
+      });
+
+      test('writeBytes throws on negative length', () {
+        final data = [1, 2, 3, 4, 5];
+        expect(
+          () => writer.writeBytes(data, 0, -1),
+          throwsA(isA<AssertionError>()),
+        );
+      });
+
+      test('writeBytes throws when offset exceeds list length', () {
+        final data = [1, 2, 3];
+        expect(
+          () => writer.writeBytes(data, 4),
+          throwsA(isA<AssertionError>()),
+        );
+      });
+
+      test('writeBytes throws when offset + length exceeds list', () {
+        final data = [1, 2, 3, 4, 5];
+        expect(
+          // offset 2 + length 5 > list length 5
+          () => writer.writeBytes(data, 2, 5),
+          throwsA(isA<AssertionError>()),
+        );
+      });
     });
 
     group('Float precision', () {
