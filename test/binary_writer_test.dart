@@ -1628,5 +1628,96 @@ void main() {
         expect(bytes, equals([42, 43]));
       });
     });
+
+    group('writeBool', () {
+      test('writes true as 0x01', () {
+        writer.writeBool(true);
+        expect(writer.takeBytes(), equals([0x01]));
+      });
+
+      test('writes false as 0x00', () {
+        writer.writeBool(false);
+        expect(writer.takeBytes(), equals([0x00]));
+      });
+
+      test('writes multiple boolean values correctly', () {
+        writer
+          ..writeBool(true)
+          ..writeBool(false)
+          ..writeBool(true)
+          ..writeBool(true)
+          ..writeBool(false);
+
+        expect(writer.takeBytes(), equals([0x01, 0x00, 0x01, 0x01, 0x00]));
+      });
+
+      test('can be read back with readBool', () {
+        writer
+          ..writeBool(true)
+          ..writeBool(false)
+          ..writeBool(true);
+
+        final bytes = writer.takeBytes();
+        final reader = BinaryReader(bytes);
+
+        expect(reader.readBool(), isTrue);
+        expect(reader.readBool(), isFalse);
+        expect(reader.readBool(), isTrue);
+      });
+
+      test('updates bytesWritten correctly', () {
+        expect(writer.bytesWritten, equals(0));
+
+        writer.writeBool(true);
+        expect(writer.bytesWritten, equals(1));
+
+        writer.writeBool(false);
+        expect(writer.bytesWritten, equals(2));
+
+        writer.writeBool(true);
+        expect(writer.bytesWritten, equals(3));
+      });
+
+      test('can be mixed with other write operations', () {
+        writer
+          ..writeUint8(42)
+          ..writeBool(true)
+          ..writeUint16(1000)
+          ..writeBool(false)
+          ..writeInt32(-500);
+
+        final bytes = writer.takeBytes();
+        final reader = BinaryReader(bytes);
+
+        expect(reader.readUint8(), equals(42));
+        expect(reader.readBool(), isTrue);
+        expect(reader.readUint16(), equals(1000));
+        expect(reader.readBool(), isFalse);
+        expect(reader.readInt32(), equals(-500));
+      });
+
+      test('expands buffer when needed', () {
+        // Write many booleans to trigger buffer expansion
+        for (var i = 0; i < 200; i++) {
+          writer.writeBool(i.isEven);
+        }
+
+        final bytes = writer.takeBytes();
+        expect(bytes.length, equals(200));
+
+        final reader = BinaryReader(bytes);
+        for (var i = 0; i < 200; i++) {
+          expect(reader.readBool(), equals(i.isEven));
+        }
+      });
+
+      test('resets correctly after takeBytes', () {
+        writer
+          ..writeBool(true)
+          ..takeBytes()
+          ..writeBool(false);
+        expect(writer.takeBytes(), equals([0x00]));
+      });
+    });
   });
 }

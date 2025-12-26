@@ -340,6 +340,20 @@ extension type const BinaryReader._(_ReaderState _rs) {
     return bytes;
   }
 
+  /// Reads all remaining bytes from the current position to the end of the
+  /// buffer.
+  ///
+  /// Returns a view of the remaining bytes without copying data.
+  /// Useful for reading trailing data or payloads of unknown length.
+  ///
+  /// Example:
+  /// ```dart
+  /// final payload = reader.readRemainingBytes();
+  /// print('Payload length: ${payload.length}');
+  /// ```
+  @pragma('vm:prefer-inline')
+  Uint8List readRemainingBytes() => readBytes(availableBytes);
+
   /// Reads a length-prefixed byte array.
   ///
   /// First reads the length as a VarUint, then reads that many bytes.
@@ -428,6 +442,38 @@ extension type const BinaryReader._(_ReaderState _rs) {
     return readString(length, allowMalformed: allowMalformed);
   }
 
+  /// Reads a boolean value (1 byte).
+  ///
+  /// A byte value of 0 is interpreted as `false`, any non-zero value as `true`.
+  ///
+  /// Example:
+  /// ```dart
+  /// final isActive = reader.readBool();  // Read active flag
+  /// ```
+  /// Asserts bounds in debug mode if insufficient bytes are available.
+  @pragma('vm:prefer-inline')
+  bool readBool() {
+    final value = readUint8();
+    return value != 0;
+  }
+
+  /// Checks if there are at least [length] bytes available to read.
+  ///
+  /// Returns `true` if enough bytes are available, `false` otherwise.
+  ///
+  /// Useful for conditional reads when the data format may vary.
+  /// Example:
+  /// ```dart
+  /// if (reader.hasBytes(4)) {
+  ///   final value = reader.readUint32();
+  ///   // Process value
+  /// } else {
+  ///   // Handle missing data
+  /// }
+  /// ```
+  @pragma('vm:prefer-inline')
+  bool hasBytes(int length) => (_rs.offset + length) <= _rs.length;
+
   /// Reads bytes without advancing the read position.
   ///
   /// This allows inspecting upcoming data without consuming it.
@@ -484,6 +530,47 @@ extension type const BinaryReader._(_ReaderState _rs) {
     _checkBounds(length, 'Skip');
 
     _rs.offset += length;
+  }
+
+  /// Sets the read position to the specified byte offset.
+  ///
+  /// This allows random access within the buffer.
+  /// Asserts bounds in debug mode if position is out of range.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Jump to a specific offset to read data
+  /// reader.seek(128);  // Move to byte offset 128
+  /// final value = reader.readUint32();
+  /// ```
+  @pragma('vm:prefer-inline')
+  void seek(int position) {
+    assert(
+      position >= 0 && position <= _rs.length,
+      'Position out of bounds: $position',
+    );
+    _rs.offset = position;
+  }
+
+  /// Moves the read position backwards by the specified number of bytes.
+  ///
+  /// This allows re-reading previously read data.
+  /// Asserts bounds in debug mode if rewinding before the start of the buffer.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Re-read the last 4 bytes
+  /// reader.rewind(4);
+  /// final value = reader.readUint32();
+  /// ```
+  @pragma('vm:prefer-inline')
+  void rewind(int length) {
+    assert(length >= 0, 'Length must be non-negative');
+    assert(
+      _rs.offset - length >= 0,
+      'Cannot rewind $length bytes from offset ${_rs.offset}',
+    );
+    _rs.offset -= length;
   }
 
   /// Resets the read position to the beginning of the buffer.

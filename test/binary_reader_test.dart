@@ -1432,5 +1432,311 @@ void main() {
         expect(reader.availableBytes, equals(0));
       });
     });
+
+    group('readBool', () {
+      test('reads false when byte is 0', () {
+        final buffer = Uint8List.fromList([0x00]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readBool(), isFalse);
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('reads true when byte is 1', () {
+        final buffer = Uint8List.fromList([0x01]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readBool(), isTrue);
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('reads true when byte is any non-zero value', () {
+        final testValues = [1, 42, 127, 128, 255];
+        for (final value in testValues) {
+          final buffer = Uint8List.fromList([value]);
+          final reader = BinaryReader(buffer);
+
+          expect(
+            reader.readBool(),
+            isTrue,
+            reason: 'Value $value should be true',
+          );
+        }
+      });
+
+      test('reads multiple boolean values correctly', () {
+        final buffer = Uint8List.fromList([0x01, 0x00, 0xFF, 0x00, 0x01]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.readBool(), isTrue);
+        expect(reader.readBool(), isFalse);
+        expect(reader.readBool(), isTrue);
+        expect(reader.readBool(), isFalse);
+        expect(reader.readBool(), isTrue);
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('advances offset correctly', () {
+        final buffer = Uint8List.fromList([0x01, 0x00, 0xFF]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.offset, equals(0));
+        reader.readBool();
+        expect(reader.offset, equals(1));
+        reader.readBool();
+        expect(reader.offset, equals(2));
+        reader.readBool();
+        expect(reader.offset, equals(3));
+      });
+    });
+
+    group('readRemainingBytes', () {
+      test('reads all remaining bytes from start', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer);
+
+        final remaining = reader.readRemainingBytes();
+        expect(remaining, equals([1, 2, 3, 4, 5]));
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('reads remaining bytes after partial read', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
+        final reader = BinaryReader(buffer)..readUint16(); // Read first 2 bytes
+        final remaining = reader.readRemainingBytes();
+        expect(remaining, equals([3, 4, 5, 6, 7, 8]));
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('returns empty list when at end of buffer', () {
+        final buffer = Uint8List.fromList([1, 2, 3]);
+        final reader = BinaryReader(buffer)..readBytes(3); // Read all bytes
+        final remaining = reader.readRemainingBytes();
+        expect(remaining, isEmpty);
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('returns empty list for empty buffer', () {
+        final buffer = Uint8List.fromList([]);
+        final reader = BinaryReader(buffer);
+
+        final remaining = reader.readRemainingBytes();
+        expect(remaining, isEmpty);
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('returns view without copying', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)..readUint8(); // Skip first byte
+        final remaining = reader.readRemainingBytes();
+
+        // Verify it's a view by checking buffer reference
+        expect(remaining.buffer, equals(buffer.buffer));
+      });
+    });
+
+    group('hasBytes', () {
+      test('returns true when enough bytes available', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.hasBytes(1), isTrue);
+        expect(reader.hasBytes(3), isTrue);
+        expect(reader.hasBytes(5), isTrue);
+      });
+
+      test('returns false when not enough bytes available', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.hasBytes(6), isFalse);
+        expect(reader.hasBytes(10), isFalse);
+        expect(reader.hasBytes(100), isFalse);
+      });
+
+      test('returns true for exact remaining bytes', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)..readUint16(); // Read 2 bytes
+        expect(reader.hasBytes(3), isTrue); // Exactly 3 bytes left
+        expect(reader.hasBytes(4), isFalse); // Too many
+      });
+
+      test('returns true for zero bytes on non-empty buffer', () {
+        final buffer = Uint8List.fromList([1, 2, 3]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.hasBytes(0), isTrue);
+      });
+
+      test('returns true for zero bytes on empty buffer', () {
+        final buffer = Uint8List.fromList([]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.hasBytes(0), isTrue);
+        expect(reader.hasBytes(1), isFalse);
+      });
+
+      test('works correctly after reading', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.hasBytes(8), isTrue);
+        reader.readUint32(); // Read 4 bytes
+        expect(reader.hasBytes(5), isFalse);
+        expect(reader.hasBytes(4), isTrue);
+        reader.readUint32(); // Read 4 more bytes
+        expect(reader.hasBytes(1), isFalse);
+        expect(reader.hasBytes(0), isTrue);
+      });
+
+      test('does not modify offset', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer);
+
+        expect(reader.offset, equals(0));
+        reader.hasBytes(3);
+        expect(reader.offset, equals(0)); // Offset unchanged
+        reader.hasBytes(10);
+        expect(reader.offset, equals(0)); // Still unchanged
+      });
+    });
+
+    group('seek', () {
+      test('sets position to beginning', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)
+          ..readUint32() // Move to position 4
+          ..seek(0);
+        expect(reader.offset, equals(0));
+        expect(reader.readUint8(), equals(1));
+      });
+
+      test('sets position to middle', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)..seek(2);
+        expect(reader.offset, equals(2));
+        expect(reader.readUint8(), equals(3));
+      });
+
+      test('sets position to end', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)..seek(5);
+        expect(reader.offset, equals(5));
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('allows seeking backwards', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)
+          ..readBytes(4) // Move to position 4
+          ..seek(1);
+        expect(reader.offset, equals(1));
+        expect(reader.readUint8(), equals(2));
+      });
+
+      test('allows seeking forwards', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
+        final reader = BinaryReader(buffer)
+          ..readUint8() // Move to position 1
+          ..seek(5);
+        expect(reader.offset, equals(5));
+        expect(reader.readUint8(), equals(6));
+      });
+
+      test('seeking multiple times', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
+        final reader = BinaryReader(buffer)..seek(3);
+        expect(reader.offset, equals(3));
+        reader.seek(1);
+        expect(reader.offset, equals(1));
+        reader.seek(7);
+        expect(reader.offset, equals(7));
+        reader.seek(0);
+        expect(reader.offset, equals(0));
+      });
+
+      test('seeking to same position is valid', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)
+          ..seek(2)
+          ..seek(2);
+        expect(reader.offset, equals(2));
+      });
+    });
+
+    group('rewind', () {
+      test('moves back by specified bytes', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)
+          ..readBytes(3) // Move to position 3
+          ..rewind(2);
+        expect(reader.offset, equals(1));
+        expect(reader.readUint8(), equals(2));
+      });
+
+      test('rewind to beginning', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)
+          ..readBytes(3)
+          ..rewind(3);
+        expect(reader.offset, equals(0));
+        expect(reader.readUint8(), equals(1));
+      });
+
+      test('rewind single byte', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)..readUint16(); // Read 2 bytes
+        expect(reader.offset, equals(2));
+        reader.rewind(1);
+        expect(reader.offset, equals(1));
+        expect(reader.readUint8(), equals(2));
+      });
+
+      test('rewind zero bytes does nothing', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)..readUint16();
+        final offsetBefore = reader.offset;
+        reader.rewind(0);
+        expect(reader.offset, equals(offsetBefore));
+      });
+
+      test('allows re-reading data', () {
+        final buffer = Uint8List.fromList([0x01, 0x02, 0x03, 0x04]);
+        final reader = BinaryReader(buffer);
+
+        final first = reader.readUint32();
+        expect(first, equals(0x01020304));
+
+        reader.rewind(4);
+        final second = reader.readUint32();
+        expect(second, equals(0x01020304));
+        expect(second, equals(first));
+      });
+
+      test('multiple rewinds', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
+        final reader = BinaryReader(buffer)..readBytes(5); // Position 5
+        expect(reader.offset, equals(5));
+
+        reader.rewind(2); // Position 3
+        expect(reader.offset, equals(3));
+
+        reader.rewind(1); // Position 2
+        expect(reader.offset, equals(2));
+
+        expect(reader.readUint8(), equals(3));
+      });
+
+      test('rewind and seek together', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
+        final reader = BinaryReader(buffer)
+          ..seek(5)
+          ..rewind(2);
+        expect(reader.offset, equals(3));
+
+        reader.rewind(3);
+        expect(reader.offset, equals(0));
+      });
+    });
   });
 }

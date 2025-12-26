@@ -510,6 +510,23 @@ extension type BinaryWriter._(_WriterState _ws) {
     writeString(value, allowMalformed: allowMalformed);
   }
 
+  /// Writes a boolean value as a single byte.
+  ///
+  /// `true` is written as `1` and `false` as `0`.
+  ///
+  /// Example:
+  /// ```dart
+  /// writer.writeBool(true);   // Writes byte 0x01
+  /// writer.writeBool(false);  // Writes byte 0x00
+  /// ```
+  /// 
+  @pragma('vm:prefer-inline')
+  // Disable lint to allow positional boolean parameter for simplicity
+  // ignore: avoid_positional_boolean_parameters
+  void writeBool(bool value) {
+    writeUint8(value ? 1 : 0);
+  }
+
   /// Extracts all written bytes and resets the writer.
   ///
   /// After calling this method, the writer is reset and ready for reuse.
