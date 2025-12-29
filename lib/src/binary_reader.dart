@@ -71,21 +71,30 @@ extension type const BinaryReader._(_ReaderState _rs) {
   /// Asserts bounds in debug mode if attempting to read past buffer end.
   @pragma('vm:prefer-inline')
   int readVarUint() {
-    var result = 0;
-    var shift = 0;
+    assert(_rs.offset < _rs.length, 'VarInt out of bounds');
 
     final list = _rs.list;
+    final len = _rs.length;
     var offset = _rs.offset;
 
-    // VarInt uses up to 10 bytes for 64-bit integers
-    for (var i = 0; i < 10; i++) {
-      assert(offset < _rs.length, 'VarInt out of bounds');
-      final byte = list[offset++];
+    // Fast path: single byte (0-127) — most common case
+    var byte = list[offset++];
+    if ((byte & 0x80) == 0) {
+      _rs.offset = offset;
+      return byte;
+    }
 
-      // Extract lower 7 bits and shift into position
+    // Multi-byte VarInt (optimized for 2-3 byte case)
+    var result = byte & 0x7f;
+    var shift = 7;
+
+    // Process remaining bytes: up to 9 more (total 10 max)
+    for (var i = 1; i < 10; i++) {
+      assert(offset < len, 'VarInt out of bounds');
+      byte = list[offset++];
+
       result |= (byte & 0x7f) << shift;
 
-      // If MSB is 0, we've reached the last byte
       if ((byte & 0x80) == 0) {
         _rs.offset = offset;
         return result;

@@ -181,6 +181,84 @@ void main() {
       expect(writer.takeBytes(), [0xFF, 0xFF, 0xFF, 0xFF, 0x0F]);
     });
 
+    test('writeVarUint fast path boundary: 0', () {
+      // 0 is unsigned and should use fast path (single byte)
+      writer.writeVarUint(0);
+      expect(writer.takeBytes(), [0]);
+    });
+
+    test('writeVarUint fast path boundary: 127 (max single byte)', () {
+      // 127 (0x7F) is the last value where MSB is not set
+      writer.writeVarUint(127);
+      expect(writer.takeBytes(), [127]);
+    });
+
+    test('writeVarUint multi-byte boundary: 128 (min two bytes)', () {
+      // 128 (0x80) requires 2 bytes because MSB is set
+      writer.writeVarUint(128);
+      expect(writer.takeBytes(), [0x80, 0x01]);
+    });
+
+    test('writeVarInt fast path: ZigZag encodes small values correctly', () {
+      // ZigZag(0) = 0 → single byte
+      writer.writeVarInt(0);
+      expect(writer.toBytes(), [0]);
+
+      writer
+        ..reset()
+        // ZigZag(1) = 2 → single byte
+        ..writeVarInt(1);
+      expect(writer.toBytes(), [2]);
+
+      writer
+        ..reset()
+        // ZigZag(-1) = 1 → single byte
+        ..writeVarInt(-1);
+      expect(writer.toBytes(), [1]);
+    });
+
+    test('writeVarInt multi-byte: ZigZag crosses boundary correctly', () {
+      // ZigZag(64) = 128 → requires 2 bytes (MSB set)
+      writer.writeVarInt(64);
+      expect(writer.takeBytes(), [0x80, 0x01]);
+
+      // ZigZag(-64) = 127 → single byte
+      writer.writeVarInt(-64);
+      expect(writer.takeBytes(), [127]);
+
+      // ZigZag(-65) = 129 → requires 2 bytes
+      writer.writeVarInt(-65);
+      expect(writer.takeBytes(), [0x81, 0x01]);
+    });
+
+    test(
+      'writeVarUint with negative value must not use fast path '
+      '(regression test)',
+      () {
+        // CRITICAL: writeVarUint(-1) must NOT use fast path
+        // Negative numbers: -1 as bits = 0xFFFFFFFF...
+        // -1 < 0x80 is FALSE, so it should use slow path
+        // This verifies the `value >= 0` check is necessary
+
+        writer.writeVarUint(-1);
+        final bytes = writer.takeBytes();
+
+        // Without `value >= 0` check, -1 might be incorrectly encoded as 1 byte
+        // With check: -1 triggers slow path and encodes as 10 bytes
+        expect(
+          bytes.length,
+          10,
+          reason: 'Negative number should use multi-byte path',
+        );
+        expect(
+          bytes[0],
+          0xFF,
+          reason: 'First byte should have continuation bit set',
+        );
+        expect(bytes[9], 0x01, reason: 'Last byte should be continuation end');
+      },
+    );
+
     test('write byte array correctly', () {
       writer.writeBytes([1, 2, 3, 4, 5]);
       expect(writer.takeBytes(), [1, 2, 3, 4, 5]);

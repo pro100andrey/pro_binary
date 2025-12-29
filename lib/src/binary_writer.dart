@@ -64,26 +64,61 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// writer.writeVarUint(1000000);   // 3 bytes
   /// ```
   @pragma('vm:prefer-inline')
+  @pragma('vm:prefer-inline')
   void writeVarUint(int value) {
-    // Fast path for single-byte VarInt
+    // Fast path: single-byte (0-127)
+    var offset = _ws.offset;
     if (value < 0x80 && value >= 0) {
       _ws.ensureOneByte();
-      _ws.list[_ws.offset++] = value;
+      _ws.list[offset++] = value;
+      _ws.offset = offset;
       return;
     }
 
+    // Slow path: multi-byte VarInt
+    final list = _ws.list;
     _ws.ensureSize(10);
 
-    var v = value;
-    final list = _ws.list;
-    var offset = _ws.offset;
+    // First byte (always has continuation bit)
+    list[offset++] = (value & 0x7F) | 0x80;
+    var v = value >>> 7;
 
+    // Unrolled 2-byte case (covers 0-16383, ~90% of real-world values)
+    if (v < 0x80) {
+      list[offset++] = v;
+      _ws.offset = offset;
+      return;
+    }
+
+    // Second byte
+    list[offset++] = (v & 0x7F) | 0x80;
+    v >>>= 7;
+
+    // Unrolled 3-byte case (covers 0-2097151)
+    if (v < 0x80) {
+      list[offset++] = v;
+      _ws.offset = offset;
+      return;
+    }
+
+    // Third byte
+    list[offset++] = (v & 0x7F) | 0x80;
+    v >>>= 7;
+
+    // Unrolled 4-byte case (covers 0-268435455, ~99.9% of 32-bit values)
+    if (v < 0x80) {
+      list[offset++] = v;
+      _ws.offset = offset;
+      return;
+    }
+
+    // Generic loop for remaining bytes (rare large 64-bit numbers)
     while (v >= 0x80) {
       list[offset++] = (v & 0x7F) | 0x80;
       v >>>= 7;
     }
 
-    list[offset++] = v & 0x7F;
+    list[offset++] = v; // Last byte without continuation bit
     _ws.offset = offset;
   }
 
@@ -113,7 +148,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   void writeVarInt(int value) {
     // ZigZag: (n << 1) ^ (n >> 63)
     // Maps: 0=>0, -1=>1, 1=>2, -2=>3, 2=>4, -3=>5, 3=>6
-    final encoded = (value << 1) ^ (value >> value.bitLength);
+    final encoded = (value << 1) ^ (value >> 63);
     writeVarUint(encoded);
   }
 
@@ -635,6 +670,8 @@ final class _WriterState {
   /// Initial buffer size.
   final int _size;
 
+  var _isInPool = false;
+
   @pragma('vm:prefer-inline')
   void _initializeBuffer() {
     list = Uint8List(_size);
@@ -714,7 +751,7 @@ final class _WriterState {
 /// This function efficiently computes the number of bytes required to
 /// encode the string in UTF-8, taking into account multi-byte characters
 /// and surrogate pairs. It's optimized with an ASCII fast path that processes
-/// up to 8 ASCII characters at once.
+/// up to 4 ASCII characters at once.
 ///
 /// Useful for:
 /// - Pre-allocating buffers of the correct size
@@ -722,7 +759,7 @@ final class _WriterState {
 /// - Validating string length constraints
 ///
 /// Performance:
-/// - ASCII strings: ~8 bytes per loop iteration
+/// - ASCII strings: ~4 bytes per loop iteration
 /// - Mixed content: Falls back to character-by-character analysis
 ///
 /// Example:
@@ -734,43 +771,39 @@ final class _WriterState {
 ///
 /// @param s The input string.
 /// @return The number of bytes needed for UTF-8 encoding.
-int getUtf8Length(String s) {
-  if (s.isEmpty) {
+int getUtf8Length(String value) {
+  if (value.isEmpty) {
     return 0;
   }
 
-  final len = s.length;
+  final len = value.length;
   var bytes = 0;
   var i = 0;
 
   while (i < len) {
-    final c = s.codeUnitAt(i);
+    final char = value.codeUnitAt(i);
 
     // ASCII fast path
-    if (c < 0x80) {
-      // Process 8 ASCII characters at a time
-      final end = len - 8;
+    if (char < 0x80) {
+      // Process 4 ASCII characters at a time
+      final end = len - 4;
       while (i <= end) {
         final mask =
-            s.codeUnitAt(i) |
-            s.codeUnitAt(i + 1) |
-            s.codeUnitAt(i + 2) |
-            s.codeUnitAt(i + 3) |
-            s.codeUnitAt(i + 4) |
-            s.codeUnitAt(i + 5) |
-            s.codeUnitAt(i + 6) |
-            s.codeUnitAt(i + 7);
+            value.codeUnitAt(i) |
+            value.codeUnitAt(i + 1) |
+            value.codeUnitAt(i + 2) |
+            value.codeUnitAt(i + 3);
 
         if (mask >= 0x80) {
           break;
         }
 
-        i += 8;
-        bytes += 8;
+        i += 4;
+        bytes += 4;
       }
 
       // Handle remaining ASCII characters
-      while (i < len && s.codeUnitAt(i) < 0x80) {
+      while (i < len && value.codeUnitAt(i) < 0x80) {
         i++;
         bytes++;
       }
@@ -781,13 +814,13 @@ int getUtf8Length(String s) {
     }
 
     // 2-byte sequence
-    if (c < 0x800) {
+    if (char < 0x800) {
       bytes += 2;
       i++;
     }
     // 3-byte sequence
-    else if (c >= 0xD800 && c <= 0xDBFF && i + 1 < len) {
-      final next = s.codeUnitAt(i + 1);
+    else if (char >= 0xD800 && char <= 0xDBFF && i + 1 < len) {
+      final next = value.codeUnitAt(i + 1);
       if (next >= 0xDC00 && next <= 0xDFFF) {
         bytes += 4;
         i += 2;
@@ -805,4 +838,183 @@ int getUtf8Length(String s) {
   }
 
   return bytes;
+}
+
+// Disable lint to allow static-only class for pooling
+// ignore: avoid_classes_with_only_static_members
+/// Object pool for reusing [BinaryWriter] instances to reduce GC pressure.
+///
+/// This pool maintains a cache of [BinaryWriter] instances with their
+/// internal buffers, allowing efficient reuse without allocating new memory
+/// for each write operation.
+///
+/// ## Features
+/// - **Automatic reuse:** [acquire] gets a pooled writer or creates a new one
+/// - **Memory bounds:** Only reuses writers with buffers ≤ 64 KiB
+/// - **Size limits:** Maintains max 32 pooled instances
+/// - **Safe:** Prevents double-release and handles edge cases
+///
+/// ## Usage Pattern
+/// Use `acquire()` and `release()` for short-lived write operations:
+///
+/// ```dart
+/// final writer = BinaryWriterPool.acquire();
+/// try {
+///   writer.writeUint32(42);
+///   writer.writeString('Hello');
+///   final bytes = writer.toBytes();
+///   // Use bytes...
+/// } finally {
+///   BinaryWriterPool.release(writer);  // Return to pool
+/// }
+/// ```
+///
+/// ## Thread Safety
+/// This pool is isolate-local. Each Dart isolate maintains its own
+/// static pool instance.
+///
+/// Avoid sharing [BinaryWriter] instances between different isolates.
+/// For concurrent operations within the same isolate, ensure writers
+/// are acquired and released synchronously or protected by logic
+/// to prevent interleaved usage.
+///
+/// ## Performance Considerations
+/// - Pooling is beneficial for high-frequency write operations
+/// - Overhead is minimal for single-use writers (use regular constructor)
+/// - Large buffers (>64 KiB) are discarded to avoid memory waste
+///
+/// ## Memory Management
+/// - Pool max size: 32 writers
+/// - Max reusable buffer: 64 KiB
+/// - Default buffer size: 1 KiB
+/// - Use [clear] to free pooled memory explicitly
+///
+/// See also: [BinaryWriter], [getStatistics] for pool monitoring
+abstract final class BinaryWriterPool {
+  // The internal pool of reusable writer states.
+  static final _pool = <_WriterState>[];
+
+  /// Maximum number of writers to keep in the pool.
+  static const _maxPoolSize = 32;
+
+  /// Default initial buffer size for new writers (1 KiB).
+  static const _defaultBufferSize = 1024;
+
+  /// Maximum buffer capacity allowed for pooling (64 KiB).
+  /// Writers that exceed this size are discarded to free up system memory
+  static const int _maxReusableCapacity = 64 * 1024;
+
+  /// Acquires a [BinaryWriter] from the pool or creates a new one.
+  ///
+  /// Returns a pooled writer if available, otherwise creates a fresh instance
+  /// with the default buffer size (1 KiB).
+  ///
+  /// The returned writer is ready to use and should be returned to the pool
+  /// via [release] when no longer needed.
+  ///
+  /// **Best Practice:** Always use a `try-finally` block.
+  ///
+  /// There are two ways to get the data:
+  /// 1. Use [BinaryWriter.toBytes] if you consume data **inside** the try
+  ///   block (zero-copy view).
+  /// 2. Use [BinaryWriter.takeBytes] if you need to **return** the data
+  ///   (transfers buffer ownership).
+  ///
+  /// ```dart
+  /// final writer = BinaryWriterPool.acquire();
+  /// try {
+  ///   writer.writeUint32(123);
+  ///   return writer.toBytes();
+  /// } finally {
+  ///   BinaryWriterPool.release(writer);
+  /// }
+  /// ```
+  ///
+  /// Returns: A [BinaryWriter] ready for use.
+  static BinaryWriter acquire() {
+    if (_pool.isNotEmpty) {
+      final state = _pool.removeLast().._isInPool = false;
+      return BinaryWriter._(state);
+    }
+
+    return BinaryWriter(initialBufferSize: _defaultBufferSize);
+  }
+
+  /// Returns a [BinaryWriter] to the pool for future reuse.
+  ///
+  /// The writer is reset (offset cleared) and stored for future [acquire]
+  /// calls. Writers with buffers larger than 64 KiB are not pooled to avoid
+  /// long-term memory retention.
+  ///
+  /// **Safe to call multiple times** (duplicate releases are ignored).
+  ///
+  /// Only writers with capacity ≤ 64 KiB are pooled. Writers exceeding this
+  /// limit are discarded, allowing the buffer to be garbage collected.
+  ///
+  /// **Do NOT use the writer after releasing it:**
+  ///
+  /// ```dart
+  /// final writer = BinaryWriterPool.acquire();
+  /// writer.writeUint32(42);
+  /// final bytes = writer.toBytes();
+  /// BinaryWriterPool.release(writer);
+  /// // DON'T USE: writer.writeString('invalid');
+  /// ```
+  ///
+  /// Parameters:
+  /// - [writer]: The [BinaryWriter] to return to the pool
+  static void release(BinaryWriter writer) {
+    final state = writer._ws;
+
+    // Prevent double-release and state corruption
+    if (state._isInPool) {
+      return;
+    }
+
+    // Only pool writers with reasonable buffer sizes
+    // Prevents memory bloat from occasional large allocations
+    if (state.capacity <= _maxReusableCapacity && _pool.length < _maxPoolSize) {
+      state
+        ..offset = 0
+        .._isInPool = true;
+      _pool.add(state);
+    }
+  }
+
+  /// Returns pool statistics for monitoring and debugging.
+  ///
+  /// Useful for performance analysis and detecting pool inefficiencies.
+  ///
+  /// Returns a map with keys:
+  /// - `'pooled'`: Number of writers currently in the pool
+  /// - `'maxPoolSize'`: Maximum pool capacity
+  /// - `'defaultBufferSize'`: Initial buffer size for new writers
+  /// - `'maxReusableCapacity'`: Maximum buffer size for pooling
+  ///
+  /// Example:
+  /// ```dart
+  /// final stats = BinaryWriterPool.getStatistics();
+  /// print('Pooled writers: ${stats['pooled']}');  // 5
+  /// ```
+  static Map<String, int> getStatistics() => {
+    'pooled': _pool.length,
+    'maxPoolSize': _maxPoolSize,
+    'defaultBufferSize': _defaultBufferSize,
+    'maxReusableCapacity': _maxReusableCapacity,
+  };
+
+  /// Clears the pool, releasing all cached writers.
+  ///
+  /// Use this to:
+  /// - Free memory during low-activity periods
+  /// - Reset pool state in tests
+  /// - Handle memory pressure
+  ///
+  /// After clearing, subsequent [acquire] calls will create new writers.
+  ///
+  /// Example:
+  /// ```dart
+  /// BinaryWriterPool.clear();  // All pooled writers discarded
+  /// ```
+  static void clear() => _pool.clear();
 }

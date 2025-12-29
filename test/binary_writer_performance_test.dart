@@ -103,6 +103,57 @@ class BinaryWriterBenchmark extends BenchmarkBase {
   }
 }
 
+class BinaryWriterVarIntBenchmark extends BenchmarkBase {
+  BinaryWriterVarIntBenchmark() : super('BinaryWriter performance test');
+
+  late final BinaryWriter writer;
+
+  @override
+  void setup() {
+    writer = BinaryWriter();
+  }
+
+  @override
+  void run() {
+    for (var i = 0; i < 1000; i++) {
+      writer
+        ..writeVarInt(42)
+        ..writeVarInt(-42)
+        ..writeVarInt(512)
+        ..writeVarInt(-512)
+        ..writeVarUint(65535)
+        ..writeVarUint(100)
+        ..writeVarInt(-32768)
+        ..writeVarInt(32768)
+        ..writeVarUint(4294967295)
+        ..writeVarUint(100)
+        ..writeVarInt(-2147483648)
+        ..writeVarInt(2147483647)
+        ..writeVarUint(9223372036854775807)
+        ..writeVarUint(1000)
+        ..writeVarInt(-9223372036854775808)
+        ..writeVarInt(9223372036854775807);
+
+      final bytes = writer.takeBytes();
+
+      if (writer.bytesWritten != 0) {
+        throw StateError('bytesWritten should be reset to 0 after takeBytes()');
+      }
+
+      if (bytes.length != 63) {
+        throw StateError('Unexpected byte length: ${bytes.length}');
+      }
+    }
+  }
+
+  @override
+  void exercise() => run();
+  static void main() {
+    BinaryWriterVarIntBenchmark().report();
+  }
+}
+
 void main() {
   BinaryWriterBenchmark.main();
+  BinaryWriterVarIntBenchmark.main();
 }
