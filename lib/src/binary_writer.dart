@@ -913,7 +913,7 @@ int getUtf8Length(String value) {
 /// - Default buffer size: 1 KiB
 /// - Use [clear] to free pooled memory explicitly
 ///
-/// See also: [BinaryWriter], [getStatistics] for pool monitoring
+/// See also: [BinaryWriter], [stats] for pool monitoring
 abstract final class BinaryWriterPool {
   // The internal pool of reusable writer states.
   static final _pool = <_WriterState>[];
