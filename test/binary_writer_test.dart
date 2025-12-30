@@ -1885,4 +1885,303 @@ void main() {
       });
     });
   });
+
+  group('BinaryWriterPool', () {
+    setUp(BinaryWriterPool.clear);
+
+    tearDown(BinaryWriterPool.clear);
+
+    test('acquire returns a working writer', () {
+      final writer = BinaryWriterPool.acquire()..writeUint32(42);
+      final bytes = writer.toBytes();
+      BinaryWriterPool.release(writer);
+
+      expect(bytes, hasLength(4));
+    });
+
+    test('acquire creates new writer when pool is empty', () {
+      expect(BinaryWriterPool.stats.pooled, equals(0));
+
+      final writer = BinaryWriterPool.acquire();
+      expect(writer, isNotNull);
+      BinaryWriterPool.release(writer);
+    });
+
+    test('release returns writer to pool', () {
+      final writer = BinaryWriterPool.acquire()
+        //Write some data to ensure buffer is used
+        ..writeUint32(42);
+      BinaryWriterPool.release(writer);
+
+      final stats = BinaryWriterPool.stats;
+      expect(stats.pooled, equals(1));
+    });
+
+    test('acquire reuses pooled writer', () {
+      final writer1 = BinaryWriterPool.acquire()
+        // Write some data to ensure buffer is used
+        ..writeUint32(42);
+
+      BinaryWriterPool.release(writer1);
+
+      expect(BinaryWriterPool.stats.pooled, equals(1));
+
+      final writer2 = BinaryWriterPool.acquire();
+      expect(BinaryWriterPool.stats.pooled, equals(0));
+
+      // Writer should be cleared
+      expect(writer2.bytesWritten, equals(0));
+
+      BinaryWriterPool.release(writer2);
+    });
+
+    test('released writer is reset', () {
+      final writer = BinaryWriterPool.acquire()
+        ..writeUint32(42)
+        ..writeString('Hello');
+      BinaryWriterPool.release(writer);
+
+      final reusedWriter = BinaryWriterPool.acquire();
+      expect(reusedWriter.bytesWritten, equals(0));
+
+      reusedWriter.writeUint8(1);
+      final bytes = reusedWriter.toBytes();
+      expect(bytes, equals([1]));
+
+      BinaryWriterPool.release(reusedWriter);
+    });
+
+    test('clear empties the pool', () {
+      final writer1 = BinaryWriterPool.acquire();
+      final writer2 = BinaryWriterPool.acquire();
+      final writer3 = BinaryWriterPool.acquire();
+
+      BinaryWriterPool.release(writer1);
+      BinaryWriterPool.release(writer2);
+      BinaryWriterPool.release(writer3);
+
+      expect(BinaryWriterPool.stats.pooled, equals(3));
+
+      BinaryWriterPool.clear();
+      expect(BinaryWriterPool.stats.pooled, equals(0));
+    });
+
+    test('getStatistics returns correct information', () {
+      final stats = BinaryWriterPool.stats;
+
+      expect(stats.pooled, equals(0));
+      expect(stats.maxPoolSize, equals(32));
+      expect(stats.defaultBufferSize, equals(1024));
+      expect(stats.maxReusableCapacity, equals(64 * 1024));
+    });
+
+    test('pool respects max pool size', () {
+      // Create and release more writers than the pool can hold
+      final writers = <BinaryWriter>[];
+      for (var i = 0; i < 40; i++) {
+        writers.add(BinaryWriterPool.acquire());
+      }
+
+      writers.forEach(BinaryWriterPool.release);
+
+      final stats = BinaryWriterPool.stats;
+      expect(stats.pooled, equals(32)); // Max pool size
+    });
+
+    test('writers with large buffers are not pooled', () {
+      final writer = BinaryWriterPool.acquire();
+
+      // Write enough data to expand buffer beyond 64 KiB
+      final largeData = List<int>.filled(70 * 1024, 42);
+      writer.writeBytes(largeData);
+
+      BinaryWriterPool.release(writer);
+
+      // Writer should not be pooled due to large buffer
+      final stats = BinaryWriterPool.stats;
+      expect(stats.pooled, equals(0));
+    });
+
+    test('double release is safe (ignored)', () {
+      final writer = BinaryWriterPool.acquire();
+      BinaryWriterPool.release(writer);
+      expect(BinaryWriterPool.stats.pooled, equals(1));
+
+      // Second release should be ignored
+      BinaryWriterPool.release(writer);
+      expect(BinaryWriterPool.stats.pooled, equals(1));
+    });
+
+    test('multiple writers work independently', () {
+      final writer1 = BinaryWriterPool.acquire();
+      final writer2 = BinaryWriterPool.acquire();
+      final writer3 = BinaryWriterPool.acquire();
+
+      writer1.writeUint32(100);
+      writer2.writeUint32(200);
+      writer3.writeUint32(300);
+
+      final bytes1 = writer1.toBytes();
+      final bytes2 = writer2.toBytes();
+      final bytes3 = writer3.toBytes();
+
+      final reader1 = BinaryReader(bytes1);
+      final reader2 = BinaryReader(bytes2);
+      final reader3 = BinaryReader(bytes3);
+
+      expect(reader1.readUint32(), equals(100));
+      expect(reader2.readUint32(), equals(200));
+      expect(reader3.readUint32(), equals(300));
+
+      BinaryWriterPool.release(writer1);
+      BinaryWriterPool.release(writer2);
+      BinaryWriterPool.release(writer3);
+    });
+
+    test('try-finally pattern works correctly', () {
+      late Uint8List bytes;
+
+      final writer = BinaryWriterPool.acquire();
+      try {
+        writer
+          ..writeUint32(42)
+          ..writeString('Test');
+        bytes = writer.toBytes();
+      } finally {
+        BinaryWriterPool.release(writer);
+      }
+
+      expect(bytes, isNotNull);
+      expect(BinaryWriterPool.stats.pooled, equals(1));
+
+      final reader = BinaryReader(bytes);
+      expect(reader.readUint32(), equals(42));
+    });
+
+    test('takeBytes and release work together', () {
+      final writer = BinaryWriterPool.acquire()..writeUint32(123);
+      final bytes = writer.takeBytes(); // This resets the writer
+      BinaryWriterPool.release(writer);
+
+      expect(bytes, hasLength(4));
+      expect(BinaryWriterPool.stats.pooled, equals(1));
+
+      // Verify writer was properly reset when returned
+      final reusedWriter = BinaryWriterPool.acquire();
+      expect(reusedWriter.bytesWritten, equals(0));
+      BinaryWriterPool.release(reusedWriter);
+    });
+
+    test('pool handles multiple acquire-release cycles', () {
+      for (var cycle = 0; cycle < 10; cycle++) {
+        final writer = BinaryWriterPool.acquire()..writeUint32(cycle);
+
+        final bytes = writer.toBytes();
+        final reader = BinaryReader(bytes);
+        expect(reader.readUint32(), equals(cycle));
+
+        BinaryWriterPool.release(writer);
+      }
+
+      // Should have 1 writer in pool after all cycles
+      expect(BinaryWriterPool.stats.pooled, equals(1));
+    });
+
+    test('writers can write complex data structures', () {
+      final writer = BinaryWriterPool.acquire();
+      try {
+        // Write a complex structure
+        writer
+          ..writeVarUint(5) // Array length
+          ..writeString('Item1')
+          ..writeString('Item2')
+          ..writeString('Item3')
+          ..writeString('Привет') // Cyrillic
+          ..writeString('🌍'); // Emoji
+
+        final bytes = writer.toBytes();
+        final reader = BinaryReader(bytes);
+
+        expect(reader.readVarUint(), equals(5));
+        expect(reader.readString(5), equals('Item1'));
+        expect(reader.readString(5), equals('Item2'));
+        expect(reader.readString(5), equals('Item3'));
+        expect(reader.readString(12), equals('Привет'));
+        expect(reader.readString(4), equals('🌍'));
+      } finally {
+        BinaryWriterPool.release(writer);
+      }
+    });
+
+    test('pool statistics remain accurate during stress test', () {
+      // Acquire multiple writers
+      final writers = <BinaryWriter>[];
+      for (var i = 0; i < 10; i++) {
+        writers.add(BinaryWriterPool.acquire());
+      }
+      expect(BinaryWriterPool.stats.pooled, equals(0));
+
+      // Release half
+      for (var i = 0; i < 5; i++) {
+        BinaryWriterPool.release(writers[i]);
+      }
+      expect(BinaryWriterPool.stats.pooled, equals(5));
+
+      // Acquire some back
+      for (var i = 0; i < 3; i++) {
+        BinaryWriterPool.acquire();
+      }
+      expect(BinaryWriterPool.stats.pooled, equals(2));
+
+      // Release remaining
+      for (var i = 5; i < 10; i++) {
+        BinaryWriterPool.release(writers[i]);
+      }
+      expect(BinaryWriterPool.stats.pooled, equals(7));
+    });
+
+    test('default buffer size is appropriate for common use cases', () {
+      final writer = BinaryWriterPool.acquire();
+      try {
+        // Write typical message
+        writer
+          ..writeUint32(12345)
+          ..writeString('Username')
+          ..writeFloat64(3.14159)
+          ..writeBool(true);
+
+        expect(writer.bytesWritten, lessThan(1024)); // Default buffer size
+      } finally {
+        BinaryWriterPool.release(writer);
+      }
+    });
+
+    test('pool handles edge case of zero writes', () {
+      final writer = BinaryWriterPool.acquire();
+      // Don't write anything
+      final bytes = writer.toBytes();
+      BinaryWriterPool.release(writer);
+
+      expect(bytes, isEmpty);
+      expect(BinaryWriterPool.stats.pooled, equals(1));
+    });
+
+    test('pooled writer buffer capacity persists across reuse', () {
+      final writer1 = BinaryWriterPool.acquire();
+
+      // Expand buffer by writing data
+      final data = List<int>.filled(2048, 42);
+      writer1.writeBytes(data);
+
+      BinaryWriterPool.release(writer1);
+
+      // Reuse the same writer
+      final writer2 = BinaryWriterPool.acquire()
+        // Writing smaller amount should not allocate new buffer
+        ..writeUint32(123);
+      expect(writer2.bytesWritten, equals(4));
+
+      BinaryWriterPool.release(writer2);
+    });
+  });
 }

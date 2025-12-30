@@ -1020,12 +1020,12 @@ abstract final class BinaryWriterPool {
   /// final stats = BinaryWriterPool.getStatistics();
   /// print('Pooled writers: ${stats['pooled']}');  // 5
   /// ```
-  static Map<String, int> getStatistics() => {
+  static PoolStatistics get stats => PoolStatistics({
     'pooled': _pool.length,
     'maxPoolSize': _maxPoolSize,
     'defaultBufferSize': _defaultBufferSize,
     'maxReusableCapacity': _maxReusableCapacity,
-  };
+  });
 
   /// Clears the pool, releasing all cached writers.
   ///
@@ -1041,4 +1041,18 @@ abstract final class BinaryWriterPool {
   /// BinaryWriterPool.clear();  // All pooled writers discarded
   /// ```
   static void clear() => _pool.clear();
+}
+
+extension type PoolStatistics(Map<String, int> _stats) {
+  /// Number of writers currently in the pool.
+  int get pooled => _stats['pooled']!;
+
+  /// Maximum pool capacity.
+  int get maxPoolSize => _stats['maxPoolSize']!;
+
+  /// Initial buffer size for new writers.
+  int get defaultBufferSize => _stats['defaultBufferSize']!;
+
+  /// Maximum buffer size for pooling.
+  int get maxReusableCapacity => _stats['maxReusableCapacity']!;
 }
