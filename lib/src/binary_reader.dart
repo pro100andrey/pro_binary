@@ -71,11 +71,13 @@ extension type const BinaryReader._(_ReaderState _rs) {
   /// Asserts bounds in debug mode if attempting to read past buffer end.
   @pragma('vm:prefer-inline')
   int readVarUint() {
-    assert(_rs.offset < _rs.length, 'VarInt out of bounds');
-
     final list = _rs.list;
     final len = _rs.length;
     var offset = _rs.offset;
+
+    if (offset >= len) {
+      throw RangeError('VarInt out of bounds: offset=$offset length=$len');
+    }
 
     // Fast path: single byte (0-127) — most common case
     var byte = list[offset++];
@@ -90,7 +92,11 @@ extension type const BinaryReader._(_ReaderState _rs) {
 
     // Process remaining bytes: up to 9 more (total 10 max)
     for (var i = 1; i < 10; i++) {
-      assert(offset < len, 'VarInt out of bounds');
+      if (offset >= len) {
+        throw RangeError(
+          'VarInt out of bounds: offset=$offset length=$len (truncated)',
+        );
+      }
       byte = list[offset++];
 
       result |= (byte & 0x7f) << shift;
@@ -337,7 +343,9 @@ extension type const BinaryReader._(_ReaderState _rs) {
   /// Asserts bounds in debug mode if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   Uint8List readBytes(int length) {
-    assert(length >= 0, 'Length must be non-negative');
+    if (length < 0) {
+      throw RangeError.value(length, 'length', 'Length must be non-negative');
+    }
     _checkBounds(length, 'Bytes');
 
     // Create a view of the underlying buffer without copying
@@ -444,7 +452,7 @@ extension type const BinaryReader._(_ReaderState _rs) {
   /// print(text); // 'Hello, 世界! 🌍'
   /// ```
   ///
-  /// Throws [AssertionError] if attempting to read past buffer end.
+  /// Throws [RangeError] if attempting to read past buffer end.
   @pragma('vm:prefer-inline')
   String readVarString({bool allowMalformed = false}) {
     final length = readVarUint();
@@ -482,7 +490,9 @@ extension type const BinaryReader._(_ReaderState _rs) {
   /// ```
   @pragma('vm:prefer-inline')
   bool hasBytes(int length) {
-    assert(length >= 0, 'Length must be non-negative');
+    if (length < 0) {
+      throw RangeError.value(length, 'length', 'Length must be non-negative');
+    }
     return (_rs.offset + length) <= _rs.length;
   }
 
@@ -508,7 +518,9 @@ extension type const BinaryReader._(_ReaderState _rs) {
   /// ```
   @pragma('vm:prefer-inline')
   Uint8List peekBytes(int length, [int? offset]) {
-    assert(length >= 0, 'Length must be non-negative');
+    if (length < 0) {
+      throw RangeError.value(length, 'length', 'Length must be non-negative');
+    }
 
     if (length == 0) {
       return Uint8List(0);
@@ -538,7 +550,9 @@ extension type const BinaryReader._(_ReaderState _rs) {
   /// reader.skip(payloadSize);
   /// ```
   void skip(int length) {
-    assert(length >= 0, 'Length must be non-negative');
+    if (length < 0) {
+      throw RangeError.value(length, 'length', 'Length must be non-negative');
+    }
     _checkBounds(length, 'Skip');
 
     _rs.offset += length;
@@ -557,10 +571,9 @@ extension type const BinaryReader._(_ReaderState _rs) {
   /// ```
   @pragma('vm:prefer-inline')
   void seek(int position) {
-    assert(
-      position >= 0 && position <= _rs.length,
-      'Position out of bounds: $position',
-    );
+    if (position < 0 || position > _rs.length) {
+      throw RangeError.range(position, 0, _rs.length, 'position');
+    }
     _rs.offset = position;
   }
 
@@ -577,11 +590,14 @@ extension type const BinaryReader._(_ReaderState _rs) {
   /// ```
   @pragma('vm:prefer-inline')
   void rewind(int length) {
-    assert(length >= 0, 'Length must be non-negative');
-    assert(
-      _rs.offset - length >= 0,
-      'Cannot rewind $length bytes from offset ${_rs.offset}',
-    );
+    if (length < 0) {
+      throw RangeError.value(length, 'length', 'Length must be non-negative');
+    }
+    if (_rs.offset - length < 0) {
+      throw RangeError(
+        'Cannot rewind $length bytes from offset ${_rs.offset}',
+      );
+    }
     _rs.offset -= length;
   }
 
@@ -598,11 +614,23 @@ extension type const BinaryReader._(_ReaderState _rs) {
   /// Throws an assertion error in debug mode if not enough bytes.
   @pragma('vm:prefer-inline')
   void _checkBounds(int bytes, String type, [int? offset]) {
-    assert(
-      (offset ?? _rs.offset) + bytes <= _rs.length,
-      'Not enough bytes to read $type: required $bytes bytes, available '
-      '${_rs.length - _rs.offset} bytes at offset ${_rs.offset}',
-    );
+    if (bytes < 0) {
+      throw RangeError.value(bytes, 'bytes', 'Bytes must be non-negative');
+    }
+
+    final start = offset ?? _rs.offset;
+    final end = start + bytes;
+
+    if (start < 0 || start > _rs.length) {
+      throw RangeError.range(start, 0, _rs.length, 'offset');
+    }
+
+    if (end > _rs.length) {
+      throw RangeError(
+        'Not enough bytes to read $type: required $bytes bytes, available '
+        '${_rs.length - _rs.offset} bytes at offset ${_rs.offset}',
+      );
+    }
   }
 }
 

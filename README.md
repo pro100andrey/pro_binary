@@ -173,6 +173,24 @@ writer.writeVarInt(-1000);      // 2 bytes
 **Use VarUint** for: lengths, counts, IDs  
 **Use VarInt** for: deltas, offsets, signed values
 
+## Encoding Efficiency
+
+VarInt encoding significantly reduces payload size for small values:
+
+| Value | VarInt | Fixed Uint32 | Savings |
+| ------- | -------- | -------------- | --------- |
+| 0 | 1 byte | 4 bytes | **75%** |
+| 42 | 1 byte | 4 bytes | **75%** |
+| 127 | 1 byte | 4 bytes | **75%** |
+| 128 | 2 bytes | 4 bytes | **50%** |
+| 300 | 2 bytes | 4 bytes | **50%** |
+| 16,384 | 3 bytes | 4 bytes | **25%** |
+| 1,000,000 | 3 bytes | 4 bytes | **25%** |
+| 268,435,455 | 4 bytes | 4 bytes | **0%** |
+
+**Use VarInt for:** lengths, counts, sizes, small IDs  
+**Use fixed-width for:** timestamps, coordinates, fixed-size IDs
+
 ## Tips & Best Practices
 
 **Buffer Sizing**: Writer starts at 128 bytes and auto-expands. For large data, set initial size:
@@ -199,7 +217,7 @@ writer.writeString(text);
 writer.writeString(text);
 ```
 
-**Error Handling**: Bounds checks run in debug mode. Catch errors for user input:
+**Error Handling**: Invalid data and out-of-bounds reads/writes throw `RangeError`. Catch errors for user input:
 
 ```dart
 try {
@@ -223,8 +241,10 @@ Comprehensive test suite with **336+ tests** covering:
 Run tests:
 
 ```bash
-dart test                    # Run all tests
-dart test test/varint_test.dart  # Run VarInt-specific tests
+dart test -x benchmark            # Run unit/integration tests (skip benchmarks)
+dart test -t benchmark            # Run performance benchmarks only
+dart test                         # Run everything (including benchmarks)
+dart test test/binary_reader_test.dart  # Run a single test file
 dart analyze                 # Check code quality
 ```
 

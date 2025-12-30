@@ -39,13 +39,13 @@ jobs:
         run: dart analyze --fatal-infos
       
       - name: Run tests
-        run: dart test
+        run: dart test -x benchmark
       
       - name: Run tests with coverage
         if: matrix.os == 'ubuntu-latest' && matrix.sdk == 'stable'
         run: |
           dart pub global activate coverage
-          dart pub global run coverage:test_with_coverage
+          dart pub global run coverage:test_with_coverage -- -x benchmark
       
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.sdk == 'stable'

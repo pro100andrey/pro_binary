@@ -12,6 +12,15 @@ void main() {
       writer = BinaryWriter();
     });
 
+    test('throw RangeError when initialBufferSize is not positive', () {
+      expect(
+        () => BinaryWriter(initialBufferSize: 0),
+        throwsA(
+          isA<RangeError>().having((e) => e.name, 'name', 'initialBufferSize'),
+        ),
+      );
+    });
+
     test('return empty list when takeBytes called on empty writer', () {
       expect(writer.takeBytes(), isEmpty);
     });
@@ -361,7 +370,7 @@ void main() {
     });
 
     group('Input validation', () {
-      test('throw AssertionError when Uint8 value is negative', () {
+      test('throw RangeError when Uint8 value is negative', () {
         expect(
           () => writer.writeUint8(-1),
           throwsA(
@@ -373,7 +382,7 @@ void main() {
         );
       });
 
-      test('throw AssertionError when Uint8 value exceeds 255', () {
+      test('throw RangeError when Uint8 value exceeds 255', () {
         expect(
           () => writer.writeUint8(256),
           throwsA(
@@ -385,7 +394,7 @@ void main() {
         );
       });
 
-      test('throw AssertionError when Int8 value is less than -128', () {
+      test('throw RangeError when Int8 value is less than -128', () {
         expect(
           () => writer.writeInt8(-129),
           throwsA(
@@ -397,7 +406,7 @@ void main() {
         );
       });
 
-      test('throw AssertionError when Int8 value exceeds 127', () {
+      test('throw RangeError when Int8 value exceeds 127', () {
         expect(
           () => writer.writeInt8(128),
           throwsA(
@@ -409,7 +418,7 @@ void main() {
         );
       });
 
-      test('throw AssertionError when Uint16 value is negative', () {
+      test('throw RangeError when Uint16 value is negative', () {
         expect(
           () => writer.writeUint16(-1),
           throwsA(
@@ -421,7 +430,7 @@ void main() {
         );
       });
 
-      test('throw AssertionError when Uint16 value exceeds 65535', () {
+      test('throw RangeError when Uint16 value exceeds 65535', () {
         expect(
           () => writer.writeUint16(65536),
           throwsA(
@@ -434,7 +443,7 @@ void main() {
       });
 
       test(
-        'should throw AssertionError when Int16 value is less than -32768',
+        'should throw RangeError when Int16 value is less than -32768',
         () {
           expect(
             () => writer.writeInt16(-32769),
@@ -448,7 +457,7 @@ void main() {
         },
       );
 
-      test('throw AssertionError when Int16 value exceeds 32767', () {
+      test('throw RangeError when Int16 value exceeds 32767', () {
         expect(
           () => writer.writeInt16(32768),
           throwsA(
@@ -460,7 +469,7 @@ void main() {
         );
       });
 
-      test('throw AssertionError when Uint32 value is negative', () {
+      test('throw RangeError when Uint32 value is negative', () {
         expect(
           () => writer.writeUint32(-1),
           throwsA(
@@ -473,7 +482,7 @@ void main() {
       });
 
       test(
-        'should throw AssertionError when Uint32 value exceeds 4294967295',
+        'should throw RangeError when Uint32 value exceeds 4294967295',
         () {
           expect(
             () => writer.writeUint32(4294967296),
@@ -488,7 +497,7 @@ void main() {
       );
 
       test(
-        'should throw AssertionError when Int32 value is less than -2147483648',
+        'should throw RangeError when Int32 value is less than -2147483648',
         () {
           expect(
             () => writer.writeInt32(-2147483649),
@@ -503,7 +512,7 @@ void main() {
       );
 
       test(
-        'should throw AssertionError when Int32 value exceeds 2147483647',
+        'should throw RangeError when Int32 value exceeds 2147483647',
         () {
           expect(
             () => writer.writeInt32(2147483648),
@@ -666,7 +675,7 @@ void main() {
         expect(value.isNegative, isTrue);
       });
 
-      test('throw AssertionError when Uint64 value is negative', () {
+      test('throw RangeError when Uint64 value is negative', () {
         expect(
           () => writer.writeUint64(-1),
           throwsA(
@@ -905,7 +914,7 @@ void main() {
         final data = [1, 2, 3, 4, 5];
         expect(
           () => writer.writeBytes(data, -1),
-          throwsA(isA<AssertionError>()),
+          throwsA(isA<RangeError>()),
         );
       });
 
@@ -913,7 +922,7 @@ void main() {
         final data = [1, 2, 3, 4, 5];
         expect(
           () => writer.writeBytes(data, 0, -1),
-          throwsA(isA<AssertionError>()),
+          throwsA(isA<RangeError>()),
         );
       });
 
@@ -921,7 +930,7 @@ void main() {
         final data = [1, 2, 3];
         expect(
           () => writer.writeBytes(data, 4),
-          throwsA(isA<AssertionError>()),
+          throwsA(isA<RangeError>()),
         );
       });
 
@@ -930,7 +939,7 @@ void main() {
         expect(
           // offset 2 + length 5 > list length 5
           () => writer.writeBytes(data, 2, 5),
-          throwsA(isA<AssertionError>()),
+          throwsA(isA<RangeError>()),
         );
       });
     });

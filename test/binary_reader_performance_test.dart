@@ -1,7 +1,6 @@
-import 'dart:convert';
-
 import 'package:benchmark_harness/benchmark_harness.dart';
 import 'package:pro_binary/pro_binary.dart';
+import 'package:test/test.dart';
 
 const string = 'Hello, World!';
 const longString =
@@ -80,10 +79,6 @@ class BinaryReaderBenchmark extends BenchmarkBase {
       reader.reset();
     }
   }
-
-  static void main() {
-    BinaryReaderBenchmark().report();
-  }
 }
 
 class GetStringLengthBenchmark extends BenchmarkBase {
@@ -111,46 +106,14 @@ class GetStringLengthBenchmark extends BenchmarkBase {
       final _ = getUtf8Length(longString);
     }
   }
-
-  static void main() {
-    GetStringLengthBenchmark().report();
-  }
-}
-
-class GetStringLengthUtf8Benchmark extends BenchmarkBase {
-  GetStringLengthUtf8Benchmark()
-    : super('GetStringLengthUtf8 performance test');
-
-  @override
-  void exercise() => run();
-
-  @override
-  void run() {
-    for (var i = 0; i < 1000; i++) {
-      final _ = utf8.encode(string).length;
-      final _ = utf8.encode(longString).length;
-      final _ = utf8.encode(string).length;
-      final _ = utf8.encode(longString).length;
-      final _ = utf8.encode(string).length;
-      final _ = utf8.encode(longString).length;
-      final _ = utf8.encode(string).length;
-      final _ = utf8.encode(longString).length;
-      final _ = utf8.encode(string).length;
-      final _ = utf8.encode(longString).length;
-      final _ = utf8.encode(string).length;
-      final _ = utf8.encode(longString).length;
-      final _ = utf8.encode(string).length;
-      final _ = utf8.encode(longString).length;
-    }
-  }
-
-  static void main() {
-    GetStringLengthUtf8Benchmark().report();
-  }
 }
 
 void main() {
-  BinaryReaderBenchmark.main();
-  GetStringLengthBenchmark.main();
-  GetStringLengthUtf8Benchmark.main();
+  test('BinaryReaderBenchmark', () {
+    BinaryReaderBenchmark().report();
+  }, tags: ['benchmark']);
+
+  test('GetStringLengthBenchmark', () {
+    GetStringLengthBenchmark().report();
+  }, tags: ['benchmark']);
 }

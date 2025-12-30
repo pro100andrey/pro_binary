@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:benchmark_harness/benchmark_harness.dart';
 import 'package:pro_binary/pro_binary.dart';
+import 'package:test/test.dart';
 
 const longStringWithEmoji =
     'The quick brown fox 🦊 jumps over the lazy dog 🐕. '
@@ -98,9 +99,6 @@ class BinaryWriterBenchmark extends BenchmarkBase {
 
   @override
   void exercise() => run();
-  static void main() {
-    BinaryWriterBenchmark().report();
-  }
 }
 
 class BinaryWriterVarIntBenchmark extends BenchmarkBase {
@@ -148,12 +146,14 @@ class BinaryWriterVarIntBenchmark extends BenchmarkBase {
 
   @override
   void exercise() => run();
-  static void main() {
-    BinaryWriterVarIntBenchmark().report();
-  }
 }
 
 void main() {
-  BinaryWriterBenchmark.main();
-  BinaryWriterVarIntBenchmark.main();
+  test('BinaryWriterBenchmark', () {
+    BinaryWriterBenchmark().report();
+  }, tags: ['benchmark']);
+
+  test('BinaryWriterVarIntBenchmark', () {
+    BinaryWriterVarIntBenchmark().report();
+  }, tags: ['benchmark']);
 }

@@ -350,13 +350,25 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// ```
   @pragma('vm:prefer-inline')
   void writeBytes(List<int> bytes, [int offset = 0, int? length]) {
-    assert(offset >= 0, 'Offset must be non-negative');
-    assert(offset <= bytes.length, 'Offset exceeds list length');
+    if (offset < 0) {
+      throw RangeError.value(offset, 'offset', 'Offset must be non-negative');
+    }
+    if (offset > bytes.length) {
+      throw RangeError.range(offset, 0, bytes.length, 'offset');
+    }
 
     final len = length ?? (bytes.length - offset);
 
-    assert(len >= 0, 'Length must be non-negative');
-    assert(offset + len <= bytes.length, 'Offset + length exceeds list length');
+    if (len < 0) {
+      throw RangeError.value(len, 'length', 'Length must be non-negative');
+    }
+    if (offset + len > bytes.length) {
+      throw RangeError(
+        'Offset + length exceeds list length: '
+        'offset=$offset length=$len '
+        'listLength=${bytes.length}',
+      );
+    }
 
     _ws.ensureSize(len);
 
@@ -647,12 +659,24 @@ extension type BinaryWriter._(_WriterState _ws) {
 /// Separated from the extension type to allow efficient inline operations.
 final class _WriterState {
   _WriterState(int initialBufferSize)
-    : assert(initialBufferSize > 0, 'Initial buffer size must be positive'),
-      _size = initialBufferSize,
-      capacity = initialBufferSize,
+    : this._validated(_validateInitialBufferSize(initialBufferSize));
+
+  _WriterState._validated(this._size)
+    : capacity = _size,
       offset = 0,
-      list = Uint8List(initialBufferSize) {
+      list = Uint8List(_size) {
     data = list.buffer.asByteData();
+  }
+
+  static int _validateInitialBufferSize(int value) {
+    if (value <= 0) {
+      throw RangeError.value(
+        value,
+        'initialBufferSize',
+        'Initial buffer size must be positive',
+      );
+    }
+    return value;
   }
 
   /// Current write position in the buffer.
