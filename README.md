@@ -47,7 +47,7 @@ final writer = BinaryWriter();
 
 // Integers (8, 16, 32, 64-bit signed/unsigned)
 writer.writeUint8(255);
-writer.writeInt32(-1000, Endian.little);
+writer.writeInt32(-1000, .little);
 writer.writeUint64(9999999);
 
 // Floats
@@ -75,7 +75,7 @@ final reader = BinaryReader(bytes);
 
 // Read primitives (matching write order)
 final u8 = reader.readUint8();
-final i32 = reader.readInt32(Endian.little);
+final i32 = reader.readInt32(.little);
 final f64 = reader.readFloat64();
 
 // Variable-length integers
@@ -199,10 +199,10 @@ VarInt encoding significantly reduces payload size for small values:
 final writer = BinaryWriter(initialBufferSize: 1024);
 ```
 
-**Endianness**: Defaults to big-endian. Specify when needed:
+**Endianness**: Defaults to big-. Specify when needed:
 
 ```dart
-writer.writeUint32(value, Endian.little);
+writer.writeUint32(value, .little);
 ```
 
 **String Encoding**: Always use length-prefix for variable strings:
