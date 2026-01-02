@@ -1,0 +1,7 @@
+# Test configuration for package:test / dart test.
+#
+# Declare custom tags to avoid warnings and to document intent.
+
+tags:
+  benchmark:
+    description: Performance/benchmark tests (excluded from CI by default).

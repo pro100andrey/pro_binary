@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "createdAt": "2025-12-29T13:09:01.837273Z",
+  "dart": "Dart SDK version: 3.10.4 (stable) (Tue Dec 9 00:01:55 2025 -0800) on \"linux_x64\"",
+  "runs": 10,
+  "warmup": 2,
+  "tag": "benchmark",
+  "benchmarkRegex": null,
+  "mediansUs": {
+    "BinaryReader performance test": 3706.0389090909093,
+    "BinaryWriter performance test": 150.3888255564516,
+    "GetStringLength performance test": 6697.887155444721
+  }
+}
