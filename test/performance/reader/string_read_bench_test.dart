@@ -17,21 +17,24 @@ class AsciiStringReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     const asciiString = 'Hello, World! This is a test string 123456789';
     stringLength = asciiString.length;
 
-    // Write 100 ASCII strings
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer.writeString(asciiString);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader.readString(stringLength);
     }
     reader.reset();
@@ -47,7 +50,7 @@ class ShortAsciiStringReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     const strings = [
       'Hi',
       'Test',
@@ -60,7 +63,7 @@ class ShortAsciiStringReadBenchmark extends BenchmarkBase {
     ];
 
     // Write 1000 short strings
-    for (var i = 0; i < 125; i++) {
+    for (var i = 0; i < 1000; i++) {
       strings.forEach(writer.writeString);
     }
     buffer = writer.takeBytes();
@@ -70,7 +73,7 @@ class ShortAsciiStringReadBenchmark extends BenchmarkBase {
   @override
   void run() {
     // Read in same pattern
-    for (var i = 0; i < 125; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader
         ..readString(2) // Hi
         ..readString(4) // Test
@@ -95,7 +98,7 @@ class LongAsciiStringReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 32768);
+    final writer = BinaryWriter();
     const longString =
         'The quick brown fox jumps over the lazy dog. '
         'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '
@@ -103,8 +106,8 @@ class LongAsciiStringReadBenchmark extends BenchmarkBase {
         'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.';
     stringLength = longString.length;
 
-    // Write 100 long ASCII strings
-    for (var i = 0; i < 100; i++) {
+    // Write 1000 long ASCII strings
+    for (var i = 0; i < 1000; i++) {
       writer.writeString(longString);
     }
     buffer = writer.takeBytes();
@@ -112,8 +115,11 @@ class LongAsciiStringReadBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader.readString(stringLength);
     }
     reader.reset();
@@ -130,12 +136,12 @@ class CyrillicStringReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     const cyrillicString = 'Привет мир! Это тестовая строка на русском языке.';
     byteLength = getUtf8Length(cyrillicString);
 
-    // Write 100 Cyrillic strings
-    for (var i = 0; i < 100; i++) {
+    // Write 1000 Cyrillic strings
+    for (var i = 0; i < 1000; i++) {
       writer.writeString(cyrillicString);
     }
     buffer = writer.takeBytes();
@@ -143,8 +149,11 @@ class CyrillicStringReadBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader.readString(byteLength);
     }
     reader.reset();
@@ -161,12 +170,12 @@ class CjkStringReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     const cjkString = '你好世界！这是一个测试字符串。日本語のテストも含まれています。';
     byteLength = getUtf8Length(cjkString);
 
-    // Write 100 CJK strings
-    for (var i = 0; i < 100; i++) {
+    // Write 1000 CJK strings
+    for (var i = 0; i < 1000; i++) {
       writer.writeString(cjkString);
     }
     buffer = writer.takeBytes();
@@ -174,8 +183,11 @@ class CjkStringReadBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader.readString(byteLength);
     }
     reader.reset();
@@ -196,17 +208,21 @@ class EmojiStringReadBenchmark extends BenchmarkBase {
     const emojiString = '🚀 🌍 🎉 👍 💻 🔥 ⚡ 🎯 🏆 💡 🌈 ✨ 🎨 🎭 🎪';
     byteLength = getUtf8Length(emojiString);
 
-    // Write 100 emoji strings
-    for (var i = 0; i < 100; i++) {
+    // Write 1000 emoji strings
+    for (var i = 0; i < 1000; i++) {
       writer.writeString(emojiString);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader.readString(byteLength);
     }
     reader.reset();
@@ -226,12 +242,12 @@ class MixedUnicodeStringReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     const mixedString = 'Hello мир 世界 🌍! Test тест 测试 🚀';
     byteLength = getUtf8Length(mixedString);
 
-    // Write 100 mixed strings
-    for (var i = 0; i < 100; i++) {
+    // Write 1000 mixed strings
+    for (var i = 0; i < 1000; i++) {
       writer.writeString(mixedString);
     }
     buffer = writer.takeBytes();
@@ -239,8 +255,11 @@ class MixedUnicodeStringReadBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader.readString(byteLength);
     }
     reader.reset();
@@ -256,20 +275,24 @@ class VarStringAsciiReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     const asciiString = 'Hello, World! This is a test string.';
 
-    // Write 100 VarStrings
-    for (var i = 0; i < 100; i++) {
+    // Write 1000 VarStrings
+    for (var i = 0; i < 1000; i++) {
       writer.writeVarString(asciiString);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader.readVarString();
     }
     reader.reset();
@@ -285,20 +308,24 @@ class VarStringMixedReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     const mixedString = 'Hello мир 世界 🌍 Test тест 测试 🚀';
 
-    // Write 100 VarStrings
-    for (var i = 0; i < 100; i++) {
+    // Write 1000 VarStrings
+    for (var i = 0; i < 1000; i++) {
       writer.writeVarString(mixedString);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader.readVarString();
     }
     reader.reset();
@@ -314,7 +341,7 @@ class EmptyStringReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
+    final writer = BinaryWriter();
 
     // Write 1000 empty strings
     for (var i = 0; i < 1000; i++) {
@@ -323,6 +350,9 @@ class EmptyStringReadBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -346,7 +376,7 @@ class RealisticMessageReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 32768);
+    final writer = BinaryWriter();
 
     // Typical message fields
     const fields = [
@@ -364,17 +394,21 @@ class RealisticMessageReadBenchmark extends BenchmarkBase {
 
     fieldLengths = fields.map(getUtf8Length).toList();
 
-    // Write 100 messages
-    for (var i = 0; i < 100; i++) {
+    // Write 1000 messages
+    for (var i = 0; i < 1000; i++) {
       fields.forEach(writer.writeString);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       fieldLengths.forEach(reader.readString);
     }
     reader.reset();
@@ -392,7 +426,7 @@ class AlternatingStringReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 32768);
+    final writer = BinaryWriter();
     const shortString = 'Hi';
     const longString =
         'This is a much longer string with more content to read and process';
@@ -401,7 +435,7 @@ class AlternatingStringReadBenchmark extends BenchmarkBase {
     longLength = longString.length;
 
     // Alternate between short and long strings
-    for (var i = 0; i < 500; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer
         ..writeString(shortString)
         ..writeString(longString);
@@ -411,8 +445,11 @@ class AlternatingStringReadBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 500; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader
         ..readString(shortLength)
         ..readString(longLength);
@@ -431,22 +468,26 @@ class VeryLongStringReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 65536);
+    final writer = BinaryWriter();
     // Create a ~2KB string
     final longString = 'Lorem ipsum dolor sit amet. ' * 80;
     stringLength = longString.length;
 
-    // Write 50 very long strings
-    for (var i = 0; i < 50; i++) {
+    // Write 1000 very long strings
+    for (var i = 0; i < 1000; i++) {
       writer.writeString(longString);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 50; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader.readString(stringLength);
     }
     reader.reset();

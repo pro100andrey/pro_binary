@@ -16,14 +16,18 @@ class SkipSmallOffsetBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
-    // Write 1000 chunks of 8 bytes each
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 1000; i++) {
       writer.writeUint64(i);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -43,15 +47,19 @@ class SkipMediumOffsetBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 256 * 1024);
+    final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(256, (i) => i % 256));
-    // Write 1000 chunks of 256 bytes
+
     for (var i = 0; i < 1000; i++) {
       writer.writeBytes(data);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -71,7 +79,7 @@ class SkipLargeOffsetBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 4 * 1024 * 1024);
+    final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(4096, (i) => i % 256));
     // Write 1000 chunks of 4KB
     for (var i = 0; i < 1000; i++) {
@@ -80,6 +88,9 @@ class SkipLargeOffsetBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -101,13 +112,17 @@ class SeekForwardBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 100000);
+    final writer = BinaryWriter();
     // Write 100KB of data
     final data = Uint8List.fromList(List.generate(100000, (i) => i % 256));
     writer.writeBytes(data);
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -128,13 +143,18 @@ class SeekBackwardBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 100000);
+    final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(100000, (i) => i % 256));
     writer.writeBytes(data);
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
+
     reader.seek(90000); // Start near end
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -156,15 +176,19 @@ class SeekRandomAccessBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 100000);
+    final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(100000, (i) => i % 256));
+
     writer.writeBytes(data);
     buffer = writer.takeBytes();
-    reader = BinaryReader(buffer);
 
+    reader = BinaryReader(buffer);
     // Pre-calculate random-like positions (deterministic for consistency)
     positions = List.generate(1000, (i) => (i * 7919) % 90000);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -188,13 +212,17 @@ class RewindBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     for (var i = 0; i < 1000; i++) {
       writer.writeUint64(i);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -217,13 +245,17 @@ class ResetBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     for (var i = 0; i < 1000; i++) {
       writer.writeUint64(i);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -247,13 +279,16 @@ class GetPositionBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     for (var i = 0; i < 1000; i++) {
       writer.writeUint64(i);
     }
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -273,13 +308,17 @@ class RemainingBytesBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     for (var i = 0; i < 1000; i++) {
       writer.writeUint64(i);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -306,9 +345,9 @@ class RealisticParsingNavigationBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 32768);
+    final writer = BinaryWriter();
     // Write protocol-like data: header (4 bytes) + payload (variable)
-    for (var i = 0; i < 500; i++) {
+    for (var i = 0; i < 1000; i++) {
       final payloadSize = 16 + (i % 8) * 8;
       writer
         ..writeUint32(payloadSize) // Header with payload size
@@ -319,8 +358,11 @@ class RealisticParsingNavigationBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 500; i++) {
+    for (var i = 0; i < 1000; i++) {
       // 1. Get current position
       reader.offset;
       // 2. Peek at header to determine payload size
@@ -352,7 +394,7 @@ class SeekAndReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 65536);
+    final writer = BinaryWriter();
     // Write 100 records of 64 bytes each
     offsets = <int>[];
     for (var i = 0; i < 100; i++) {
@@ -360,9 +402,13 @@ class SeekAndReadBenchmark extends BenchmarkBase {
       final data = Uint8List.fromList(List.generate(64, (j) => (i + j) % 256));
       writer.writeBytes(data);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -388,16 +434,20 @@ class SkipAndPeekBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 65536);
+    final writer = BinaryWriter();
     // Write pattern: 4 bytes to skip, 4 bytes to peek
     for (var i = 0; i < 1000; i++) {
       writer
         ..writeUint32(0xDEADBEEF) // Skip this
         ..writeUint32(i); // Peek at this
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -422,13 +472,16 @@ class BacktrackNavigationBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     for (var i = 0; i < 2000; i++) {
       writer.writeUint32(i);
     }
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {

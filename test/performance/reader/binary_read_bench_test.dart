@@ -18,10 +18,10 @@ class SmallBytesReadBenchmark extends BenchmarkBase {
     final writer = BinaryWriter();
     final data = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
 
-    // Write 1000 small byte arrays
     for (var i = 0; i < 1000; i++) {
       writer.writeBytes(data);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
@@ -50,10 +50,10 @@ class MediumBytesReadBenchmark extends BenchmarkBase {
     final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(64, (i) => i % 256));
 
-    // Write 1000 medium byte arrays
     for (var i = 0; i < 1000; i++) {
       writer.writeBytes(data);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
@@ -82,10 +82,10 @@ class LargeBytesReadBenchmark extends BenchmarkBase {
     final writer = BinaryWriter(initialBufferSize: 1024 * 1024);
     final data = Uint8List.fromList(List.generate(1024, (i) => i % 256));
 
-    // Write 100 large byte arrays
     for (var i = 0; i < 1000; i++) {
       writer.writeBytes(data);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
@@ -114,10 +114,10 @@ class VeryLargeBytesReadBenchmark extends BenchmarkBase {
     final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(64 * 1024, (i) => i % 256));
 
-    // Write 10 very large byte arrays
-    for (var i = 0; i < 10; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer.writeBytes(data);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
@@ -146,10 +146,10 @@ class VarBytesSmallReadBenchmark extends BenchmarkBase {
     final writer = BinaryWriter();
     final data = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
 
-    // Write 1000 VarBytes
     for (var i = 0; i < 1000; i++) {
       writer.writeVarBytes(data);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
@@ -178,10 +178,10 @@ class VarBytesMediumReadBenchmark extends BenchmarkBase {
     final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(256, (i) => i % 256));
 
-    // Write 500 VarBytes
-    for (var i = 0; i < 500; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer.writeVarBytes(data);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
@@ -191,7 +191,7 @@ class VarBytesMediumReadBenchmark extends BenchmarkBase {
 
   @override
   void run() {
-    for (var i = 0; i < 500; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader.readVarBytes();
     }
     reader.reset();
@@ -210,10 +210,10 @@ class VarBytesLargeReadBenchmark extends BenchmarkBase {
     final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(4096, (i) => i % 256));
 
-    // Write 100 VarBytes
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer.writeVarBytes(data);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
@@ -223,7 +223,7 @@ class VarBytesLargeReadBenchmark extends BenchmarkBase {
 
   @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader.readVarBytes();
     }
     reader.reset();
@@ -240,8 +240,6 @@ class EmptyBytesReadBenchmark extends BenchmarkBase {
   @override
   void setup() {
     final writer = BinaryWriter();
-
-    // Write 1000 empty byte arrays
     for (var i = 0; i < 1000; i++) {
       writer.writeBytes([]);
     }
@@ -302,10 +300,10 @@ class ReadRemainingBytesReadBenchmark extends BenchmarkBase {
     final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(1024, (i) => i % 256));
 
-    // Write 100 chunks
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer.writeBytes(data);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
@@ -315,7 +313,7 @@ class ReadRemainingBytesReadBenchmark extends BenchmarkBase {
 
   @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader.readBytes(1024);
     }
     reader.reset();
@@ -351,6 +349,7 @@ class MixedBytesReadBenchmark extends BenchmarkBase {
         ..writeBytes(payload)
         ..writeBytes(checksum);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
@@ -383,12 +382,12 @@ class AlternatingBytesReadBenchmark extends BenchmarkBase {
     final small = Uint8List.fromList([1, 2, 3, 4]);
     final large = Uint8List.fromList(List.generate(512, (i) => i % 256));
 
-    // Alternate between small and large
     for (var i = 0; i < 1000; i++) {
       writer
         ..writeBytes(small)
         ..writeBytes(large);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
@@ -421,10 +420,10 @@ class SequentialSmallReadsReadBenchmark extends BenchmarkBase {
   void setup() {
     final writer = BinaryWriter();
 
-    // Write 4000 bytes as 1-byte chunks
     for (var i = 0; i < 1000; i++) {
       writer.writeUint8(i % 256);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
@@ -452,7 +451,6 @@ class SkipAndReadBenchmark extends BenchmarkBase {
   void setup() {
     final writer = BinaryWriter();
 
-    // Write pattern: 8 bytes data, 8 bytes padding
     for (var i = 0; i < 1000; i++) {
       final data = Uint8List.fromList(List.generate(8, (j) => (i + j) % 256));
       final padding = Uint8List.fromList(List.generate(8, (_) => 0));
@@ -460,6 +458,7 @@ class SkipAndReadBenchmark extends BenchmarkBase {
         ..writeBytes(data)
         ..writeBytes(padding);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }

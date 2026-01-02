@@ -22,9 +22,13 @@ class VarUintFastPathBenchmark extends BenchmarkBase {
     for (var i = 0; i < 1000; i++) {
       writer.writeVarUint(i % 128); // Values 0-127
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -53,9 +57,13 @@ class VarUint2ByteBenchmark extends BenchmarkBase {
     for (var i = 0; i < 1000; i++) {
       writer.writeVarUint(128 + (i % 100)); // Values 128-227
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -81,9 +89,13 @@ class VarUint3ByteBenchmark extends BenchmarkBase {
     for (var i = 0; i < 1000; i++) {
       writer.writeVarUint(16384 + (i % 1000) * 100);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -113,6 +125,9 @@ class VarUint4ByteBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -147,6 +162,9 @@ class VarUint5ByteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       final _ = reader.readVarUint();
@@ -177,6 +195,9 @@ class VarIntPositiveBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -210,6 +231,9 @@ class VarIntNegativeBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       final _ = reader.readVarInt();
@@ -240,6 +264,9 @@ class VarIntMixedBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -286,6 +313,9 @@ class VarUintMixedSizesBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {

@@ -16,14 +16,18 @@ class Uint8ReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write 1000 Uint8 values
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 1000; i++) {
       writer.writeUint8(i % 256);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -43,14 +47,18 @@ class Int8ReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write 1000 Int8 values
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 1000; i++) {
       writer.writeInt8((i % 256) - 128); // Range: -128 to 127
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -70,14 +78,18 @@ class Uint16BigEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write 1000 Uint16 values
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 1000; i++) {
       writer.writeUint16((i * 257) % 65536); // Varied values
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -97,14 +109,18 @@ class Uint16LittleEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write 1000 Uint16 values in little-endian
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 1000; i++) {
       writer.writeUint16((i * 257) % 65536, .little);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -124,14 +140,18 @@ class Int16BigEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write 1000 Int16 values
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 1000; i++) {
       writer.writeInt16((i * 257) % 65536 - 32768); // Range: -32768 to 32767
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -151,14 +171,18 @@ class Int16LittleEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write 1000 Int16 values in little-endian
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 1000; i++) {
       writer.writeInt16((i * 257) % 65536 - 32768, .little);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -178,7 +202,7 @@ class Uint32BigEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
+    final writer = BinaryWriter();
     // Write 1000 Uint32 values
     for (var i = 0; i < 1000; i++) {
       writer.writeUint32((i * 1000000 + i * 123) % 4294967296);
@@ -186,6 +210,9 @@ class Uint32BigEndianReadBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -205,14 +232,18 @@ class Uint32LittleEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write 1000 Uint32 values in little-endian
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 1000; i++) {
       writer.writeUint32((i * 1000000 + i * 123) % 4294967296, .little);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -232,14 +263,18 @@ class Int32BigEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
+    final writer = BinaryWriter();
     // Write 1000 Int32 values
     for (var i = 0; i < 1000; i++) {
       writer.writeInt32((i * 1000000 + i * 123) % 4294967296 - 2147483648);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -259,17 +294,21 @@ class Int32LittleEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write 1000 Int32 values in little-endian
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 1000; i++) {
       writer.writeInt32(
         (i * 1000000 + i * 123) % 4294967296 - 2147483648,
         .little,
       );
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -289,7 +328,7 @@ class Uint64BigEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
+    final writer = BinaryWriter();
     // Write 1000 Uint64 values
     for (var i = 0; i < 1000; i++) {
       writer.writeUint64(i * 1000000000 + i * 12345);
@@ -297,6 +336,9 @@ class Uint64BigEndianReadBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -316,14 +358,18 @@ class Uint64LittleEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
+    final writer = BinaryWriter();
     // Write 1000 Uint64 values in little-endian
     for (var i = 0; i < 1000; i++) {
       writer.writeUint64(i * 1000000000 + i * 12345, .little);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -343,7 +389,7 @@ class Int64BigEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
+    final writer = BinaryWriter();
     // Write 1000 Int64 values
     for (var i = 0; i < 1000; i++) {
       final value = i.isEven
@@ -351,9 +397,13 @@ class Int64BigEndianReadBenchmark extends BenchmarkBase {
           : -(i * 1000000000 + i * 12345);
       writer.writeInt64(value);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -373,7 +423,7 @@ class Int64LittleEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
+    final writer = BinaryWriter();
     // Write 1000 Int64 values in little-endian
     for (var i = 0; i < 1000; i++) {
       final value = i.isEven
@@ -381,9 +431,13 @@ class Int64LittleEndianReadBenchmark extends BenchmarkBase {
           : -(i * 1000000000 + i * 12345);
       writer.writeInt64(value, .little);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -407,7 +461,6 @@ class MixedFixedIntReadBenchmark extends BenchmarkBase {
   @override
   void setup() {
     final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write mixed integer types as they might appear in a real protocol
     for (var i = 0; i < 1000; i++) {
       writer
         ..writeUint8(127) // Message type
@@ -419,9 +472,13 @@ class MixedFixedIntReadBenchmark extends BenchmarkBase {
         ..writeInt16(-1000, .little) // Medium signed value
         ..writeInt64(-10000000, .little); // Large signed value
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {

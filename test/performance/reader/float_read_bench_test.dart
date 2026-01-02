@@ -16,15 +16,18 @@ class Float32BigEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write 1000 Float32 values with varied magnitudes
+    final writer = BinaryWriter();
     for (var i = 0; i < 1000; i++) {
       final value = (i * 3.14159) - 500.0;
       writer.writeFloat32(value);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -44,15 +47,19 @@ class Float32LittleEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
+    final writer = BinaryWriter();
     // Write 1000 Float32 values in little-endian
     for (var i = 0; i < 1000; i++) {
       final value = (i * 3.14159) - 500.0;
       writer.writeFloat32(value, .little);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -75,15 +82,19 @@ class Float64BigEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write 1000 Float64 values with varied magnitudes
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 1000; i++) {
       final value = (i * 2.718281828) - 1000.0;
       writer.writeFloat64(value);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -103,15 +114,19 @@ class Float64LittleEndianReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write 1000 Float64 values in little-endian
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 1000; i++) {
       final value = (i * 2.718281828) - 1000.0;
       writer.writeFloat64(value, .little);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -134,19 +149,23 @@ class Float32SpecialValuesReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write special values: NaN, Infinity, -Infinity, -0.0, normal values
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 200; i++) {
       writer
-        ..writeFloat32(double.nan, .little)
-        ..writeFloat32(double.infinity, .little)
-        ..writeFloat32(double.negativeInfinity, .little)
+        ..writeFloat32(.nan, .little)
+        ..writeFloat32(.infinity, .little)
+        ..writeFloat32(.negativeInfinity, .little)
         ..writeFloat32(-0, .little)
         ..writeFloat32(1, .little);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -166,19 +185,23 @@ class Float64SpecialValuesReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write special values: NaN, Infinity, -Infinity, -0.0, normal values
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 200; i++) {
       writer
-        ..writeFloat64(double.nan, .little)
-        ..writeFloat64(double.infinity, .little)
-        ..writeFloat64(double.negativeInfinity, .little)
+        ..writeFloat64(.nan, .little)
+        ..writeFloat64(.infinity, .little)
+        ..writeFloat64(.negativeInfinity, .little)
         ..writeFloat64(-0, .little)
         ..writeFloat64(1, .little);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -201,14 +224,18 @@ class Float32SmallValuesReadBenchmark extends BenchmarkBase {
   @override
   void setup() {
     final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write very small values near the subnormal range
+
     for (var i = 0; i < 1000; i++) {
       final value = (i + 1) * 1e-38; // Near Float32 min positive normal
       writer.writeFloat32(value, .little);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -228,15 +255,19 @@ class Float64SmallValuesReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write very small values near the subnormal range
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 1000; i++) {
       final value = (i + 1) * 1e-308; // Near Float64 min positive normal
       writer.writeFloat64(value, .little);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -256,8 +287,8 @@ class Float32LargeValuesReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write large values near Float32 max
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 1000; i++) {
       final value = (i + 1) * 1e35; // Near Float32 max (~3.4e38)
       writer.writeFloat32(value, .little);
@@ -265,6 +296,9 @@ class Float32LargeValuesReadBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -284,8 +318,8 @@ class Float64LargeValuesReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write large values near Float64 max
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 1000; i++) {
       final value = (i + 1) * 1e305; // Near Float64 max (~1.8e308)
       writer.writeFloat64(value, .little);
@@ -293,6 +327,9 @@ class Float64LargeValuesReadBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -315,8 +352,8 @@ class MixedFloatReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Write mixed Float32/Float64 as in a typical game or graphics protocol
+    final writer = BinaryWriter();
+
     for (var i = 0; i < 100; i++) {
       writer
         // 3D position (Float32 x3)
@@ -336,9 +373,13 @@ class MixedFloatReadBenchmark extends BenchmarkBase {
         ..writeFloat32(0.2, .little)
         ..writeFloat32(1, .little);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -376,16 +417,19 @@ class AlternatingFloatReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
-    // Alternate between Float32 and Float64
+    final writer = BinaryWriter();
     for (var i = 0; i < 500; i++) {
       writer
         ..writeFloat32(i * 3.14, .little)
         ..writeFloat64(i * 2.718, .little);
     }
+
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
