@@ -15,7 +15,7 @@ class SmallBytesReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     final data = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
 
     // Write 1000 small byte arrays
@@ -25,6 +25,9 @@ class SmallBytesReadBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -44,7 +47,7 @@ class MediumBytesReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 65536);
+    final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(64, (i) => i % 256));
 
     // Write 1000 medium byte arrays
@@ -54,6 +57,9 @@ class MediumBytesReadBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -77,7 +83,7 @@ class LargeBytesReadBenchmark extends BenchmarkBase {
     final data = Uint8List.fromList(List.generate(1024, (i) => i % 256));
 
     // Write 100 large byte arrays
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer.writeBytes(data);
     }
     buffer = writer.takeBytes();
@@ -85,8 +91,11 @@ class LargeBytesReadBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader.readBytes(1024);
     }
     reader.reset();
@@ -102,7 +111,7 @@ class VeryLargeBytesReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 64 * 1024 * 10);
+    final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(64 * 1024, (i) => i % 256));
 
     // Write 10 very large byte arrays
@@ -112,6 +121,9 @@ class VeryLargeBytesReadBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -131,7 +143,7 @@ class VarBytesSmallReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     final data = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
 
     // Write 1000 VarBytes
@@ -141,6 +153,9 @@ class VarBytesSmallReadBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -160,7 +175,7 @@ class VarBytesMediumReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 256 * 1024);
+    final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(256, (i) => i % 256));
 
     // Write 500 VarBytes
@@ -170,6 +185,9 @@ class VarBytesMediumReadBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -189,7 +207,7 @@ class VarBytesLargeReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 512 * 1024);
+    final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(4096, (i) => i % 256));
 
     // Write 100 VarBytes
@@ -199,6 +217,9 @@ class VarBytesLargeReadBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -218,7 +239,7 @@ class EmptyBytesReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 8192);
+    final writer = BinaryWriter();
 
     // Write 1000 empty byte arrays
     for (var i = 0; i < 1000; i++) {
@@ -227,6 +248,9 @@ class EmptyBytesReadBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -246,13 +270,16 @@ class PeekBytesReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(16, (i) => i));
 
     writer.writeBytes(data);
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -272,7 +299,7 @@ class ReadRemainingBytesReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 65536);
+    final writer = BinaryWriter();
     final data = Uint8List.fromList(List.generate(1024, (i) => i % 256));
 
     // Write 100 chunks
@@ -282,6 +309,9 @@ class ReadRemainingBytesReadBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -303,13 +333,13 @@ class MixedBytesReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 65536);
+    final writer = BinaryWriter();
 
     // Simulate a protocol message:
     // - Header (16 bytes)
     // - Payload (variable: 64, 128, 256 bytes)
     // - Checksum (4 bytes)
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       final header = Uint8List.fromList(List.generate(16, (j) => j));
       final payload = Uint8List.fromList(
         List.generate(64 + (i % 3) * 64, (j) => (j + i) % 256),
@@ -326,8 +356,11 @@ class MixedBytesReadBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader
         ..readBytes(16) // Header
         ..readBytes(64 + (i % 3) * 64) // Payload
@@ -346,12 +379,12 @@ class AlternatingBytesReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 65536);
+    final writer = BinaryWriter();
     final small = Uint8List.fromList([1, 2, 3, 4]);
     final large = Uint8List.fromList(List.generate(512, (i) => i % 256));
 
     // Alternate between small and large
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer
         ..writeBytes(small)
         ..writeBytes(large);
@@ -361,8 +394,11 @@ class AlternatingBytesReadBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader
         ..readBytes(4)
         ..readBytes(512);
@@ -383,10 +419,10 @@ class SequentialSmallReadsReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 16384);
+    final writer = BinaryWriter();
 
     // Write 4000 bytes as 1-byte chunks
-    for (var i = 0; i < 4000; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer.writeUint8(i % 256);
     }
     buffer = writer.takeBytes();
@@ -394,8 +430,11 @@ class SequentialSmallReadsReadBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 4000; i++) {
+    for (var i = 0; i < 1000; i++) {
       reader.readBytes(1);
     }
     reader.reset();
@@ -411,7 +450,7 @@ class SkipAndReadBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    final writer = BinaryWriter(initialBufferSize: 65536);
+    final writer = BinaryWriter();
 
     // Write pattern: 8 bytes data, 8 bytes padding
     for (var i = 0; i < 1000; i++) {
@@ -424,6 +463,9 @@ class SkipAndReadBenchmark extends BenchmarkBase {
     buffer = writer.takeBytes();
     reader = BinaryReader(buffer);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {

@@ -75,9 +75,9 @@ extension type BinaryWriter._(_WriterState _ws) {
       return;
     }
 
+    _ws.ensureSize(10);
     // Slow path: multi-byte VarInt
     final list = _ws.list;
-    _ws.ensureSize(10);
 
     // First byte (always has continuation bit)
     list[offset++] = (value & 0x7F) | 0x80;

@@ -13,9 +13,12 @@ class SmallBytesWriteBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    writer = BinaryWriter(initialBufferSize: 16384);
+    writer = BinaryWriter();
     data = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -35,9 +38,12 @@ class MediumBytesWriteBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    writer = BinaryWriter(initialBufferSize: 65536);
+    writer = BinaryWriter();
     data = Uint8List.fromList(List.generate(64, (i) => i % 256));
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -57,13 +63,16 @@ class LargeBytesWriteBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    writer = BinaryWriter(initialBufferSize: 1024 * 1024);
+    writer = BinaryWriter();
     data = Uint8List.fromList(List.generate(1024, (i) => i % 256));
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer.writeBytes(data);
     }
     writer.reset();
@@ -79,13 +88,16 @@ class VeryLargeBytesWriteBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    writer = BinaryWriter(initialBufferSize: 64 * 1024 * 10);
+    writer = BinaryWriter();
     data = Uint8List.fromList(List.generate(64 * 1024, (i) => i % 256));
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 10; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer.writeBytes(data);
     }
     writer.reset();
@@ -101,9 +113,12 @@ class VarBytesSmallWriteBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    writer = BinaryWriter(initialBufferSize: 16384);
+    writer = BinaryWriter();
     data = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -123,13 +138,16 @@ class VarBytesMediumWriteBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    writer = BinaryWriter(initialBufferSize: 256 * 1024);
+    writer = BinaryWriter();
     data = Uint8List.fromList(List.generate(256, (i) => i % 256));
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 500; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer.writeVarBytes(data);
     }
     writer.reset();
@@ -145,13 +163,16 @@ class VarBytesLargeWriteBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    writer = BinaryWriter(initialBufferSize: 512 * 1024);
+    writer = BinaryWriter();
     data = Uint8List.fromList(List.generate(4096, (i) => i % 256));
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer.writeVarBytes(data);
     }
     writer.reset();
@@ -166,8 +187,11 @@ class EmptyBytesWriteBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    writer = BinaryWriter(initialBufferSize: 8192);
+    writer = BinaryWriter();
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -189,7 +213,7 @@ class MixedBytesWriteBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    writer = BinaryWriter(initialBufferSize: 65536);
+    writer = BinaryWriter();
     header = Uint8List.fromList(List.generate(16, (j) => j));
     payloads = [
       Uint8List.fromList(List.generate(64, (j) => j % 256)),
@@ -200,8 +224,11 @@ class MixedBytesWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer
         ..writeBytes(header)
         ..writeBytes(payloads[i % 3])
@@ -221,14 +248,17 @@ class AlternatingBytesWriteBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    writer = BinaryWriter(initialBufferSize: 65536);
+    writer = BinaryWriter();
     small = Uint8List.fromList([1, 2, 3, 4]);
     large = Uint8List.fromList(List.generate(512, (i) => i % 256));
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer
         ..writeBytes(small)
         ..writeBytes(large);
@@ -246,12 +276,15 @@ class SequentialSmallWritesBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    writer = BinaryWriter(initialBufferSize: 16384);
+    writer = BinaryWriter();
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
-    for (var i = 0; i < 4000; i++) {
+    for (var i = 0; i < 1000; i++) {
       writer.writeUint8(i % 256);
     }
     writer.reset();
@@ -267,9 +300,12 @@ class ListIntWriteBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    writer = BinaryWriter(initialBufferSize: 65536);
+    writer = BinaryWriter();
     data = List.generate(64, (i) => i % 256);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -290,10 +326,13 @@ class Uint8ListViewWriteBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    writer = BinaryWriter(initialBufferSize: 65536);
+    writer = BinaryWriter();
     data = Uint8List.fromList(List.generate(128, (i) => i % 256));
     view = Uint8List.view(data.buffer, 32, 64);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {

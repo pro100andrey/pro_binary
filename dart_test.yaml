@@ -5,8 +5,3 @@
 tags:
   benchmark:
     description: Performance/benchmark tests (excluded from CI by default).
-
-# Include benchmark files in test discovery
-# Note: By default, only *_test.dart files are discovered.
-# This configuration allows *_bench.dart files to be found too.
-filename: "*_{test,bench}.dart"
