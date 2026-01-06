@@ -154,8 +154,8 @@ class BufferGrowthMixedWritesBenchmark extends BenchmarkBase {
     for (var i = 0; i < 200; i++) {
       writer
         ..writeUint8(i % 256)
-        ..writeUint32(i * 1000, Endian.little)
-        ..writeFloat64(i * 3.14, Endian.little)
+        ..writeUint32(i * 1000, .little)
+        ..writeFloat64(i * 3.14, .little)
         ..writeString('Message $i')
         ..writeVarUint(i);
     }

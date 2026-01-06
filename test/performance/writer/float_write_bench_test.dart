@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:benchmark_harness/benchmark_harness.dart';
 import 'package:pro_binary/pro_binary.dart';
 import 'package:test/test.dart';
@@ -38,7 +36,7 @@ class Float32LittleEndianWriteBenchmark extends BenchmarkBase {
   @override
   void run() {
     for (var i = 0; i < 1000; i++) {
-      writer.writeFloat32((i * 3.14159) - 500.0, Endian.little);
+      writer.writeFloat32((i * 3.14159) - 500.0, .little);
     }
     writer.reset();
   }
@@ -58,7 +56,7 @@ class Float32SmallValuesWriteBenchmark extends BenchmarkBase {
   @override
   void run() {
     for (var i = 0; i < 1000; i++) {
-      writer.writeFloat32((i % 100) * 0.01, Endian.little);
+      writer.writeFloat32((i % 100) * 0.01, .little);
     }
     writer.reset();
   }
@@ -78,7 +76,7 @@ class Float32LargeValuesWriteBenchmark extends BenchmarkBase {
   @override
   void run() {
     for (var i = 0; i < 1000; i++) {
-      writer.writeFloat32((i * 1000000.0) - 500000000.0, Endian.little);
+      writer.writeFloat32((i * 1000000.0) - 500000000.0, .little);
     }
     writer.reset();
   }
@@ -100,10 +98,10 @@ class Float32SpecialValuesWriteBenchmark extends BenchmarkBase {
   void run() {
     for (var i = 0; i < 250; i++) {
       writer
-        ..writeFloat32(0, Endian.little)
-        ..writeFloat32(double.nan, Endian.little)
-        ..writeFloat32(double.infinity, Endian.little)
-        ..writeFloat32(double.negativeInfinity, Endian.little);
+        ..writeFloat32(0, .little)
+        ..writeFloat32(.nan, .little)
+        ..writeFloat32(.infinity, .little)
+        ..writeFloat32(.negativeInfinity, .little);
     }
     writer.reset();
   }
@@ -143,7 +141,7 @@ class Float64LittleEndianWriteBenchmark extends BenchmarkBase {
   @override
   void run() {
     for (var i = 0; i < 1000; i++) {
-      writer.writeFloat64((i * 2.718281828) - 1000.0, Endian.little);
+      writer.writeFloat64((i * 2.718281828) - 1000.0, .little);
     }
     writer.reset();
   }
@@ -163,7 +161,7 @@ class Float64SmallValuesWriteBenchmark extends BenchmarkBase {
   @override
   void run() {
     for (var i = 0; i < 1000; i++) {
-      writer.writeFloat64((i % 100) * 0.001, Endian.little);
+      writer.writeFloat64((i % 100) * 0.001, .little);
     }
     writer.reset();
   }
@@ -185,7 +183,7 @@ class Float64LargeValuesWriteBenchmark extends BenchmarkBase {
     for (var i = 0; i < 1000; i++) {
       writer.writeFloat64(
         (i * 1000000000.0) - 500000000000.0,
-        Endian.little,
+        .little,
       );
     }
     writer.reset();
@@ -208,10 +206,10 @@ class Float64SpecialValuesWriteBenchmark extends BenchmarkBase {
   void run() {
     for (var i = 0; i < 250; i++) {
       writer
-        ..writeFloat64(0, Endian.little)
-        ..writeFloat64(double.nan, Endian.little)
-        ..writeFloat64(double.infinity, Endian.little)
-        ..writeFloat64(double.negativeInfinity, Endian.little);
+        ..writeFloat64(0, .little)
+        ..writeFloat64(.nan, .little)
+        ..writeFloat64(.infinity, .little)
+        ..writeFloat64(.negativeInfinity, .little);
     }
     writer.reset();
   }
@@ -233,21 +231,21 @@ class MixedFloatWriteBenchmark extends BenchmarkBase {
     for (var i = 0; i < 100; i++) {
       writer
         // Position (3D coordinates)
-        ..writeFloat32(i * 10.0, Endian.little)
-        ..writeFloat32(i * 20.0, Endian.little)
-        ..writeFloat32(i * 30.0, Endian.little)
+        ..writeFloat32(i * 10.0, .little)
+        ..writeFloat32(i * 20.0, .little)
+        ..writeFloat32(i * 30.0, .little)
         // Rotation (quaternion)
-        ..writeFloat32(0, Endian.little)
-        ..writeFloat32(0, Endian.little)
-        ..writeFloat32(0, Endian.little)
-        ..writeFloat32(1, Endian.little)
+        ..writeFloat32(0, .little)
+        ..writeFloat32(0, .little)
+        ..writeFloat32(0, .little)
+        ..writeFloat32(1, .little)
         // Timestamp
-        ..writeFloat64(i * 0.016, Endian.little)
+        ..writeFloat64(i * 0.016, .little)
         // Color (RGBA)
-        ..writeFloat32(1, Endian.little)
-        ..writeFloat32(0.5, Endian.little)
-        ..writeFloat32(0, Endian.little)
-        ..writeFloat32(1, Endian.little);
+        ..writeFloat32(1, .little)
+        ..writeFloat32(0.5, .little)
+        ..writeFloat32(0, .little)
+        ..writeFloat32(1, .little);
     }
     writer.reset();
   }
@@ -268,8 +266,8 @@ class AlternatingFloatWriteBenchmark extends BenchmarkBase {
   void run() {
     for (var i = 0; i < 500; i++) {
       writer
-        ..writeFloat32(i * 3.14, Endian.little)
-        ..writeFloat64(i * 2.718, Endian.little);
+        ..writeFloat32(i * 3.14, .little)
+        ..writeFloat64(i * 2.718, .little);
     }
     writer.reset();
   }

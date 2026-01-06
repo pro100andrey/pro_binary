@@ -618,7 +618,7 @@ void main() {
       });
 
       test('handle Float32 NaN value correctly', () {
-        writer.writeFloat32(double.nan);
+        writer.writeFloat32(.nan);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
@@ -626,7 +626,7 @@ void main() {
       });
 
       test('handle Float32 positive Infinity correctly', () {
-        writer.writeFloat32(double.infinity);
+        writer.writeFloat32(.infinity);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
@@ -634,7 +634,7 @@ void main() {
       });
 
       test('handle Float32 negative Infinity correctly', () {
-        writer.writeFloat32(double.negativeInfinity);
+        writer.writeFloat32(.negativeInfinity);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
@@ -642,7 +642,7 @@ void main() {
       });
 
       test('handle Float64 NaN value correctly', () {
-        writer.writeFloat64(double.nan);
+        writer.writeFloat64(.nan);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
@@ -650,7 +650,7 @@ void main() {
       });
 
       test('handle Float64 positive Infinity correctly', () {
-        writer.writeFloat64(double.infinity);
+        writer.writeFloat64(.infinity);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);
@@ -658,7 +658,7 @@ void main() {
       });
 
       test('handle Float64 negative Infinity correctly', () {
-        writer.writeFloat64(double.negativeInfinity);
+        writer.writeFloat64(.negativeInfinity);
         final bytes = writer.takeBytes();
 
         final reader = BinaryReader(bytes);

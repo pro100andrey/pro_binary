@@ -787,7 +787,7 @@ void main() {
 
       test('readFloat32 with NaN', () {
         final buffer = Uint8List(4);
-        ByteData.view(buffer.buffer).setFloat32(0, double.nan);
+        ByteData.view(buffer.buffer).setFloat32(0, .nan);
         final reader = BinaryReader(buffer);
 
         expect(reader.readFloat32().isNaN, isTrue);
@@ -795,7 +795,7 @@ void main() {
 
       test('readFloat32 with Infinity', () {
         final buffer = Uint8List(4);
-        ByteData.view(buffer.buffer).setFloat32(0, double.infinity);
+        ByteData.view(buffer.buffer).setFloat32(0, .infinity);
         final reader = BinaryReader(buffer);
 
         expect(reader.readFloat32(), equals(double.infinity));
@@ -803,7 +803,7 @@ void main() {
 
       test('readFloat32 with negative Infinity', () {
         final buffer = Uint8List(4);
-        ByteData.view(buffer.buffer).setFloat32(0, double.negativeInfinity);
+        ByteData.view(buffer.buffer).setFloat32(0, .negativeInfinity);
         final reader = BinaryReader(buffer);
 
         expect(reader.readFloat32(), equals(double.negativeInfinity));
@@ -811,7 +811,7 @@ void main() {
 
       test('readFloat64 with NaN', () {
         final buffer = Uint8List(8);
-        ByteData.view(buffer.buffer).setFloat64(0, double.nan);
+        ByteData.view(buffer.buffer).setFloat64(0, .nan);
         final reader = BinaryReader(buffer);
 
         expect(reader.readFloat64().isNaN, isTrue);
@@ -819,7 +819,7 @@ void main() {
 
       test('readFloat64 with Infinity', () {
         final buffer = Uint8List(8);
-        ByteData.view(buffer.buffer).setFloat64(0, double.infinity);
+        ByteData.view(buffer.buffer).setFloat64(0, .infinity);
         final reader = BinaryReader(buffer);
 
         expect(reader.readFloat64(), equals(double.infinity));
@@ -827,7 +827,7 @@ void main() {
 
       test('readFloat64 with negative Infinity', () {
         final buffer = Uint8List(8);
-        ByteData.view(buffer.buffer).setFloat64(0, double.negativeInfinity);
+        ByteData.view(buffer.buffer).setFloat64(0, .negativeInfinity);
         final reader = BinaryReader(buffer);
 
         expect(reader.readFloat64(), equals(double.negativeInfinity));

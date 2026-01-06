@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:benchmark_harness/benchmark_harness.dart';
 import 'package:pro_binary/pro_binary.dart';
 import 'package:test/test.dart';
@@ -78,7 +76,7 @@ class Uint16LittleEndianWriteBenchmark extends BenchmarkBase {
   @override
   void run() {
     for (var i = 0; i < 1000; i++) {
-      writer.writeUint16(i % 65536, Endian.little);
+      writer.writeUint16(i % 65536, .little);
     }
     writer.reset();
   }
@@ -118,7 +116,7 @@ class Int16LittleEndianWriteBenchmark extends BenchmarkBase {
   @override
   void run() {
     for (var i = 0; i < 1000; i++) {
-      writer.writeInt16((i % 65536) - 32768, Endian.little);
+      writer.writeInt16((i % 65536) - 32768, .little);
     }
     writer.reset();
   }
@@ -158,7 +156,7 @@ class Uint32LittleEndianWriteBenchmark extends BenchmarkBase {
   @override
   void run() {
     for (var i = 0; i < 1000; i++) {
-      writer.writeUint32(i * 1000, Endian.little);
+      writer.writeUint32(i * 1000, .little);
     }
     writer.reset();
   }
@@ -198,7 +196,7 @@ class Int32LittleEndianWriteBenchmark extends BenchmarkBase {
   @override
   void run() {
     for (var i = 0; i < 1000; i++) {
-      writer.writeInt32(i * 1000 - 500000, Endian.little);
+      writer.writeInt32(i * 1000 - 500000, .little);
     }
     writer.reset();
   }
@@ -238,7 +236,7 @@ class Uint64LittleEndianWriteBenchmark extends BenchmarkBase {
   @override
   void run() {
     for (var i = 0; i < 1000; i++) {
-      writer.writeUint64(i * 1000000, Endian.little);
+      writer.writeUint64(i * 1000000, .little);
     }
     writer.reset();
   }
@@ -278,7 +276,7 @@ class Int64LittleEndianWriteBenchmark extends BenchmarkBase {
   @override
   void run() {
     for (var i = 0; i < 1000; i++) {
-      writer.writeInt64(i * 1000000 - 500000000, Endian.little);
+      writer.writeInt64(i * 1000000 - 500000000, .little);
     }
     writer.reset();
   }
@@ -300,13 +298,13 @@ class MixedFixedIntWriteBenchmark extends BenchmarkBase {
     for (var i = 0; i < 100; i++) {
       writer
         ..writeUint8(i % 256)
-        ..writeUint16(i % 65536, Endian.little)
-        ..writeUint32(i * 1000, Endian.little)
-        ..writeInt32(i * 100 - 5000, Endian.little)
-        ..writeUint64(i * 1000000, Endian.little)
+        ..writeUint16(i % 65536, .little)
+        ..writeUint32(i * 1000, .little)
+        ..writeInt32(i * 100 - 5000, .little)
+        ..writeUint64(i * 1000000, .little)
         ..writeInt8((i % 256) - 128)
-        ..writeInt16((i % 32768) - 16384, Endian.little)
-        ..writeInt64(i * 1000000, Endian.little);
+        ..writeInt16((i % 32768) - 16384, .little)
+        ..writeInt64(i * 1000000, .little);
     }
     writer.reset();
   }
