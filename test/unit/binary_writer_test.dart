@@ -2184,4 +2184,236 @@ void main() {
       BinaryWriterPool.release(writer2);
     });
   });
+
+  group('VarInt/VarUint edge cases', () {
+    test('writeVarUint with maximum safe 64-bit value', () {
+      final writer = BinaryWriter()..writeVarUint(0x7FFFFFFFFFFFFFFF);
+      final bytes = writer.takeBytes();
+
+      final reader = BinaryReader(bytes);
+      expect(reader.readVarUint(), equals(0x7FFFFFFFFFFFFFFF));
+    });
+
+    test('writeVarInt with maximum positive value', () {
+      // disabling lint for large integer literal
+      // ignore: avoid_js_rounded_ints
+      final writer = BinaryWriter()..writeVarInt(0x3FFFFFFFFFFFFFFF);
+      final bytes = writer.takeBytes();
+
+      final reader = BinaryReader(bytes);
+      // disabling lint for large integer literal
+      // ignore: avoid_js_rounded_ints
+      expect(reader.readVarInt(), equals(0x3FFFFFFFFFFFFFFF));
+    });
+
+    test('writeVarInt with minimum negative value', () {
+      final writer = BinaryWriter()..writeVarInt(-0x4000000000000000);
+      final bytes = writer.takeBytes();
+
+      final reader = BinaryReader(bytes);
+      expect(reader.readVarInt(), equals(-0x4000000000000000));
+    });
+
+    test('writeVarUint boundary transitions', () {
+      final writer = BinaryWriter()
+        ..writeVarUint(0x7F) // Last 1-byte value
+        ..writeVarUint(0x80) // First 2-byte value
+        ..writeVarUint(0x3FFF) // Last 2-byte value
+        ..writeVarUint(0x4000) // First 3-byte value
+        ..writeVarUint(0x1FFFFF) // Last 3-byte value
+        ..writeVarUint(0x200000); // First 4-byte value
+
+      final bytes = writer.takeBytes();
+      final reader = BinaryReader(bytes);
+
+      expect(reader.readVarUint(), equals(0x7F));
+      expect(reader.readVarUint(), equals(0x80));
+      expect(reader.readVarUint(), equals(0x3FFF));
+      expect(reader.readVarUint(), equals(0x4000));
+      expect(reader.readVarUint(), equals(0x1FFFFF));
+      expect(reader.readVarUint(), equals(0x200000));
+    });
+
+    test('writeVarInt ZigZag boundary transitions', () {
+      final writer = BinaryWriter()
+        ..writeVarInt(-64) // Last 1-byte negative
+        ..writeVarInt(-65) // First 2-byte negative
+        ..writeVarInt(63) // Last 1-byte positive
+        ..writeVarInt(64); // First 2-byte positive
+
+      final bytes = writer.takeBytes();
+      final reader = BinaryReader(bytes);
+
+      expect(reader.readVarInt(), equals(-64));
+      expect(reader.readVarInt(), equals(-65));
+      expect(reader.readVarInt(), equals(63));
+      expect(reader.readVarInt(), equals(64));
+    });
+
+    test('writeVarUint with all 10-byte value (near maximum)', () {
+      // Maximum VarUint uses 9-10 bytes depending on value
+      const largeValue = 0x7FFFFFFFFFFFFFFF;
+      final writer = BinaryWriter()..writeVarUint(largeValue);
+      final bytes = writer.takeBytes();
+
+      expect(bytes.length, equals(9)); // This value encodes to 9 bytes
+
+      final reader = BinaryReader(bytes);
+      expect(reader.readVarUint(), equals(largeValue));
+    });
+  });
+
+  group('VarBytes/VarString edge cases', () {
+    test('writeVarBytes with maximum single-byte length (127 bytes)', () {
+      final writer = BinaryWriter();
+      final data = List.generate(127, (i) => i);
+      writer.writeVarBytes(data);
+      final bytes = writer.takeBytes();
+
+      // VarUint(127) = 1 byte + 127 data bytes = 128 total
+      expect(bytes.length, equals(128));
+      expect(bytes[0], equals(127));
+
+      final reader = BinaryReader(bytes);
+      expect(reader.readVarBytes(), equals(data));
+    });
+
+    test('writeVarBytes with minimum two-byte length (128 bytes)', () {
+      final writer = BinaryWriter();
+      final data = List.generate(128, (i) => i & 0xFF);
+      writer.writeVarBytes(data);
+      final bytes = writer.takeBytes();
+
+      // VarUint(128) = 2 bytes + 128 data bytes = 130 total
+      expect(bytes.length, equals(130));
+
+      final reader = BinaryReader(bytes);
+      expect(reader.readVarBytes(), equals(data));
+    });
+
+    test('writeVarString with ASCII at 127 character boundary', () {
+      final writer = BinaryWriter();
+      final str = 'A' * 127; // 127 ASCII chars = 127 bytes
+      writer.writeVarString(str);
+      final bytes = writer.takeBytes();
+
+      // VarUint(127) = 1 byte + 127 bytes = 128 total
+      expect(bytes.length, equals(128));
+
+      final reader = BinaryReader(bytes);
+      expect(reader.readVarString(), equals(str));
+    });
+
+    test('writeVarString with UTF-8 multi-byte at boundary', () {
+      final writer = BinaryWriter();
+      // Each Cyrillic char = 2 bytes, 64 chars = 128 bytes
+      final str = 'Я' * 64;
+      writer.writeVarString(str);
+      final bytes = writer.takeBytes();
+
+      // VarUint(128) = 2 bytes + 128 bytes = 130 total
+      expect(bytes.length, equals(130));
+
+      final reader = BinaryReader(bytes);
+      expect(reader.readVarString(), equals(str));
+    });
+
+    test('writeVarBytes triggers buffer expansion', () {
+      final writer = BinaryWriter(initialBufferSize: 16);
+      final largeData = List.generate(1000, (i) => i & 0xFF);
+
+      writer.writeVarBytes(largeData);
+
+      final bytes = writer.takeBytes();
+      expect(bytes.length, greaterThan(1000));
+
+      final reader = BinaryReader(bytes);
+      expect(reader.readVarBytes(), equals(largeData));
+    });
+  });
+
+  group('Complex error scenarios', () {
+    test(
+      'writeString with extremely long string triggers multiple expansions',
+      () {
+        final writer = BinaryWriter(initialBufferSize: 8);
+        final longString = 'A' * 10000;
+
+        writer.writeString(longString);
+        final bytes = writer.takeBytes();
+
+        expect(bytes.length, equals(10000));
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readString(bytes.length), equals(longString));
+      },
+    );
+
+    test('alternating VarInt and fixed writes with buffer growth', () {
+      final writer = BinaryWriter(initialBufferSize: 16);
+
+      for (var i = 0; i < 50; i++) {
+        writer
+          ..writeVarUint(i * 100)
+          ..writeUint32(i)
+          ..writeVarInt(-i);
+      }
+
+      final bytes = writer.takeBytes();
+      final reader = BinaryReader(bytes);
+
+      for (var i = 0; i < 50; i++) {
+        expect(reader.readVarUint(), equals(i * 100));
+        expect(reader.readUint32(), equals(i));
+        expect(reader.readVarInt(), equals(-i));
+      }
+    });
+
+    test('writeVarString with mixed malformed and valid UTF-8', () {
+      final writer = BinaryWriter()
+        // Valid string first
+        ..writeVarString('Valid');
+
+      // Malformed string with allowMalformed=true
+      const malformed = 'Test\uD800End';
+      writer.writeVarString(malformed);
+
+      final bytes = writer.takeBytes();
+      final reader = BinaryReader(bytes);
+
+      expect(reader.readVarString(), equals('Valid'));
+      final result = reader.readVarString(allowMalformed: true);
+      expect(result, contains('Test'));
+      expect(result, contains('End'));
+    });
+
+    test('complex interleaved writes maintain correct offsets', () {
+      final writer = BinaryWriter()
+        ..writeUint8(1)
+        ..writeVarUint(300)
+        ..writeUint16(1000)
+        ..writeVarInt(-500)
+        ..writeUint32(0xDEADBEEF)
+        ..writeVarString('Test')
+        ..writeBool(true)
+        ..writeVarBytes([1, 2, 3, 4, 5])
+        ..writeFloat32(3.14)
+        ..writeUint64(123456789);
+
+      final bytes = writer.takeBytes();
+      final reader = BinaryReader(bytes);
+
+      expect(reader.readUint8(), equals(1));
+      expect(reader.readVarUint(), equals(300));
+      expect(reader.readUint16(), equals(1000));
+      expect(reader.readVarInt(), equals(-500));
+      expect(reader.readUint32(), equals(0xDEADBEEF));
+      expect(reader.readVarString(), equals('Test'));
+      expect(reader.readBool(), isTrue);
+      expect(reader.readVarBytes(), equals([1, 2, 3, 4, 5]));
+      expect(reader.readFloat32(), closeTo(3.14, 0.01));
+      expect(reader.readUint64(), equals(123456789));
+      expect(reader.availableBytes, equals(0));
+    });
+  });
 }

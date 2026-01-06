@@ -1866,5 +1866,210 @@ void main() {
         expect(() => reader.rewind(-1), throwsA(isA<RangeError>()));
       });
     });
+
+    group('VarInt/VarUint edge cases', () {
+      test('readVarUint with maximum safe 64-bit value boundary', () {
+        // Test value close to overflow boundary
+        final writer = BinaryWriter()..writeVarUint(0x7FFFFFFFFFFFFFFF);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readVarUint(), equals(0x7FFFFFFFFFFFFFFF));
+      });
+
+      test('readVarInt with maximum positive ZigZag value', () {
+        // disabling lint for large integer literal
+        // ignore: avoid_js_rounded_ints
+        final writer = BinaryWriter()..writeVarInt(0x3FFFFFFFFFFFFFFF);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        // disabling lint for large integer literal
+        // ignore: avoid_js_rounded_ints
+        expect(reader.readVarInt(), equals(0x3FFFFFFFFFFFFFFF));
+      });
+
+      test('readVarInt with minimum negative ZigZag value', () {
+        final writer = BinaryWriter()..writeVarInt(-0x4000000000000000);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readVarInt(), equals(-0x4000000000000000));
+      });
+
+      test('readVarUint boundary values sequence', () {
+        final writer = BinaryWriter()
+          ..writeVarUint(0x7F) // 1 byte max
+          ..writeVarUint(0x80) // 2 byte min
+          ..writeVarUint(0x3FFF) // 2 byte max
+          ..writeVarUint(0x4000) // 3 byte min
+          ..writeVarUint(0x1FFFFF) // 3 byte max
+          ..writeVarUint(0x200000); // 4 byte min
+
+        final bytes = writer.takeBytes();
+        final reader = BinaryReader(bytes);
+
+        expect(reader.readVarUint(), equals(0x7F));
+        expect(reader.readVarUint(), equals(0x80));
+        expect(reader.readVarUint(), equals(0x3FFF));
+        expect(reader.readVarUint(), equals(0x4000));
+        expect(reader.readVarUint(), equals(0x1FFFFF));
+        expect(reader.readVarUint(), equals(0x200000));
+      });
+    });
+
+    group('VarBytes/VarString error handling', () {
+      test('readVarBytes throws when length exceeds available bytes', () {
+        // Write VarInt claiming 1000 bytes but only provide 10
+        final writer = BinaryWriter()
+          ..writeVarUint(1000)
+          ..writeBytes(List.filled(10, 42));
+
+        final bytes = writer.takeBytes();
+        final reader = BinaryReader(bytes);
+
+        expect(reader.readVarBytes, throwsA(isA<RangeError>()));
+      });
+
+      test('readVarString throws when length exceeds available bytes', () {
+        // Write VarInt claiming 100 bytes but only provide 5
+        final writer = BinaryWriter()
+          ..writeVarUint(100)
+          ..writeBytes([72, 101, 108, 108, 111]); // "Hello"
+
+        final bytes = writer.takeBytes();
+        final reader = BinaryReader(bytes);
+
+        expect(reader.readVarString, throwsA(isA<RangeError>()));
+      });
+
+      test('readVarBytes with corrupted length at buffer end', () {
+        // VarInt that claims more bytes than buffer has
+        final buffer = Uint8List.fromList([0xFF, 0xFF, 0xFF, 0xFF, 0x0F]);
+        final reader = BinaryReader(buffer);
+
+        // Should throw when trying to read the claimed bytes
+        expect(reader.readVarBytes, throwsA(isA<RangeError>()));
+      });
+
+      test('readVarString handles empty string correctly', () {
+        final writer = BinaryWriter()..writeVarString('');
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readVarString(), equals(''));
+      });
+
+      test('readVarBytes with zero length', () {
+        final writer = BinaryWriter()..writeVarBytes([]);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        expect(reader.readVarBytes(), isEmpty);
+      });
+
+      test('readVarString with malformed UTF-8 in VarString format', () {
+        // Write invalid UTF-8 sequence with VarInt length prefix
+        final writer = BinaryWriter()
+          ..writeVarUint(3)
+          ..writeBytes([0xFF, 0xFE, 0xFD]); // Invalid UTF-8
+
+        final bytes = writer.takeBytes();
+        final reader = BinaryReader(bytes);
+
+        expect(
+          reader.readVarString,
+          throwsA(isA<FormatException>()),
+        );
+
+        // Reset and try with allowMalformed
+        final reader2 = BinaryReader(bytes);
+        final result = reader2.readVarString(allowMalformed: true);
+        expect(result, isNotEmpty); // Should contain replacement characters
+      });
+    });
+
+    group('Partial read scenarios', () {
+      test('reading after partial VarInt consumption', () {
+        final writer = BinaryWriter()
+          ..writeVarUint(300)
+          ..writeUint32(0x12345678);
+
+        final bytes = writer.takeBytes();
+        final reader = BinaryReader(bytes);
+
+        expect(reader.readVarUint(), equals(300));
+        expect(reader.readUint32(), equals(0x12345678));
+        expect(reader.availableBytes, equals(0));
+      });
+
+      test('interleaved VarInt and fixed-size reads', () {
+        final writer = BinaryWriter()
+          ..writeVarUint(127)
+          ..writeUint8(42)
+          ..writeVarInt(-1)
+          ..writeUint16(1000)
+          ..writeVarUint(128)
+          ..writeUint32(0xDEADBEEF);
+
+        final bytes = writer.takeBytes();
+        final reader = BinaryReader(bytes);
+
+        expect(reader.readVarUint(), equals(127));
+        expect(reader.readUint8(), equals(42));
+        expect(reader.readVarInt(), equals(-1));
+        expect(reader.readUint16(), equals(1000));
+        expect(reader.readVarUint(), equals(128));
+        expect(reader.readUint32(), equals(0xDEADBEEF));
+      });
+
+      test('readRemainingBytes after VarBytes', () {
+        final writer = BinaryWriter()
+          ..writeVarBytes([1, 2, 3])
+          ..writeBytes([4, 5, 6, 7, 8]);
+
+        final bytes = writer.takeBytes();
+        final reader = BinaryReader(bytes);
+
+        final varBytes = reader.readVarBytes();
+        expect(varBytes, equals([1, 2, 3]));
+
+        final remaining = reader.readRemainingBytes();
+        expect(remaining, equals([4, 5, 6, 7, 8]));
+      });
+    });
+
+    group('Navigation edge cases', () {
+      test('seek and hasBytes combined', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
+        final reader = BinaryReader(buffer)..seek(3);
+        expect(reader.hasBytes(5), isTrue);
+        expect(reader.hasBytes(6), isFalse);
+
+        reader.seek(7);
+        expect(reader.hasBytes(1), isTrue);
+        expect(reader.hasBytes(2), isFalse);
+      });
+
+      test('rewind to exactly zero offset', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
+        final reader = BinaryReader(buffer)..readBytes(3);
+        expect(reader.offset, equals(3));
+
+        reader.rewind(3);
+        expect(reader.offset, equals(0));
+        expect(reader.readUint8(), equals(1));
+      });
+
+      test('multiple seeks without reading', () {
+        final buffer = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
+        final reader = BinaryReader(buffer);
+
+        for (var i = 0; i < 8; i++) {
+          reader.seek(i);
+          expect(reader.offset, equals(i));
+        }
+      });
+    });
   });
 }
