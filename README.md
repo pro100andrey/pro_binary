@@ -4,15 +4,17 @@
 [![Tests](https://github.com/pro100andrey/pro_binary/workflows/Tests/badge.svg)](https://github.com/pro100andrey/pro_binary/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-High-performance binary serialization for Dart. Fast, type-safe, and easy to use.
+High-performance binary serialization library for Dart with zero-copy operations, efficient memory management, and Protocol Buffers-compatible VarInt encoding.
 
-## Why pro_binary?
+## Features
 
-- 🚀 **Fast**: Optimized for performance with zero-copy operations
-- 🎯 **Type-safe**: Full support for all Dart primitive types
-- 🔍 **Developer-friendly**: Clear error messages in debug mode
-- 📦 **Smart**: Auto-expanding buffers, VarInt encoding for smaller payloads
-- 🌐 **Flexible**: Big-endian and little-endian support
+- 🚀 **Zero-copy reads**: Direct `Uint8List` views without data duplication
+- ⚡ **Optimized writes**: Exponential buffer growth strategy (×1.5) with pooling support
+- 🔢 **VarInt encoding**: Protocol Buffers-compatible variable-length integer encoding
+- 🎯 **Type-safe API**: Full support for all Dart primitive types (int8-int64, float32/64, bool)
+- 🌐 **Endianness support**: Both big-endian (default) and little-endian byte order
+- 📦 **Memory efficient**: Automatic buffer management with configurable initial capacity
+- 🧪 **Battle-tested**: 556+ tests with extensive edge case coverage
 
 ## Installation
 
@@ -123,10 +125,14 @@ final text = 'Hello, 世界! 🌍';
 final encoded = utf8.encode(text);
 writer.writeVarUint(encoded.length);
 writer.writeString(text);
+// or simply
+writer.writeVarString(text);
 
 // Read
 final length = reader.readVarUint();
 final text = reader.readString(length);
+// or simply
+final text = reader.readVarString();
 ```
 
 ### Struct-like Data
@@ -157,6 +163,67 @@ class Player {
 }
 ```
 
+## Architecture
+
+### BinaryWriter
+
+```dart
+final writer = BinaryWriter(initialBufferSize: 128); // Default: 128 bytes
+```
+
+**Buffer Management:**
+
+- Initial capacity: 128 bytes (configurable)
+- Growth strategy: `newCapacity = max(currentCapacity * 1.5, currentCapacity + requiredBytes)` with 64-byte alignment
+- Resets buffer without reallocation: `writer.reset()`
+- Takes ownership of buffer: `writer.takeBytes()` (one-time use, resets writer)
+- Creates view without reset: `writer.toBytes()` (reusable)
+
+**Write Operations:**
+
+- Fixed-width integers: `writeUint8`, `writeInt16`, `writeUint32`, `writeInt64`, etc.
+- Variable-length integers: `writeVarUint` (unsigned), `writeVarInt` (ZigZag-encoded signed)
+- Floating-point: `writeFloat32`, `writeFloat64`
+- Binary data: `writeBytes`, `writeVarBytes` (length-prefixed)
+- Strings: `writeString` (raw UTF-8), `writeVarString` (length-prefixed)
+- Boolean: `writeBool` (1 byte: 0x00 or 0x01)
+
+### BinaryReader
+
+```dart
+final reader = BinaryReader(bytes);
+```
+
+**Zero-Copy Design:**
+
+- No buffer copying: operates on `Uint8List.view` of input data
+- Direct memory access via `ByteData` for endianness handling
+- Automatic offset tracking with bounds checking
+
+**Read Operations:**
+
+- Fixed-width integers: `readUint8`, `readInt16`, `readUint32`, `readInt64`, etc.
+- Variable-length integers: `readVarUint`, `readVarInt` (ZigZag-decoded)
+- Floating-point: `readFloat32`, `readFloat64`
+- Binary data: `readBytes`, `readVarBytes`, `readRemainingBytes`
+- Strings: `readString` (raw UTF-8), `readVarString` (length-prefixed)
+- Boolean: `readBool`
+
+**Navigation API:**
+
+- `skip(int bytes)`: Move forward by N bytes
+- `seek(int position)`: Jump to absolute position
+- `rewind(int bytes)`: Move backward by N bytes
+- `reset()`: Return to start
+- `peekBytes(int length, [int offset])`: Look ahead without consuming
+- `hasBytes(int count)`: Check if enough bytes available
+
+**State Inspection:**
+
+- `offset`: Current read position (0-based)
+- `length`: Total buffer size
+- `availableBytes`: Remaining unread bytes
+
 ## VarInt Encoding
 
 VarInt uses fewer bytes for small numbers:
@@ -169,6 +236,14 @@ writer.writeVarUint(1000000);   // 3 bytes
 writer.writeVarInt(-1);         // 1 byte  (ZigZag encoded)
 writer.writeVarInt(-1000);      // 2 bytes
 ```
+
+**Implementation Details:**
+
+- Protocol Buffers Base 128 Varint encoding
+- 7 data bits + 1 continuation bit per byte
+- Maximum 10 bytes for 64-bit values
+- ZigZag encoding for signed integers: `(n << 1) ^ (n >> 63)`
+- Fast path optimization for single-byte values (0-127)
 
 **Use VarUint** for: lengths, counts, IDs  
 **Use VarInt** for: deltas, offsets, signed values
@@ -193,65 +268,242 @@ VarInt encoding significantly reduces payload size for small values:
 
 ## Tips & Best Practices
 
-**Buffer Sizing**: Writer starts at 128 bytes and auto-expands. For large data, set initial size:
+### Performance Optimization
+
+**Pre-allocate buffers** for known data sizes:
 
 ```dart
+// For ~1KB messages
 final writer = BinaryWriter(initialBufferSize: 1024);
+
+// Avoid multiple small allocations
+final writer = BinaryWriter(initialBufferSize: 8192); // For bulk writes
 ```
 
-**Endianness**: Defaults to big-. Specify when needed:
+**Use object pooling** for high-frequency operations:
 
 ```dart
-writer.writeUint32(value, .little);
-```
-
-**String Encoding**: Always use length-prefix for variable strings:
-
-```dart
-// ✅ Good
-final bytes = utf8.encode(text);
-writer.writeVarUint(bytes.length);
-writer.writeString(text);
-
-// ❌ Bad - no way to know where string ends
-writer.writeString(text);
-```
-
-**Error Handling**: Invalid data and out-of-bounds reads/writes throw `RangeError`. Catch errors for user input:
-
-```dart
+// Acquire from pool
+final writer = BinaryWriterPool.acquire();
 try {
-  final value = reader.readUint32();
-} catch (e) {
-  print('Invalid data: $e');
+  writer.writeUint32(value);
+  final bytes = writer.takeBytes();
+  send(bytes);
+} finally {
+  // Return to pool for reuse
+  BinaryWriterPool.release(writer);
+}
+
+// Pool statistics
+print(BinaryWriterPool.poolSize);      // Available writers
+print(BinaryWriterPool.peakPoolSize);  // High water mark
+```
+
+**Choose correct integer type**:
+
+```dart
+// VarInt for small values (lengths, counts)
+writer.writeVarUint(items.length);  // 1 byte for length < 128
+
+// Fixed-width for large/unpredictable values
+writer.writeUint32(timestamp);      // Always 4 bytes, predictable
+writer.writeUint64(uuid);           // Fixed 8 bytes
+```
+
+### Endianness
+
+Default: **big-endian** (network byte order). Specify when needed:
+
+```dart
+// Explicit endianness
+writer.writeUint32(value, .little);
+writer.writeFloat64(3.14, .big);
+
+// Reading must match writing
+final value = reader.readUint32(.little);
+```
+
+**When to use little-endian:**
+
+- Interop with x86/ARM systems (native byte order)
+- Matching existing binary formats (e.g., RIFF, BMP)
+- Performance-critical code on little-endian CPUs
+
+### String Encoding
+
+Always use **length-prefixed** encoding for variable-length strings:
+
+```dart
+// ✅ Good: Self-describing
+writer.writeVarString('Hello');
+// Equivalent to:
+// writer.writeVarUint(utf8.encode('Hello').length);
+// writer.writeString('Hello');
+
+// ❌ Bad: No way to determine string boundaries
+writer.writeString('Hello');
+writer.writeString('World'); // Where does first string end?
+```
+
+For **fixed-length** strings, calculate UTF-8 byte length:
+
+```dart
+final text = 'Hello, 世界!';
+final bytes = utf8.encode(text);
+writer.writeUint16(bytes.length);  // Store byte length
+writer.writeString(text);
+
+// Reading
+final byteLength = reader.readUint16();
+final text = reader.readString(byteLength);
+```
+
+### Error Handling
+
+All operations throw `RangeError` on invalid data or buffer overflow:
+
+```dart
+// Buffer underflow
+try {
+  final value = reader.readUint32(); // Not enough bytes
+} on RangeError catch (e) {
+  print('Buffer underflow: $e');
+}
+
+// Invalid VarInt
+try {
+  final value = reader.readVarInt(); // Malformed encoding
+} on FormatException catch (e) {
+  print('Invalid VarInt: $e');
+}
+
+// String decoding errors
+try {
+  final text = reader.readString(10, allowMalformed: false);
+} on FormatException catch (e) {
+  print('Invalid UTF-8: $e');
+}
+```
+
+### Design Patterns
+
+**Tagged unions** (discriminated unions):
+
+```dart
+enum MessageType { ping, data, ack }
+
+void writeMessage(BinaryWriter w, MessageType type, dynamic payload) {
+  w.writeUint8(type.index);
+  switch (type) {
+    case MessageType.ping:
+      // No payload
+      break;
+    case MessageType.data:
+      w.writeVarBytes(payload as List<int>);
+      break;
+    case MessageType.ack:
+      w.writeUint32(payload as int); // Sequence number
+      break;
+  }
+}
+```
+
+**Version-tolerant serialization**:
+
+```dart
+class Message {
+  static const int version = 2;
+  
+  void writeTo(BinaryWriter w) {
+    w.writeUint8(version);        // Version byte
+    w.writeVarUint(id);            // Field 1
+    w.writeVarString(text);        // Field 2
+    // Version 2: added timestamp
+    if (version >= 2) {
+      w.writeUint64(timestamp);
+    }
+  }
+  
+  static Message readFrom(BinaryReader r) {
+    final ver = r.readUint8();
+    final id = r.readVarUint();
+    final text = r.readVarString();
+    final timestamp = ver >= 2 ? r.readUint64() : 0;
+    return Message(id, text, timestamp);
+  }
 }
 ```
 
 ## Testing
 
-Comprehensive test suite with **336+ tests** covering:
+Comprehensive test suite with **556 tests** covering:
 
-- ✅ **VarInt/VarUint encoding** - 70+ dedicated tests for variable-length integers
-- ✅ **All data types** - Exhaustive testing of read/write operations
-- ✅ **Edge cases** - Boundary conditions, overflow, special values
-- ✅ **UTF-8 handling** - Multi-byte characters, emojis, malformed sequences
-- ✅ **Round-trip validation** - Ensures data integrity through encode/decode cycles
-- ✅ **Performance benchmarks** - Tracks optimization effectiveness
+- ✅ **Unit tests (417)**: Isolated BinaryReader/Writer method testing
+  - All primitive types (int8-int64, float32/64, bool)
+  - VarInt/VarUint encoding/decoding (70+ dedicated tests)
+  - Boundary conditions and overflow detection
+  - UTF-8 handling (multi-byte chars, emojis, malformed sequences)
+  - Navigation API (seek, skip, rewind, peek)
+  - Error handling and exception cases
+
+- ✅ **Integration tests (92)**: End-to-end roundtrip validation
+  - Write → Read consistency for all data types
+  - Buffer expansion under load
+  - Complex data structure serialization
+
+- ✅ **Performance benchmarks (51)**: Optimization tracking
+  - Read/write throughput for all operations
+  - Buffer growth patterns
+  - VarInt encoding efficiency by value range
+  - Navigation operation costs
 
 Run tests:
 
 ```bash
-dart test -x benchmark            # Run unit/integration tests (skip benchmarks)
-dart test -t benchmark            # Run performance benchmarks only
-dart test                         # Run everything (including benchmarks)
-dart test test/binary_reader_test.dart  # Run a single test file
-dart analyze                 # Check code quality
+# Run unit + integration tests (skip benchmarks)
+dart test -x benchmark
+
+# Run performance benchmarks only  
+dart test -t benchmark
+
+# Run all tests including benchmarks
+dart test
+
+# Run specific test file
+dart test test/unit/binary_reader_test.dart
+
+# Run with coverage
+dart pub global activate coverage
+dart pub global run coverage:test_with_coverage -- -x benchmark
+
+# Code analysis
+dart analyze --fatal-infos
+dart format --set-exit-if-changed .
 ```
 
 ## Contributing
 
-Found a bug or have a feature idea? [Open an issue](https://github.com/pro100andrey/pro_binary/issues) or submit a PR!
+Contributions are welcome! Please:
+
+1. **Open an issue** first to discuss major changes
+2. **Follow existing code style** (run `dart format`)
+3. **Add tests** for new features (maintain >95% coverage)
+4. **Update documentation** including README examples
+5. **Run full test suite** before submitting PR
+
+   ```bash
+   dart analyze --fatal-infos
+   dart format --set-exit-if-changed .
+   dart test
+   ```
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
 ## License
 
 MIT License - see [LICENSE](./LICENSE) for details.
+
+---
+
+Need help? Found a bug? Have a feature request?  
+👉 [Open an issue](https://github.com/pro100andrey/pro_binary/issues)

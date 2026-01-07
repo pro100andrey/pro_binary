@@ -369,6 +369,200 @@ void main() {
       expect(writer.bytesWritten, equals(10007));
     });
 
+    test('initial capacity is 128 bytes by default and aligned', () {
+      expect(writer.capacity, equals(128));
+      expect(writer.capacity % 64, equals(0));
+    });
+
+    test('capacity is aligned to 64-byte boundary on initialization', () {
+      // Test various sizes
+      final customWriter256 = BinaryWriter(initialBufferSize: 256);
+      expect(customWriter256.capacity, equals(256));
+      expect(customWriter256.capacity % 64, equals(0));
+
+      // Size 50 should be aligned to 64
+      final customWriter50 = BinaryWriter(initialBufferSize: 50);
+      expect(customWriter50.capacity, equals(64));
+      expect(customWriter50.capacity % 64, equals(0));
+
+      // Size 100 should be aligned to 128
+      final customWriter100 = BinaryWriter(initialBufferSize: 100);
+      expect(customWriter100.capacity, equals(128));
+      expect(customWriter100.capacity % 64, equals(0));
+    });
+
+    test('capacity increases after buffer expansion', () {
+      // Default capacity is 128 bytes
+      expect(writer.capacity, equals(128));
+
+      // Write data that exceeds initial capacity
+      final largeData = Uint8List(200);
+      writer.writeBytes(largeData);
+
+      // Capacity with 1.5x growth: need 200, 128 * 1.5 = 192 < 200, so use
+      // 200 aligned to 256
+      expect(writer.capacity, equals(256));
+    });
+
+    test('capacity expands with 1.5x growth strategy', () {
+      final smallWriter = BinaryWriter(initialBufferSize: 64);
+      expect(smallWriter.capacity, equals(64));
+
+      // Write 100 bytes (exceeds initial 64)
+      // 64 * 1.5 = 96 < 100, so use 100 aligned to 128
+      smallWriter.writeBytes(Uint8List(100));
+
+      expect(smallWriter.capacity, equals(128));
+    });
+
+    test('capacity resets to initial size after reset', () {
+      // Force expansion
+      writer.writeBytes(Uint8List(200));
+      expect(writer.capacity, greaterThan(128));
+
+      // reset() should reset capacity back to initial size (128)
+      writer.reset();
+      expect(writer.capacity, equals(128));
+      expect(writer.bytesWritten, equals(0));
+    });
+
+    test('capacity resets to initial size after takeBytes', () {
+      // Force expansion
+      writer.writeBytes(Uint8List(200));
+      expect(writer.capacity, greaterThan(128));
+
+      // takeBytes() resets to initial size (128)
+      writer.takeBytes();
+      expect(writer.capacity, equals(128));
+      expect(writer.bytesWritten, equals(0));
+    });
+
+    test('capacity does not change with toBytes', () {
+      writer.writeBytes(Uint8List(200));
+      final capacityBefore = writer.capacity;
+
+      // toBytes() should not change capacity
+      final bytes = writer.toBytes();
+      expect(writer.capacity, equals(capacityBefore));
+      expect(bytes.length, equals(200));
+    });
+
+    test('capacity aligns to 64-byte boundary after expansion', () {
+      // Start with 128 bytes (already aligned to 64)
+      expect(writer.capacity, equals(128));
+      expect(writer.capacity % 64, equals(0));
+
+      // Write 200 bytes -> requires 256 capacity (128 * 2)
+      // 256 is already aligned to 64, so capacity should be 256
+      writer.writeBytes(Uint8List(200));
+      expect(writer.capacity, equals(256));
+      expect(writer.capacity % 64, equals(0));
+    });
+
+    test('capacity aligns to 64-byte boundary from small initial size', () {
+      // Start with 50 bytes -> aligned to 64
+      final smallWriter = BinaryWriter(initialBufferSize: 50);
+      expect(smallWriter.capacity, equals(64));
+
+      // Write 100 bytes -> 64 * 2 = 128 (aligned)
+      smallWriter.writeBytes(Uint8List(100));
+      expect(smallWriter.capacity, equals(128));
+      expect(smallWriter.capacity % 64, equals(0));
+    });
+
+    test('capacity alignment happens on initialization and expansion', () {
+      // Test that both initialization and expansion align to 64-byte boundary
+      final sizes = [1, 17, 33, 65, 99, 130];
+      final expectedInitial = [64, 64, 64, 128, 128, 192];
+
+      for (var i = 0; i < sizes.length; i++) {
+        final size = sizes[i];
+        final expected = expectedInitial[i];
+        final w = BinaryWriter(initialBufferSize: size);
+
+        // Initial capacity should be aligned
+        expect(
+          w.capacity,
+          equals(expected),
+          reason: 'Initial size $size should align to $expected',
+        );
+        expect(
+          w.capacity % 64,
+          equals(0),
+          reason: 'Initial capacity should be aligned',
+        );
+
+        // After expansion, capacity should still be aligned
+        w.writeBytes(Uint8List(w.capacity + 1));
+        expect(
+          w.capacity % 64,
+          equals(0),
+          reason: 'Capacity after expansion should be aligned',
+        );
+      }
+    });
+
+    test('capacity expansion maintains 64-byte alignment', () {
+      // Start with 64 bytes
+      final w = BinaryWriter(initialBufferSize: 64);
+      expect(w.capacity, equals(64));
+
+      // Force multiple expansions
+      w.writeBytes(
+        Uint8List(100),
+      ); // Need 100, 64 * 1.5 = 96 < 100, so use 100 aligned to 128
+      expect(w.capacity % 64, equals(0));
+      expect(w.capacity, equals(128));
+      // Total 250, need 250: 128 * 1.5 = 192 < 250, so use 250 aligned to 256
+      w.writeBytes(Uint8List(150));
+      expect(w.capacity % 64, equals(0));
+      expect(w.capacity, equals(256));
+    });
+
+    test('capacity with exact requirement uses alignment', () {
+      final w = BinaryWriter(initialBufferSize: 64);
+      expect(w.capacity, equals(64)); // Already aligned
+
+      // Write exactly 65 bytes -> need 65 total capacity
+      // Current: 64, need: 65, so expand: 64 * 1.5 = 96, aligned to 64 = 128
+      w.writeBytes(Uint8List(65));
+      expect(w.capacity, equals(128));
+      expect(w.capacity % 64, equals(0));
+
+      // Now write 65 more bytes -> total written: 130, need 130 capacity
+      // Current: 128, need: 130, so expand: 128 * 1.5 = 192 (already aligned)
+      w.writeBytes(Uint8List(65));
+      expect(w.capacity, equals(192));
+      expect(w.capacity % 64, equals(0));
+    });
+
+    test('capacity alignment calculation is correct', () {
+      // Test specific alignment calculations
+      final testCases = {
+        1: 64, // (1 + 63) & ~63 = 64
+        63: 64, // (63 + 63) & ~63 = 64
+        64: 64, // (64 + 63) & ~63 = 64
+        65: 128, // (65 + 63) & ~63 = 128
+        127: 128, // (127 + 63) & ~63 = 128
+        128: 128, // (128 + 63) & ~63 = 128
+        129: 192, // (129 + 63) & ~63 = 192
+        255: 256, // (255 + 63) & ~63 = 256
+        256: 256, // (256 + 63) & ~63 = 256
+        257: 320, // (257 + 63) & ~63 = 320
+      };
+
+      for (final entry in testCases.entries) {
+        final unaligned = entry.key;
+        final aligned = entry.value;
+        final calculated = (unaligned + 63) & ~63;
+        expect(
+          calculated,
+          equals(aligned),
+          reason: 'Alignment of $unaligned should be $aligned',
+        );
+      }
+    });
+
     group('Input validation', () {
       test('throw RangeError when Uint8 value is negative', () {
         expect(

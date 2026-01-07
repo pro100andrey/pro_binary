@@ -14,7 +14,6 @@ import 'dart:typed_data';
 /// Example:
 /// ```dart
 /// final writer = BinaryWriter();
-///
 /// // Write various data types
 /// writer.writeUint32(42);
 /// writer.writeFloat64(3.14);
@@ -40,6 +39,9 @@ extension type BinaryWriter._(_WriterState _ws) {
 
   /// Returns the total number of bytes written to the buffer.
   int get bytesWritten => _ws.offset;
+
+  /// Returns the current capacity of the internal buffer.
+  int get capacity => _ws.capacity;
 
   /// Writes an unsigned variable-length integer using VarInt encoding.
   ///
@@ -661,10 +663,11 @@ final class _WriterState {
   _WriterState(int initialBufferSize)
     : this._validated(_validateInitialBufferSize(initialBufferSize));
 
-  _WriterState._validated(this._size)
-    : capacity = _size,
+  _WriterState._validated(int size)
+    : _size = size,
+      capacity = (size + 63) & ~63,
       offset = 0,
-      list = Uint8List(_size) {
+      list = Uint8List((size + 63) & ~63) {
     data = list.buffer.asByteData();
   }
 
@@ -698,9 +701,10 @@ final class _WriterState {
 
   @pragma('vm:prefer-inline')
   void _initializeBuffer() {
-    list = Uint8List(_size);
+    final alignedSize = (_size + 63) & ~63;
+    list = Uint8List(alignedSize);
     data = list.buffer.asByteData();
-    capacity = _size;
+    capacity = alignedSize;
     offset = 0;
   }
 
@@ -752,16 +756,19 @@ final class _WriterState {
 
   /// Expands the buffer to accommodate additional data.
   ///
-  /// Uses exponential growth (2x) for better amortized performance,
+  /// Uses exponential growth (1.5x) for better memory efficiency,
   /// but ensures the buffer is always large enough for the requested size.
   void _expand(int size) {
     final req = offset + size;
-    // Double the capacity (exponential growth)
-    var newCapacity = capacity * 2;
+    // Grow by 1.5x (exponential growth with better memory efficiency)
+    var newCapacity = capacity + (capacity >> 1);
+
     // Ensure we meet the minimum requirement
     if (newCapacity < req) {
       newCapacity = req;
     }
+    // Align to 64-byte boundary
+    newCapacity = (newCapacity + 63) & ~63;
 
     list = Uint8List(newCapacity)..setRange(0, offset, list);
 
