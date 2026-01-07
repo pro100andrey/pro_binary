@@ -14,6 +14,9 @@ class PoolAcquireNewBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 100; i++) {
       final writer = BinaryWriterPool.acquire();
@@ -44,6 +47,9 @@ class PoolAcquireReusedBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 100; i++) {
       final writer = BinaryWriterPool.acquire();
@@ -70,6 +76,9 @@ class PoolReleaseBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (final writer in writers) {
       writer.writeBytes(List.generate(50, (j) => j % 256));
@@ -89,6 +98,9 @@ class PoolFullCycleBenchmark extends BenchmarkBase {
   void setup() {
     BinaryWriterPool.clear();
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -112,6 +124,9 @@ class PoolHeavyUsageBenchmark extends BenchmarkBase {
   void setup() {
     BinaryWriterPool.clear();
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -142,6 +157,9 @@ class PoolSequentialAcquireBenchmark extends BenchmarkBase {
   void setup() {
     BinaryWriterPool.clear();
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -175,6 +193,9 @@ class PoolStatisticsBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     // Query statistics multiple times
     for (var i = 0; i < 1000; i++) {
@@ -198,6 +219,9 @@ class PoolMixedOperationsBenchmark extends BenchmarkBase {
   void setup() {
     BinaryWriterPool.clear();
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -238,6 +262,9 @@ class PoolBufferReuseBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     // Use pool with varying write sizes
     for (var cycle = 0; cycle < 20; cycle++) {
@@ -265,6 +292,9 @@ class PoolResetStatisticsBenchmark extends BenchmarkBase {
       BinaryWriterPool.release(w);
     }
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {

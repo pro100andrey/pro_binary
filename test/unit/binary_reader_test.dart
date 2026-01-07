@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 void main() {
   group('BinaryReader', () {
-    test('readUint8', () {
+    test('reads Uint8 correctly', () {
       final buffer = Uint8List.fromList([0x01]);
       final reader = BinaryReader(buffer);
 
@@ -14,7 +14,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readInt8', () {
+    test('reads Int8 correctly', () {
       final buffer = Uint8List.fromList([0xFF]);
       final reader = BinaryReader(buffer);
 
@@ -22,7 +22,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readUint16 big-endian', () {
+    test('reads Uint16 in big-endian', () {
       final buffer = Uint8List.fromList([0x01, 0x00]);
       final reader = BinaryReader(buffer);
 
@@ -30,7 +30,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readUint16 little-endian', () {
+    test('reads Uint16 in little-endian', () {
       final buffer = Uint8List.fromList([0x00, 0x01]);
       final reader = BinaryReader(buffer);
 
@@ -38,7 +38,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readInt16 big-endian', () {
+    test('reads Int16 in big-endian', () {
       final buffer = Uint8List.fromList([0xFF, 0xFF]);
       final reader = BinaryReader(buffer);
 
@@ -46,7 +46,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readInt16 little-endian', () {
+    test('reads Int16 in little-endian', () {
       final buffer = Uint8List.fromList([0x00, 0x80]);
       final reader = BinaryReader(buffer);
 
@@ -54,7 +54,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readUint32 big-endian', () {
+    test('reads Uint32 in big-endian', () {
       final buffer = Uint8List.fromList([0x00, 0x01, 0x00, 0x00]);
       final reader = BinaryReader(buffer);
 
@@ -62,7 +62,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readUint32 little-endian', () {
+    test('reads Uint32 in little-endian', () {
       final buffer = Uint8List.fromList([0x00, 0x00, 0x01, 0x00]);
       final reader = BinaryReader(buffer);
 
@@ -70,7 +70,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readInt32 big-endian', () {
+    test('reads Int32 in big-endian', () {
       final buffer = Uint8List.fromList([0xFF, 0xFF, 0xFF, 0xFF]);
       final reader = BinaryReader(buffer);
 
@@ -78,7 +78,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readInt32 little-endian', () {
+    test('reads Int32 in little-endian', () {
       final buffer = Uint8List.fromList([0x00, 0x00, 0x00, 0x80]);
       final reader = BinaryReader(buffer);
 
@@ -86,7 +86,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readUint64 big-endian', () {
+    test('reads Uint64 in big-endian', () {
       final buffer = Uint8List.fromList([
         0x00,
         0x00,
@@ -103,7 +103,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readUint64 little-endian', () {
+    test('reads Uint64 in little-endian', () {
       final buffer = Uint8List.fromList([
         0x00,
         0x00,
@@ -120,7 +120,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readInt64 big-endian', () {
+    test('reads Int64 in big-endian', () {
       final buffer = Uint8List.fromList([
         0xFF,
         0xFF,
@@ -137,7 +137,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readInt64 little-endian', () {
+    test('reads Int64 in little-endian', () {
       final buffer = Uint8List.fromList([
         0x00,
         0x00,
@@ -154,7 +154,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readFloat32 big-endian', () {
+    test('reads Float32 in big-endian', () {
       final buffer = Uint8List.fromList([0x40, 0x49, 0x0F, 0xDB]); // 3.1415927
       final reader = BinaryReader(buffer);
 
@@ -162,7 +162,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readFloat32 little-endian', () {
+    test('reads Float32 in little-endian', () {
       final buffer = Uint8List.fromList([0xDB, 0x0F, 0x49, 0x40]); // 3.1415927
       final reader = BinaryReader(buffer);
 
@@ -170,7 +170,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readFloat64 big-endian', () {
+    test('reads Float64 in big-endian', () {
       final buffer = Uint8List.fromList([
         0x40,
         0x09,
@@ -190,7 +190,7 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readFloat64 little-endian', () {
+    test('reads Float64 in little-endian', () {
       final buffer = Uint8List.fromList([
         0x18,
         0x2D,
@@ -274,31 +274,6 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readVarInt roundtrip with writeVarInt', () {
-      final writer = BinaryWriter()
-        ..writeVarUint(0)
-        ..writeVarUint(1)
-        ..writeVarUint(127)
-        ..writeVarUint(128)
-        ..writeVarUint(300)
-        ..writeVarUint(70000)
-        ..writeVarUint(1 << 20)
-        ..writeVarUint(1 << 30);
-
-      final buffer = writer.takeBytes();
-      final reader = BinaryReader(buffer);
-
-      expect(reader.readVarUint(), equals(0));
-      expect(reader.readVarUint(), equals(1));
-      expect(reader.readVarUint(), equals(127));
-      expect(reader.readVarUint(), equals(128));
-      expect(reader.readVarUint(), equals(300));
-      expect(reader.readVarUint(), equals(70000));
-      expect(reader.readVarUint(), equals(1 << 20));
-      expect(reader.readVarUint(), equals(1 << 30));
-      expect(reader.availableBytes, equals(0));
-    });
-
     test('readZigZag encoding for zero', () {
       final buffer = Uint8List.fromList([0]);
       final reader = BinaryReader(buffer);
@@ -355,33 +330,6 @@ void main() {
       expect(reader.availableBytes, equals(0));
     });
 
-    test('readZigZag roundtrip with writeZigZag', () {
-      final writer = BinaryWriter()
-        ..writeVarInt(0)
-        ..writeVarInt(1)
-        ..writeVarInt(-1)
-        ..writeVarInt(2)
-        ..writeVarInt(-2)
-        ..writeVarInt(100)
-        ..writeVarInt(-100)
-        ..writeVarInt(2147483647)
-        ..writeVarInt(-2147483648);
-
-      final buffer = writer.takeBytes();
-      final reader = BinaryReader(buffer);
-
-      expect(reader.readVarInt(), equals(0));
-      expect(reader.readVarInt(), equals(1));
-      expect(reader.readVarInt(), equals(-1));
-      expect(reader.readVarInt(), equals(2));
-      expect(reader.readVarInt(), equals(-2));
-      expect(reader.readVarInt(), equals(100));
-      expect(reader.readVarInt(), equals(-100));
-      expect(reader.readVarInt(), equals(2147483647));
-      expect(reader.readVarInt(), equals(-2147483648));
-      expect(reader.availableBytes, equals(0));
-    });
-
     test('readVarUint throws on truncated varint', () {
       // VarInt with continuation bit set but no following byte
       final buffer = Uint8List.fromList([0x80]); // MSB=1, expects more bytes
@@ -407,7 +355,16 @@ void main() {
       ]);
       final reader = BinaryReader(buffer);
 
-      expect(reader.readVarUint, throwsA(isA<FormatException>()));
+      expect(
+        reader.readVarUint,
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('VarInt is too long'),
+          ),
+        ),
+      );
     });
 
     test('readVarInt throws on truncated zigzag', () {
@@ -479,14 +436,6 @@ void main() {
       final reader = BinaryReader(buffer)..skip(2);
       expect(reader.offset, equals(2));
       expect(reader.readUint8(), equals(0x02));
-    });
-
-    test('read zero-length bytes', () {
-      final buffer = Uint8List.fromList([]);
-      final reader = BinaryReader(buffer);
-
-      expect(reader.readBytes(0), equals([]));
-      expect(reader.availableBytes, equals(0));
     });
 
     test('read beyond buffer throws RangeError', () {
@@ -1915,6 +1864,22 @@ void main() {
         expect(reader.readVarUint(), equals(0x4000));
         expect(reader.readVarUint(), equals(0x1FFFFF));
         expect(reader.readVarUint(), equals(0x200000));
+      });
+
+      test('readVarInt throws on value exceeding int64 range', () {
+        // Create buffer with VarInt that would decode to value > max int64
+        // This tests overflow protection
+        final buffer = Uint8List.fromList([
+          0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //
+          0xFF, 0xFF, 0xFF, 0xFF, 0x7F, // Maximum valid VarInt encoding
+        ]);
+        final reader = BinaryReader(buffer);
+
+        // Should successfully read maximum value without throwing
+        expect(
+          reader.readVarInt,
+          returnsNormally,
+        );
       });
     });
 

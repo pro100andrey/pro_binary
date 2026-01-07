@@ -14,6 +14,9 @@ class Uint8WriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       writer.writeUint8(i % 256);
@@ -32,6 +35,9 @@ class Int8WriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 8192);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -54,6 +60,9 @@ class Uint16BigEndianWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       writer.writeUint16(i % 65536);
@@ -72,6 +81,9 @@ class Uint16LittleEndianWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 16384);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -94,6 +106,9 @@ class Int16BigEndianWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       writer.writeInt16((i % 65536) - 32768);
@@ -112,6 +127,9 @@ class Int16LittleEndianWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 16384);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -134,6 +152,9 @@ class Uint32BigEndianWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       writer.writeUint32(i * 1000);
@@ -152,6 +173,9 @@ class Uint32LittleEndianWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 32768);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -174,6 +198,9 @@ class Int32BigEndianWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       writer.writeInt32(i * 1000 - 500000);
@@ -192,6 +219,9 @@ class Int32LittleEndianWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 32768);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -214,6 +244,9 @@ class Uint64BigEndianWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       writer.writeUint64(i * 1000000);
@@ -232,6 +265,9 @@ class Uint64LittleEndianWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 65536);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -254,6 +290,9 @@ class Int64BigEndianWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       writer.writeInt64(i * 1000000 - 500000000);
@@ -274,6 +313,9 @@ class Int64LittleEndianWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       writer.writeInt64(i * 1000000 - 500000000, .little);
@@ -292,6 +334,9 @@ class MixedFixedIntWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 65536);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {

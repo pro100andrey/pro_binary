@@ -665,7 +665,7 @@ void main() {
     });
 
     group('Writer buffer management integration', () {
-      test('write causes buffer expansion and can be read correctly', () {
+      test('buffer expansion preserves data integrity', () {
         final writer = BinaryWriter(initialBufferSize: 4);
 
         for (var i = 0; i < 100; i++) {

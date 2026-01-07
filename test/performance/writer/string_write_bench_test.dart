@@ -14,6 +14,9 @@ class AsciiStringWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 100; i++) {
       writer.writeString('Hello, World! This is a test string 123456789');
@@ -32,6 +35,9 @@ class ShortAsciiStringWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 16384);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -62,6 +68,9 @@ class LongAsciiStringWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     const longString =
         'The quick brown fox jumps over the lazy dog. '
@@ -88,6 +97,9 @@ class CyrillicStringWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 100; i++) {
       writer.writeString('Привет мир! Это тестовая строка на русском языке.');
@@ -106,6 +118,9 @@ class CjkStringWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 16384);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -128,6 +143,9 @@ class EmojiStringWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 100; i++) {
       writer.writeString('🚀 🌍 🎉 👍 💻 🔥 ⚡ 🎯 🏆 💡 🌈 ✨ 🎨 🎭 🎪');
@@ -146,6 +164,9 @@ class MixedUnicodeStringWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 16384);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -168,6 +189,9 @@ class VarStringAsciiWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 100; i++) {
       writer.writeVarString('Hello, World! This is a test string.');
@@ -186,6 +210,9 @@ class VarStringMixedWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 16384);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -208,6 +235,9 @@ class EmptyStringWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       writer.writeString('');
@@ -226,6 +256,9 @@ class RealisticMessageWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 32768);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -259,6 +292,9 @@ class AlternatingStringWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     const shortString = 'Hi';
     const longString =
@@ -282,6 +318,9 @@ class VeryLongStringWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 65536);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {

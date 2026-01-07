@@ -14,6 +14,9 @@ class VarUintFastPathWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       writer.writeVarUint(i % 128);
@@ -32,6 +35,9 @@ class VarUint2ByteWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 16384);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -55,6 +61,9 @@ class VarUint3ByteWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       writer.writeVarUint(16384 + (i % 10000));
@@ -74,6 +83,9 @@ class VarUint4ByteWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 32768);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -96,6 +108,9 @@ class VarUint5ByteWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       writer.writeVarUint(268435456 + i);
@@ -114,6 +129,9 @@ class VarIntPositiveWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 16384);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -136,6 +154,9 @@ class VarIntNegativeWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 1000; i++) {
       writer.writeVarInt(-(i + 1));
@@ -154,6 +175,9 @@ class VarIntMixedWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 16384);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -175,6 +199,9 @@ class VarUintMixedSizesWriteBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 32768);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {

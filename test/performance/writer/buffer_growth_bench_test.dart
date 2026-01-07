@@ -17,6 +17,9 @@ class BufferGrowthSmallInitialBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     // Write 1KB of data, forcing multiple expansions
     for (var i = 0; i < 256; i++) {
@@ -37,6 +40,9 @@ class BufferGrowthMediumInitialBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 256);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -60,6 +66,9 @@ class BufferGrowthIncrementalBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 64);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -89,6 +98,9 @@ class BufferGrowthLargeSingleWriteBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     // Single large write that forces expansion
     writer
@@ -107,6 +119,9 @@ class BufferGrowthStringWritesBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 32);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -130,6 +145,9 @@ class BufferGrowthVarIntWritesBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 250; i++) {
       writer.writeVarUint(i & 0x7F); // Keep values to 0-127 (single byte)
@@ -148,6 +166,9 @@ class BufferGrowthMixedWritesBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 64);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -176,6 +197,9 @@ class NoBufferGrowthBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     // Write 32KB without triggering growth
     final data = Uint8List.fromList(List.generate(256, (i) => i % 256));
@@ -200,6 +224,9 @@ class BufferGrowthVarBytesBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 100; i++) {
       writer.writeVarBytes(data);
@@ -219,6 +246,9 @@ class BufferGrowthResetPatternBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter();
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {
@@ -259,6 +289,9 @@ class BufferGrowthAlternatingSizesBenchmark extends BenchmarkBase {
   }
 
   @override
+  void exercise() => run();
+
+  @override
   void run() {
     for (var i = 0; i < 50; i++) {
       writer
@@ -281,6 +314,9 @@ class BufferGrowthMaxCapacityBenchmark extends BenchmarkBase {
   void setup() {
     writer = BinaryWriter(initialBufferSize: 1024);
   }
+
+  @override
+  void exercise() => run();
 
   @override
   void run() {

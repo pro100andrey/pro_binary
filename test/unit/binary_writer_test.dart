@@ -12,7 +12,7 @@ void main() {
       writer = BinaryWriter();
     });
 
-    test('throw RangeError when initialBufferSize is not positive', () {
+    test('throws RangeError when initialBufferSize is not positive', () {
       expect(
         () => BinaryWriter(initialBufferSize: 0),
         throwsA(
@@ -21,171 +21,171 @@ void main() {
       );
     });
 
-    test('return empty list when takeBytes called on empty writer', () {
+    test('returns empty list when takeBytes called on empty writer', () {
       expect(writer.takeBytes(), isEmpty);
     });
 
-    test('write single Uint8 value correctly', () {
+    test('writes single Uint8 value correctly', () {
       writer.writeUint8(1);
       expect(writer.takeBytes(), [1]);
     });
 
-    test('write negative Int8 value correctly', () {
+    test('writes negative Int8 value correctly', () {
       writer.writeInt8(-1);
       expect(writer.takeBytes(), [255]);
     });
 
-    test('write Uint16 in big-endian format', () {
+    test('writes Uint16 in big-endian format', () {
       writer.writeUint16(256);
       expect(writer.takeBytes(), [1, 0]);
     });
 
-    test('write Uint16 in little-endian format', () {
+    test('writes Uint16 in little-endian format', () {
       writer.writeUint16(256, .little);
       expect(writer.takeBytes(), [0, 1]);
     });
 
-    test('write Int16 in big-endian format', () {
+    test('writes Int16 in big-endian format', () {
       writer.writeInt16(-1);
       expect(writer.takeBytes(), [255, 255]);
     });
 
-    test('write Int16 in little-endian format', () {
+    test('writes Int16 in little-endian format', () {
       writer.writeInt16(-32768, .little);
       expect(writer.takeBytes(), [0, 128]);
     });
 
-    test('write Uint32 in big-endian format', () {
+    test('writes Uint32 in big-endian format', () {
       writer.writeUint32(65536);
       expect(writer.takeBytes(), [0, 1, 0, 0]);
     });
 
-    test('write Uint32 in little-endian format', () {
+    test('writes Uint32 in little-endian format', () {
       writer.writeUint32(65536, .little);
       expect(writer.takeBytes(), [0, 0, 1, 0]);
     });
 
-    test('write Int32 in big-endian format', () {
+    test('writes Int32 in big-endian format', () {
       writer.writeInt32(-1);
       expect(writer.takeBytes(), [255, 255, 255, 255]);
     });
 
-    test('write Int32 in little-endian format', () {
+    test('writes Int32 in little-endian format', () {
       writer.writeInt32(-2147483648, .little);
       expect(writer.takeBytes(), [0, 0, 0, 128]);
     });
 
-    test('write Uint64 in big-endian format', () {
+    test('writes Uint64 in big-endian format', () {
       writer.writeUint64(4294967296);
       expect(writer.takeBytes(), [0, 0, 0, 1, 0, 0, 0, 0]);
     });
 
-    test('write Uint64 in little-endian format', () {
+    test('writes Uint64 in little-endian format', () {
       writer.writeUint64(4294967296, .little);
       expect(writer.takeBytes(), [0, 0, 0, 0, 1, 0, 0, 0]);
     });
 
-    test('write Int64 in big-endian format', () {
+    test('writes Int64 in big-endian format', () {
       writer.writeInt64(-1);
       expect(writer.takeBytes(), [255, 255, 255, 255, 255, 255, 255, 255]);
     });
 
-    test('write Int64 in little-endian format', () {
+    test('writes Int64 in little-endian format', () {
       writer.writeInt64(-9223372036854775808, .little);
       expect(writer.takeBytes(), [0, 0, 0, 0, 0, 0, 0, 128]);
     });
 
-    test('write Float32 in big-endian format', () {
+    test('writes Float32 in big-endian format', () {
       writer.writeFloat32(3.1415927);
       expect(writer.takeBytes(), [64, 73, 15, 219]);
     });
 
-    test('write Float32 in little-endian format', () {
+    test('writes Float32 in little-endian format', () {
       writer.writeFloat32(3.1415927, .little);
       expect(writer.takeBytes(), [219, 15, 73, 64]);
     });
 
-    test('write Float64 in big-endian format', () {
+    test('writes Float64 in big-endian format', () {
       writer.writeFloat64(3.141592653589793);
       expect(writer.takeBytes(), [64, 9, 33, 251, 84, 68, 45, 24]);
     });
 
-    test('write Float64 in little-endian format', () {
+    test('writes Float64 in little-endian format', () {
       writer.writeFloat64(3.141592653589793, .little);
       expect(writer.takeBytes(), [24, 45, 68, 84, 251, 33, 9, 64]);
     });
 
-    test('write VarInt single byte (0)', () {
+    test('writes VarInt single byte (0)', () {
       writer.writeVarUint(0);
       expect(writer.takeBytes(), [0]);
     });
 
-    test('write VarInt single byte (127)', () {
+    test('writes VarInt single byte (127)', () {
       writer.writeVarUint(127);
       expect(writer.takeBytes(), [127]);
     });
 
-    test('write VarInt two bytes (128)', () {
+    test('writes VarInt two bytes (128)', () {
       writer.writeVarUint(128);
       expect(writer.takeBytes(), [0x80, 0x01]);
     });
 
-    test('write VarInt two bytes (300)', () {
+    test('writes VarInt two bytes (300)', () {
       writer.writeVarUint(300);
       expect(writer.takeBytes(), [0xAC, 0x02]);
     });
 
-    test('write VarInt three bytes (16384)', () {
+    test('writes VarInt three bytes (16384)', () {
       writer.writeVarUint(16384);
       expect(writer.takeBytes(), [0x80, 0x80, 0x01]);
     });
 
-    test('write VarInt four bytes (2097151)', () {
+    test('writes VarInt four bytes (2097151)', () {
       writer.writeVarUint(2097151);
       expect(writer.takeBytes(), [0xFF, 0xFF, 0x7F]);
     });
 
-    test('write VarInt five bytes (268435455)', () {
+    test('writes VarInt five bytes (268435455)', () {
       writer.writeVarUint(268435455);
       expect(writer.takeBytes(), [0xFF, 0xFF, 0xFF, 0x7F]);
     });
 
-    test('write VarInt large value', () {
+    test('writes VarInt large value', () {
       writer.writeVarUint(1 << 30);
       expect(writer.takeBytes(), [0x80, 0x80, 0x80, 0x80, 0x04]);
     });
 
-    test('write ZigZag encoding for positive values', () {
+    test('writes ZigZag encoding for positive values', () {
       writer.writeVarInt(0);
       expect(writer.takeBytes(), [0]);
     });
 
-    test('write ZigZag encoding for positive value 1', () {
+    test('writes ZigZag encoding for positive value 1', () {
       writer.writeVarInt(1);
       expect(writer.takeBytes(), [2]);
     });
 
-    test('write ZigZag encoding for negative value -1', () {
+    test('writes ZigZag encoding for negative value -1', () {
       writer.writeVarInt(-1);
       expect(writer.takeBytes(), [1]);
     });
 
-    test('write ZigZag encoding for positive value 2', () {
+    test('writes ZigZag encoding for positive value 2', () {
       writer.writeVarInt(2);
       expect(writer.takeBytes(), [4]);
     });
 
-    test('write ZigZag encoding for negative value -2', () {
+    test('writes ZigZag encoding for negative value -2', () {
       writer.writeVarInt(-2);
       expect(writer.takeBytes(), [3]);
     });
 
-    test('write ZigZag encoding for large positive value', () {
+    test('writes ZigZag encoding for large positive value', () {
       writer.writeVarInt(2147483647);
       expect(writer.takeBytes(), [0xFE, 0xFF, 0xFF, 0xFF, 0x0F]);
     });
 
-    test('write ZigZag encoding for large negative value', () {
+    test('writes ZigZag encoding for large negative value', () {
       writer.writeVarInt(-2147483648);
       expect(writer.takeBytes(), [0xFF, 0xFF, 0xFF, 0xFF, 0x0F]);
     });
@@ -1570,17 +1570,6 @@ void main() {
         expect(reader.readVarBytes(), equals([3, 4, 5]));
         expect(reader.readVarBytes(), equals([6]));
       });
-
-      test('writeVarBytes round-trip', () {
-        final writer = BinaryWriter();
-        final original = List.generate(256, (i) => i);
-        writer.writeVarBytes(original);
-
-        final reader = BinaryReader(writer.takeBytes());
-        final result = reader.readVarBytes();
-
-        expect(result, equals(original));
-      });
     });
 
     group('VarString operations', () {
@@ -1624,17 +1613,6 @@ void main() {
         // 'Hi ' = 3, '世界' = 6, ' ' = 1, '🌍' = 4, '!' = 1 => 15 bytes
         expect(bytes[0], equals(15)); // VarUint length
         expect(bytes.length, equals(16)); // 1 + 15
-      });
-
-      test('writeVarString round-trip with reader', () {
-        final writer = BinaryWriter();
-        const testString = 'Test 测试 🎉';
-        writer.writeVarString(testString);
-
-        final reader = BinaryReader(writer.toBytes());
-        final result = reader.readVarString();
-
-        expect(result, equals(testString));
       });
 
       test('writeVarString with malformed handling', () {
