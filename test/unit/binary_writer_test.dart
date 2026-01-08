@@ -2147,6 +2147,195 @@ void main() {
       expect(stats.maxReusableCapacity, equals(64 * 1024));
     });
 
+    test('acquireHit increments on pool reuse', () {
+      expect(BinaryWriterPool.stats.acquireHit, equals(0));
+
+      // First acquire is a miss
+      final writer1 = BinaryWriterPool.acquire();
+      expect(BinaryWriterPool.stats.acquireHit, equals(0));
+      expect(BinaryWriterPool.stats.acquireMiss, equals(1));
+
+      BinaryWriterPool.release(writer1);
+
+      // Second acquire is a hit (reuses pooled writer)
+      final writer2 = BinaryWriterPool.acquire();
+      expect(BinaryWriterPool.stats.acquireHit, equals(1));
+      expect(BinaryWriterPool.stats.acquireMiss, equals(1));
+
+      BinaryWriterPool.release(writer2);
+    });
+
+    test('acquireMiss increments on new allocation', () {
+      expect(BinaryWriterPool.stats.acquireMiss, equals(0));
+
+      // Pool is empty, should create new writers
+      final writer1 = BinaryWriterPool.acquire();
+      expect(BinaryWriterPool.stats.acquireMiss, equals(1));
+
+      final writer2 = BinaryWriterPool.acquire();
+      expect(BinaryWriterPool.stats.acquireMiss, equals(2));
+
+      final writer3 = BinaryWriterPool.acquire();
+      expect(BinaryWriterPool.stats.acquireMiss, equals(3));
+
+      BinaryWriterPool.release(writer1);
+      BinaryWriterPool.release(writer2);
+      BinaryWriterPool.release(writer3);
+
+      // Now pool has 3 writers, no new allocations needed
+      final writer4 = BinaryWriterPool.acquire();
+      expect(BinaryWriterPool.stats.acquireMiss, equals(3));
+      expect(BinaryWriterPool.stats.acquireHit, equals(1));
+
+      BinaryWriterPool.release(writer4);
+    });
+
+    test('peakPoolSize tracks maximum pool size', () {
+      expect(BinaryWriterPool.stats.peakPoolSize, equals(0));
+
+      // Create 3 writers simultaneously (all will be misses)
+      final writer1 = BinaryWriterPool.acquire();
+      final writer2 = BinaryWriterPool.acquire();
+      final writer3 = BinaryWriterPool.acquire();
+
+      // Release all 3 - pool size will grow to 3
+      BinaryWriterPool.release(writer1);
+      expect(BinaryWriterPool.stats.pooled, equals(1));
+      expect(BinaryWriterPool.stats.peakPoolSize, equals(1));
+
+      BinaryWriterPool.release(writer2);
+      expect(BinaryWriterPool.stats.pooled, equals(2));
+      expect(BinaryWriterPool.stats.peakPoolSize, equals(2));
+
+      BinaryWriterPool.release(writer3);
+      expect(BinaryWriterPool.stats.pooled, equals(3));
+      expect(BinaryWriterPool.stats.peakPoolSize, equals(3));
+
+      // Acquire one (pool size decreases but peak stays)
+      final writer4 = BinaryWriterPool.acquire();
+      expect(BinaryWriterPool.stats.pooled, equals(2));
+      expect(BinaryWriterPool.stats.peakPoolSize, equals(3));
+
+      BinaryWriterPool.release(writer4);
+    });
+
+    test('discardedLargeBuffers increments when buffer exceeds limit', () {
+      expect(BinaryWriterPool.stats.discardedLargeBuffers, equals(0));
+
+      final writer = BinaryWriterPool.acquire();
+
+      // Write enough data to expand buffer beyond 64 KiB
+      final largeData = List<int>.filled(70 * 1024, 42);
+      writer.writeBytes(largeData);
+
+      BinaryWriterPool.release(writer);
+
+      // Buffer should be discarded
+      expect(BinaryWriterPool.stats.discardedLargeBuffers, equals(1));
+      expect(BinaryWriterPool.stats.pooled, equals(0));
+
+      // Create another large buffer
+      final writer2 = BinaryWriterPool.acquire()
+        ..writeBytes(List<int>.filled(100 * 1024, 1));
+      BinaryWriterPool.release(writer2);
+
+      expect(BinaryWriterPool.stats.discardedLargeBuffers, equals(2));
+    });
+
+    test('totalAcquires returns sum of hits and misses', () {
+      expect(BinaryWriterPool.stats.totalAcquires, equals(0));
+
+      final writer1 = BinaryWriterPool.acquire(); // miss
+      expect(BinaryWriterPool.stats.totalAcquires, equals(1));
+
+      BinaryWriterPool.release(writer1);
+
+      final writer2 = BinaryWriterPool.acquire(); // hit
+      expect(BinaryWriterPool.stats.totalAcquires, equals(2));
+
+      final writer3 = BinaryWriterPool.acquire(); // miss
+      expect(BinaryWriterPool.stats.totalAcquires, equals(3));
+
+      expect(BinaryWriterPool.stats.acquireHit, equals(1));
+      expect(BinaryWriterPool.stats.acquireMiss, equals(2));
+
+      BinaryWriterPool.release(writer2);
+      BinaryWriterPool.release(writer3);
+    });
+
+    test('hitRate returns correct percentage', () {
+      // Initially no acquires
+      expect(BinaryWriterPool.stats.hitRate, equals(0.0));
+
+      // First acquire is always a miss
+      final writer1 = BinaryWriterPool.acquire();
+      expect(BinaryWriterPool.stats.hitRate, equals(0.0)); // 0/1 = 0%
+
+      BinaryWriterPool.release(writer1);
+
+      // Second acquire is a hit
+      final writer2 = BinaryWriterPool.acquire();
+      expect(BinaryWriterPool.stats.hitRate, equals(0.5)); // 1/2 = 50%
+
+      BinaryWriterPool.release(writer2);
+
+      // Third acquire is a hit
+      final writer3 = BinaryWriterPool.acquire();
+      expect(
+        BinaryWriterPool.stats.hitRate,
+        closeTo(0.666, 0.001),
+      ); // 2/3 ≈ 66.7%
+
+      BinaryWriterPool.release(writer3);
+    });
+
+    test('clear resets all statistics', () {
+      // Generate some activity
+      // Create 2 writers to have one in pool after operations
+      final writerA = BinaryWriterPool.acquire(); // miss
+      final writerB = BinaryWriterPool.acquire(); // miss
+      writerA.writeUint32(1);
+      BinaryWriterPool.release(writerA); // pool=1
+
+      // Reuse writerA
+      final writer2 =
+          BinaryWriterPool.acquire() // hit, pool=0
+            ..writeUint32(2);
+      BinaryWriterPool.release(writer2); // pool=1
+
+      // Reuse again
+      final writer3 =
+          BinaryWriterPool.acquire() // hit, pool=0
+            ..writeUint32(3);
+      BinaryWriterPool.release(writer3); // pool=1
+
+      // Now use writerB with large buffer
+      writerB.writeBytes(List<int>.filled(70 * 1024, 1));
+      BinaryWriterPool.release(writerB); // Discarded, pool stays =1
+
+      // Verify stats are non-zero
+      final stats = BinaryWriterPool.stats;
+      expect(stats.pooled, equals(1)); // writerA is still pooled
+      expect(stats.acquireHit, equals(2)); // writer2 and writer3 were hits
+      expect(stats.acquireMiss, equals(2)); // writerA and writerB were misses
+      expect(
+        stats.peakPoolSize,
+        equals(1),
+      ); // Never more than 1 in pool at once
+      expect(stats.discardedLargeBuffers, equals(1)); // writerB was discarded
+
+      // Clear should reset everything
+      BinaryWriterPool.clear();
+
+      final clearedStats = BinaryWriterPool.stats;
+      expect(clearedStats.pooled, equals(0));
+      expect(clearedStats.acquireHit, equals(0));
+      expect(clearedStats.acquireMiss, equals(0));
+      expect(clearedStats.peakPoolSize, equals(0));
+      expect(clearedStats.discardedLargeBuffers, equals(0));
+      expect(clearedStats.hitRate, equals(0.0));
+    });
+
     test('pool respects max pool size', () {
       // Create and release more writers than the pool can hold
       final writers = <BinaryWriter>[];

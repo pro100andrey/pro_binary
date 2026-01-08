@@ -966,6 +966,12 @@ abstract final class BinaryWriterPool {
   /// Writers that exceed this size are discarded to free up system memory
   static const int _maxReusableCapacity = 64 * 1024;
 
+  // Performance counters
+  static var _acquireHit = 0;
+  static var _acquireMiss = 0;
+  static var _peakPoolSize = 0;
+  static var _discardedLargeBuffers = 0;
+
   /// Acquires a [BinaryWriter] from the pool or creates a new one.
   ///
   /// Returns a pooled writer if available, otherwise creates a fresh instance
@@ -995,10 +1001,12 @@ abstract final class BinaryWriterPool {
   /// Returns: A [BinaryWriter] ready for use.
   static BinaryWriter acquire([int defaultBufferSize = _defaultBufferSize]) {
     if (_pool.isNotEmpty) {
+      _acquireHit++;
       final state = _pool.removeLast().._isInPool = false;
       return BinaryWriter._(state);
     }
 
+    _acquireMiss++;
     return BinaryWriter(initialBufferSize: defaultBufferSize);
   }
 
@@ -1040,6 +1048,13 @@ abstract final class BinaryWriterPool {
         ..offset = 0
         .._isInPool = true;
       _pool.add(state);
+
+      // Track peak pool size
+      if (_pool.length > _peakPoolSize) {
+        _peakPoolSize = _pool.length;
+      }
+    } else if (state.capacity > _maxReusableCapacity) {
+      _discardedLargeBuffers++;
     }
   }
 
@@ -1052,17 +1067,26 @@ abstract final class BinaryWriterPool {
   /// - `'maxPoolSize'`: Maximum pool capacity
   /// - `'defaultBufferSize'`: Initial buffer size for new writers
   /// - `'maxReusableCapacity'`: Maximum buffer size for pooling
+  /// - `'acquireHit'`: Number of successful reuses from pool
+  /// - `'acquireMiss'`: Number of new writer allocations
+  /// - `'peakPoolSize'`: Maximum pool size reached
+  /// - `'discardedLargeBuffers'`: Number of oversized buffers discarded
   ///
   /// Example:
   /// ```dart
-  /// final stats = BinaryWriterPool.getStatistics();
-  /// print('Pooled writers: ${stats['pooled']}');  // 5
+  /// final stats = BinaryWriterPool.stats;
+  /// print('Pooled writers: ${stats.pooled}');  // 5
+  /// print('Hit rate: ${stats.acquireHit / (stats.acquireHit + stats.acquireMiss)}');
   /// ```
   static PoolStatistics get stats => PoolStatistics({
     'pooled': _pool.length,
     'maxPoolSize': _maxPoolSize,
     'defaultBufferSize': _defaultBufferSize,
     'maxReusableCapacity': _maxReusableCapacity,
+    'acquireHit': _acquireHit,
+    'acquireMiss': _acquireMiss,
+    'peakPoolSize': _peakPoolSize,
+    'discardedLargeBuffers': _discardedLargeBuffers,
   });
 
   /// Clears the pool, releasing all cached writers.
@@ -1078,7 +1102,13 @@ abstract final class BinaryWriterPool {
   /// ```dart
   /// BinaryWriterPool.clear();  // All pooled writers discarded
   /// ```
-  static void clear() => _pool.clear();
+  static void clear() {
+    _pool.clear();
+    _acquireHit = 0;
+    _acquireMiss = 0;
+    _peakPoolSize = 0;
+    _discardedLargeBuffers = 0;
+  }
 }
 
 extension type PoolStatistics(Map<String, int> _stats) {
@@ -1093,4 +1123,22 @@ extension type PoolStatistics(Map<String, int> _stats) {
 
   /// Maximum buffer size for pooling.
   int get maxReusableCapacity => _stats['maxReusableCapacity']!;
+
+  /// Number of successful reuses from pool (cache hits).
+  int get acquireHit => _stats['acquireHit']!;
+
+  /// Number of new writer allocations (cache misses).
+  int get acquireMiss => _stats['acquireMiss']!;
+
+  /// Maximum pool size reached during runtime.
+  int get peakPoolSize => _stats['peakPoolSize']!;
+
+  /// Number of oversized buffers discarded to prevent memory bloat.
+  int get discardedLargeBuffers => _stats['discardedLargeBuffers']!;
+
+  /// Total number of acquire operations.
+  int get totalAcquires => acquireHit + acquireMiss;
+
+  /// Cache hit rate (0.0 to 1.0).
+  double get hitRate => totalAcquires > 0 ? acquireHit / totalAcquires : 0.0;
 }

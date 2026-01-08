@@ -31,13 +31,13 @@ import 'package:pro_binary/pro_binary.dart';
 // Writing data
 final writer = BinaryWriter();
 writer.writeUint32(42);
-writer.writeString('Hello, World!');
+writer.writeVarString('Hello, World!');  // Length-prefixed
 final bytes = writer.takeBytes();
 
 // Reading data
 final reader = BinaryReader(bytes);
-final number = reader.readUint32();    // 42
-final text = reader.readString(13);     // 'Hello, World!'
+final number = reader.readUint32();     // 42
+final text = reader.readVarString();    // 'Hello, World!'
 ```
 
 ## Core API
@@ -60,9 +60,16 @@ writer.writeFloat64(3.14159265359);
 writer.writeVarUint(42);        // Unsigned VarInt
 writer.writeVarInt(-42);        // Signed VarInt with ZigZag
 
+// Binary data
+writer.writeBytes([1, 2, 3]);         // Raw bytes
+writer.writeVarBytes([1, 2, 3]);      // Length-prefixed bytes
+
 // Strings
-writer.writeString('text');     // Fixed UTF-8 string (you control length)
-writer.writeVarString('Hello'); // Length-prefixed UTF-8 string (auto length)
+writer.writeString('text');           // Raw UTF-8 string (no length prefix)
+writer.writeVarString('Hello');       // Length-prefixed UTF-8 string
+
+// Boolean
+writer.writeBool(true);               // Single byte (0x01 or 0x00)
 
 // Get result
 final bytes = writer.takeBytes();  // Gets bytes and resets
@@ -84,18 +91,32 @@ final f64 = reader.readFloat64();
 final count = reader.readVarUint();
 final delta = reader.readVarInt();
 
+// Binary data
+final data = reader.readBytes(10);        // Read 10 bytes
+final varData = reader.readVarBytes();    // Read length-prefixed bytes
+final remaining = reader.readRemainingBytes(); // Read all remaining
+
 // Strings
-final text = reader.readString(10);     // Read 10 UTF-8 bytes (you specify length)
-final message = reader.readVarString(); // Read length-prefixed string (auto length)
+final text = reader.readString(10);       // Read 10 UTF-8 bytes
+final message = reader.readVarString();   // Read length-prefixed string
+
+// Boolean
+final flag = reader.readBool();           // Read boolean (0x00 = false, other = true)
 
 // Navigation
 reader.skip(4);                    // Skip bytes
+reader.seek(10);                   // Jump to position 10
+reader.rewind(2);                  // Move back 2 bytes
 final peek = reader.peekBytes(2);  // Look ahead without consuming
 reader.reset();                    // Go back to start
 
 // Check state
 print(reader.offset);              // Current position
+print(reader.length);              // Total buffer size
 print(reader.availableBytes);      // Bytes left to read
+if (reader.hasBytes(4)) {          // Check if enough bytes available
+  final value = reader.readUint32();
+}
 ```
 
 ## Real-World Examples
@@ -106,33 +127,33 @@ print(reader.availableBytes);      // Bytes left to read
 // Encode message
 final writer = BinaryWriter();
 writer.writeUint8(0x42);           // Message type
-writer.writeVarUint(payload.length);
-writer.writeBytes(payload);
+writer.writeVarBytes(payload);      // Length-prefixed payload
 sendToServer(writer.takeBytes());
 
 // Decode message
 final reader = BinaryReader(received);
 final type = reader.readUint8();
-final length = reader.readVarUint();
-final payload = reader.readBytes(length);
+final payload = reader.readVarBytes(); // Reads length + data
 ```
 
 ### Length-Prefixed Strings
 
 ```dart
-// Write
-final text = 'Hello, 世界! 🌍';
-final encoded = utf8.encode(text);
-writer.writeVarUint(encoded.length);
-writer.writeString(text);
-// or simply
-writer.writeVarString(text);
+// Recommended: Use writeVarString (automatic length)
+writer.writeVarString('Hello, 世界! 🌍');
 
-// Read
+// Or manually (equivalent to above):
+final text = 'Hello, 世界! 🌍';
+final utf8Length = getUtf8Length(text);  // Calculate UTF-8 byte length
+writer.writeVarUint(utf8Length);
+writer.writeString(text);
+
+// Reading: Use readVarString (reads length + data)
+final text = reader.readVarString();
+
+// Or manually (equivalent to above):
 final length = reader.readVarUint();
 final text = reader.readString(length);
-// or simply
-final text = reader.readVarString();
 ```
 
 ### Struct-like Data
@@ -143,19 +164,18 @@ class Player {
   final String name;
   final double x, y;
 
+  Player(this.id, this.name, this.x, this.y);
+
   void writeTo(BinaryWriter w) {
     w.writeUint32(id);
-    final nameBytes = utf8.encode(name);
-    w.writeVarUint(nameBytes.length);
-    w.writeString(name);
+    w.writeVarString(name);  // Length-prefixed string
     w.writeFloat64(x);
     w.writeFloat64(y);
   }
 
   static Player readFrom(BinaryReader r) {
     final id = r.readUint32();
-    final nameLen = r.readVarUint();
-    final name = r.readString(nameLen);
+    final name = r.readVarString();  // Reads length + string
     final x = r.readFloat64();
     final y = r.readFloat64();
     return Player(id, name, x, y);
@@ -174,7 +194,8 @@ final writer = BinaryWriter(initialBufferSize: 128); // Default: 128 bytes
 **Buffer Management:**
 
 - Initial capacity: 128 bytes (configurable)
-- Growth strategy: `newCapacity = max(currentCapacity * 1.5, currentCapacity + requiredBytes)` with 64-byte alignment
+- Growth strategy: `newCapacity = ((currentCapacity * 1.5).ceil() + 63) & ~63` (1.5× + 64-byte alignment)
+- Minimum expansion: Ensures space for requested bytes
 - Resets buffer without reallocation: `writer.reset()`
 - Takes ownership of buffer: `writer.takeBytes()` (one-time use, resets writer)
 - Creates view without reset: `writer.toBytes()` (reusable)
@@ -187,6 +208,10 @@ final writer = BinaryWriter(initialBufferSize: 128); // Default: 128 bytes
 - Binary data: `writeBytes`, `writeVarBytes` (length-prefixed)
 - Strings: `writeString` (raw UTF-8), `writeVarString` (length-prefixed)
 - Boolean: `writeBool` (1 byte: 0x00 or 0x01)
+
+**Helper Functions:**
+
+- `getUtf8Length(String)`: Calculate UTF-8 byte length without encoding
 
 ### BinaryReader
 
@@ -283,20 +308,29 @@ final writer = BinaryWriter(initialBufferSize: 8192); // For bulk writes
 **Use object pooling** for high-frequency operations:
 
 ```dart
-// Acquire from pool
+// Acquire from pool (default 1KB buffer)
 final writer = BinaryWriterPool.acquire();
 try {
   writer.writeUint32(value);
-  final bytes = writer.takeBytes();
+  final bytes = writer.toBytes();  // Get bytes, keep writer alive
   send(bytes);
 } finally {
-  // Return to pool for reuse
+  // Return to pool for reuse (max 32 writers, max 64KB buffers)
   BinaryWriterPool.release(writer);
 }
 
 // Pool statistics
-print(BinaryWriterPool.poolSize);      // Available writers
-print(BinaryWriterPool.peakPoolSize);  // High water mark
+final stats = BinaryWriterPool.stats;
+print('Pooled writers: ${stats.pooled}');                  // Current pool size
+print('Max pool size: ${stats.maxPoolSize}');              // Maximum capacity (32)
+print('Peak pool size: ${stats.peakPoolSize}');            // High water mark
+print('Acquire hits: ${stats.acquireHit}');                // Successful reuses
+print('Acquire misses: ${stats.acquireMiss}');             // New allocations
+print('Hit rate: ${(stats.hitRate * 100).toStringAsFixed(1)}%'); // Cache efficiency
+print('Discarded: ${stats.discardedLargeBuffers}');        // Oversized buffers
+
+// Clear pool manually
+BinaryWriterPool.clear();
 ```
 
 **Choose correct integer type**:
@@ -349,13 +383,17 @@ For **fixed-length** strings, calculate UTF-8 byte length:
 
 ```dart
 final text = 'Hello, 世界!';
-final bytes = utf8.encode(text);
-writer.writeUint16(bytes.length);  // Store byte length
+final utf8Length = getUtf8Length(text);  // Calculate without encoding
+writer.writeUint16(utf8Length);          // Store byte length
 writer.writeString(text);
 
 // Reading
 final byteLength = reader.readUint16();
 final text = reader.readString(byteLength);
+
+// Handle malformed UTF-8 sequences
+final strict = reader.readString(10, allowMalformed: false);  // Throws on error
+final lenient = reader.readString(10);  // allowMalformed: true (default) - uses �
 ```
 
 ### Error Handling
@@ -399,10 +437,25 @@ void writeMessage(BinaryWriter w, MessageType type, dynamic payload) {
       // No payload
       break;
     case MessageType.data:
-      w.writeVarBytes(payload as List<int>);
+      w.writeVarBytes(payload as List<int>);  // Length-prefixed
       break;
     case MessageType.ack:
-      w.writeUint32(payload as int); // Sequence number
+      w.writeUint32(payload as int);  // Sequence number
+      break;
+  }
+}
+
+void readMessage(BinaryReader r) {
+  final type = MessageType.values[r.readUint8()];
+  switch (type) {
+    case MessageType.ping:
+      // No payload
+      break;
+    case MessageType.data:
+      final payload = r.readVarBytes();  // Reads length + data
+      break;
+    case MessageType.ack:
+      final seqNum = r.readUint32();
       break;
   }
 }
