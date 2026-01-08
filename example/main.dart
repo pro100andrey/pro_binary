@@ -17,7 +17,7 @@ void writeExample() {
 
   final writer = BinaryWriter()
     ..writeUint8(42)
-    ..writeInt32(-1000, Endian.little)
+    ..writeInt32(-1000, .little)
     ..writeFloat64(3.14159)
     ..writeString('Hello, World!');
 
@@ -37,7 +37,7 @@ void readExample() {
   final reader = BinaryReader(buffer);
 
   print('uint8:   ${reader.readUint8()}');
-  print('int32:   ${reader.readInt32(Endian.little)}');
+  print('int32:   ${reader.readInt32(.little)}');
   print('float64: ${reader.readFloat64()}');
   print('string:  ${reader.readString(5)}');
   print('Position: ${reader.offset}/${buffer.length}\n');

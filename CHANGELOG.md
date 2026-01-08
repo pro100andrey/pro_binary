@@ -1,3 +1,32 @@
+## 3.0.0
+
+**Improvements:**
+
+- **feat**: New methods and properties
+  - `BinaryWriterPool` for reusing `BinaryWriter` instances
+  - `getUtf8Length(String)` to calculate UTF-8 byte length without encoding
+  - `writeVarString(String)` and `readVarString()` for variable-length string encoding
+  - `writeBool` and `readBool` methods for boolean values
+  - `writeVarUint` and `readVarUint` for variable-length unsigned integers
+  - `writeVarInt` and `readVarInt` for variable-length signed integers
+  - `writeVarBytes` and `readVarBytes` for variable-length byte arrays
+  - Navigation methods in `BinaryReader`: `peekBytes()`, `skip()`, `seek()`, `rewind()`, and `reset()`
+- **docs**: Comprehensive documentation overhaul
+  - Added detailed API documentation with usage examples for all methods
+  - Documented `writeVarString()`, `readVarString()`, and `getUtf8Length()`
+  - Included performance notes and best practices
+  - Added inline comments explaining complex encoding algorithms
+- **test**: Expanded test suite
+  - Coverage for all new methods and edge cases
+  - Performance benchmarks for encoding/decoding functions
+  - Validation tests for UTF-8 handling and error scenarios
+- **improvement**: Refactored internal codebase
+  - Improved modularity and readability
+  - Enhanced error handling with descriptive messages
+  - Optimized buffer management for better performance
+
+- **fix**: Resolved known issues
+
 ## 2.2.0
 
  **test**: Added integration tests for new error handling features
