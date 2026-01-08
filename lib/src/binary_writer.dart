@@ -1,5 +1,9 @@
 import 'dart:typed_data';
 
+// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER
+// for explanation of max safe integer in JavaScript.
+import 'constants_native.dart' if (dart.library.js_util) 'constants_web.dart';
+
 /// A high-performance binary writer for encoding data into a byte buffer.
 ///
 /// Provides methods for writing various data types including:
@@ -66,7 +70,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// writer.writeVarUint(1000000);   // 3 bytes
   /// ```
   @pragma('vm:prefer-inline')
-  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeVarUint(int value) {
     // Fast path: single-byte (0-127)
     var offset = _ws.offset;
@@ -147,6 +151,8 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// writer.writeVarInt(42);   // 1 byte
   /// writer.writeVarInt(-42);  // 1 byte
   /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeVarInt(int value) {
     // ZigZag: (n << 1) ^ (n >> 63)
     // Maps: 0=>0, -1=>1, 1=>2, -2=>3, 2=>4, -3=>5, 3=>6
@@ -163,6 +169,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   ///
   /// Throws [RangeError] if [value] is outside the valid range.
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeUint8(int value) {
     _checkRange(value, 0, 255, 'Uint8');
     _ws.ensureOneByte();
@@ -179,6 +186,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   ///
   /// Throws [RangeError] if [value] is outside the valid range.
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeInt8(int value) {
     _checkRange(value, -128, 127, 'Int8');
     _ws.ensureOneByte();
@@ -197,6 +205,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   ///
   /// Throws [RangeError] if [value] is outside the valid range.
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeUint16(int value, [Endian endian = .big]) {
     _checkRange(value, 0, 65535, 'Uint16');
     _ws.ensureTwoBytes();
@@ -216,6 +225,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   ///
   /// Throws [RangeError] if [value] is outside the valid range.
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeInt16(int value, [Endian endian = .big]) {
     _checkRange(value, -32768, 32767, 'Int16');
     _ws.ensureTwoBytes();
@@ -235,6 +245,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   ///
   /// Throws [RangeError] if [value] is outside the valid range.
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeUint32(int value, [Endian endian = .big]) {
     _checkRange(value, 0, 4294967295, 'Uint32');
     _ws.ensureFourBytes();
@@ -254,6 +265,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   ///
   /// Throws [RangeError] if [value] is outside the valid range.
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeInt32(int value, [Endian endian = .big]) {
     _checkRange(value, -2147483648, 2147483647, 'Int32');
     _ws.ensureFourBytes();
@@ -279,8 +291,9 @@ extension type BinaryWriter._(_WriterState _ws) {
   ///
   /// Throws [RangeError] if [value] is outside the valid range.
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeUint64(int value, [Endian endian = .big]) {
-    _checkRange(value, 0, 9223372036854775807, 'Uint64');
+    _checkRange(value, 0, kMaxInt64, 'Uint64');
     _ws.ensureEightBytes();
 
     _ws.data.setUint64(_ws.offset, value, endian);
@@ -300,8 +313,9 @@ extension type BinaryWriter._(_WriterState _ws) {
   ///
   /// Throws [RangeError] if [value] is outside the valid range.
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeInt64(int value, [Endian endian = .big]) {
-    _checkRange(value, -9223372036854775808, 9223372036854775807, 'Int64');
+    _checkRange(value, kMinInt64, kMaxInt64, 'Int64');
     _ws.ensureEightBytes();
 
     _ws.data.setInt64(_ws.offset, value, endian);
@@ -317,6 +331,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// writer.writeFloat32(3.14);  // Pi approximation
   /// ```
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeFloat32(double value, [Endian endian = .big]) {
     _ws.ensureFourBytes();
     _ws.data.setFloat32(_ws.offset, value, endian);
@@ -332,6 +347,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// writer.writeFloat64(3.14159265359);  // High-precision pi
   /// ```
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeFloat64(double value, [Endian endian = .big]) {
     _ws.ensureEightBytes();
     _ws.data.setFloat64(_ws.offset, value, endian);
@@ -351,6 +367,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// writer.writeBytes(data, 1, 3);     // Write [2, 3, 4]
   /// ```
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeBytes(List<int> bytes, [int offset = 0, int? length]) {
     if (offset < 0) {
       throw RangeError.value(offset, 'offset', 'Offset must be non-negative');
@@ -364,6 +381,7 @@ extension type BinaryWriter._(_WriterState _ws) {
     if (len < 0) {
       throw RangeError.value(len, 'length', 'Length must be non-negative');
     }
+
     if (offset + len > bytes.length) {
       throw RangeError(
         'Offset + length exceeds list length: '
@@ -398,6 +416,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// writer.writeBytes(bytes);
   /// ```
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeVarBytes(List<int> bytes) {
     writeVarUint(bytes.length);
     writeBytes(bytes);
@@ -430,6 +449,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   ///
   /// **Performance:** Highly optimized for ASCII-heavy strings.
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeString(String value, {bool allowMalformed = true}) {
     final len = value.length;
     if (len == 0) {
@@ -560,6 +580,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// writer.writeString(text);
   /// ```
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeVarString(String value, {bool allowMalformed = true}) {
     final utf8Length = getUtf8Length(value);
     writeVarUint(utf8Length);
@@ -577,6 +598,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// ```
   ///
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   // Disable lint to allow positional boolean parameter for simplicity
   // ignore: avoid_positional_boolean_parameters
   void writeBool(bool value) {
@@ -601,9 +623,11 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// final packet2 = writer.takeBytes();
   /// ```
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   Uint8List takeBytes() {
     final result = Uint8List.sublistView(_ws.list, 0, _ws.offset);
     _ws._initializeBuffer();
+
     return result;
   }
 
@@ -623,6 +647,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// final final = writer.takeBytes();   // Get all data
   /// ```
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   Uint8List toBytes() => Uint8List.sublistView(_ws.list, 0, _ws.offset);
 
   /// Resets the writer to its initial state, discarding all written data.
@@ -635,6 +660,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// Otherwise, writes the Unicode replacement character U+FFFD (�)
   /// encoded as UTF-8: 0xEF 0xBF 0xBD
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   int _handleMalformed(String v, int i, int offset, bool allow) {
     if (!allow) {
       throw FormatException('Invalid UTF-16: lone surrogate at index $i', v, i);
@@ -700,6 +726,7 @@ final class _WriterState {
   var _isInPool = false;
 
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void _initializeBuffer() {
     final alignedSize = (_size + 63) & ~63;
     list = Uint8List(alignedSize);
@@ -719,6 +746,7 @@ final class _WriterState {
   }
 
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void ensureOneByte() {
     if (offset + 1 <= capacity) {
       return;
@@ -728,6 +756,7 @@ final class _WriterState {
   }
 
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void ensureTwoBytes() {
     if (offset + 2 <= capacity) {
       return;
@@ -737,6 +766,7 @@ final class _WriterState {
   }
 
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void ensureFourBytes() {
     if (offset + 4 <= capacity) {
       return;
@@ -746,6 +776,7 @@ final class _WriterState {
   }
 
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void ensureEightBytes() {
     if (offset + 8 <= capacity) {
       return;
@@ -962,13 +993,13 @@ abstract final class BinaryWriterPool {
   /// ```
   ///
   /// Returns: A [BinaryWriter] ready for use.
-  static BinaryWriter acquire() {
+  static BinaryWriter acquire([int defaultBufferSize = _defaultBufferSize]) {
     if (_pool.isNotEmpty) {
       final state = _pool.removeLast().._isInPool = false;
       return BinaryWriter._(state);
     }
 
-    return BinaryWriter(initialBufferSize: _defaultBufferSize);
+    return BinaryWriter(initialBufferSize: defaultBufferSize);
   }
 
   /// Returns a [BinaryWriter] to the pool for future reuse.
