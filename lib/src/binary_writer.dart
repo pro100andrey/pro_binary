@@ -1103,8 +1103,10 @@ abstract final class BinaryWriterPool {
   ///   return writer.takeBytes();
   /// });
   /// ```
-  static T withWriter<T>(T Function(BinaryWriter writer) action,
-      [int defaultBufferSize = _defaultBufferSize]) {
+  static T withWriter<T>(
+    T Function(BinaryWriter writer) action, [
+    int defaultBufferSize = _defaultBufferSize,
+  ]) {
     final writer = acquire(defaultBufferSize);
     try {
       return action(writer);
@@ -1208,9 +1210,9 @@ abstract final class BinaryWriterPool {
   static void clear() {
     // Assist GC by breaking links to potentially large byte buffers
     for (var i = 0; i < _pool.length; i++) {
-      final state = _pool[i];
-      state.list = Uint8List(0);
-      state.data = ByteData(0);
+      _pool[i]
+        ..list = Uint8List(0)
+        ..data = ByteData(0);
     }
     _pool.clear();
     _acquireHit = 0;

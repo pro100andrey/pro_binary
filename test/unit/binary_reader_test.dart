@@ -2036,5 +2036,62 @@ void main() {
         }
       });
     });
+
+    group('Concise API', () {
+      test('operator [] returns byte at absolute index', () {
+        final buffer = Uint8List.fromList([10, 20, 30, 40]);
+        final reader = BinaryReader(buffer);
+        expect(reader[0], equals(10));
+        expect(reader[1], equals(20));
+        expect(reader[2], equals(30));
+        expect(reader[3], equals(40));
+        expect(reader.offset, equals(0));
+      });
+
+      test('call() is an alias for readBytes', () {
+        final buffer = Uint8List.fromList([10, 20, 30, 40]);
+        final reader = BinaryReader(buffer);
+        final data = reader.call(2);
+        expect(data, equals([10, 20]));
+        expect(reader.offset, equals(2));
+      });
+    });
+
+    group('Coverage edge cases', () {
+      test('readVarUint throws on empty buffer', () {
+        final reader = BinaryReader(Uint8List(0));
+        expect(reader.readVarUint, throwsA(isA<RangeError>()));
+      });
+
+      test('readVarUint throws on truncated 3-byte value', () {
+        final reader = BinaryReader(Uint8List.fromList([0x80, 0x80]));
+        expect(reader.readVarUint, throwsA(isA<RangeError>()));
+      });
+
+      test('readVarUint throws on truncated multi-byte value in loop', () {
+        final reader = BinaryReader(
+          Uint8List.fromList([0x80, 0x80, 0x80, 0x80]),
+        );
+        expect(reader.readVarUint, throwsA(isA<RangeError>()));
+      });
+
+      test('hasBytes throws on negative length', () {
+        final reader = BinaryReader(Uint8List(10));
+        expect(() => reader.hasBytes(-1), throwsA(isA<RangeError>()));
+      });
+
+      test('readBytes throws on negative length', () {
+        final reader = BinaryReader(Uint8List(10));
+        expect(() => reader.readBytes(-1), throwsA(isA<RangeError>()));
+      });
+
+      test(
+        'seek throws on out of range offset in checkBounds via peekBytes',
+        () {
+          final reader = BinaryReader(Uint8List(10));
+          expect(() => reader.peekBytes(1, 11), throwsA(isA<RangeError>()));
+        },
+      );
+    });
   });
 }

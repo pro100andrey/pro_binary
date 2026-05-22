@@ -2776,5 +2776,92 @@ void main() {
       expect(reader.readUint64(), equals(123456789));
       expect(reader.availableBytes, equals(0));
     });
+
+    group('Concise API', () {
+      test('call() is an alias for writeBytes', () {
+        final writer = BinaryWriter();
+        writer([10, 20, 30]);
+        expect(writer.takeBytes(), equals([10, 20, 30]));
+      });
+    });
+
+    group('Extra error handling', () {
+      test(
+        'writeString handles high surrogate followed by non-low surrogate',
+        () {
+          final writer = BinaryWriter();
+          const testStr = 'A\uD800B';
+          writer.writeString(testStr);
+          final bytes = writer.takeBytes();
+          expect(bytes.length, equals(5));
+          expect(bytes[0], equals(0x41)); // 'A'
+          expect(bytes[1], equals(0xEF)); // U+FFFD start
+          expect(bytes[4], equals(0x42)); // 'B'
+        },
+      );
+
+      test(
+        'writeString handles lone high surrogate at end of string',
+        () {
+          final writer = BinaryWriter();
+          const testStr = 'A\uD800';
+          writer.writeString(testStr);
+          final bytes = writer.takeBytes();
+          expect(bytes.length, equals(4));
+        },
+      );
+    });
+
+    group('BinaryWriterPool Extra', () {
+      test('withWriter executes action and releases writer', () {
+        final result = BinaryWriterPool.withWriter((w) {
+          w.writeUint32(42);
+          return w.toBytes();
+        });
+        expect(result, equals([0, 0, 0, 42]));
+        expect(BinaryWriterPool.stats.pooled, greaterThan(0));
+      });
+
+      test('withWriter releases writer even on error', () {
+        BinaryWriterPool.clear();
+        expect(
+          () => BinaryWriterPool.withWriter((w) {
+            throw Exception('Test');
+          }),
+          throwsException,
+        );
+        expect(BinaryWriterPool.stats.pooled, equals(1));
+      });
+
+      test('acquire expands pooled writer if requested size is larger', () {
+        BinaryWriterPool.clear();
+        final writer = BinaryWriterPool.acquire(100);
+        BinaryWriterPool.release(writer);
+
+        // Now acquire with larger buffer
+        final largerWriter = BinaryWriterPool.acquire(1000);
+        expect(largerWriter.capacity, greaterThanOrEqualTo(1000));
+        BinaryWriterPool.release(largerWriter);
+      });
+    });
+
+    group('Coverage edge cases', () {
+      test('writeVarString with 16KB+ string (2-byte VarInt)', () {
+        final writer = BinaryWriter();
+        final longStr = 'a' * 20000;
+        writer.writeVarString(longStr);
+        final reader = BinaryReader(writer.takeBytes());
+        expect(reader.readVarString(), equals(longStr));
+      });
+
+      test('writeVarString with 2MB+ string (3-byte VarInt)', () {
+        final writer = BinaryWriter();
+        // This is a large test, but necessary for coverage
+        final longStr = 'a' * (256 * 1024);
+        writer.writeVarString(longStr);
+        final reader = BinaryReader(writer.takeBytes());
+        expect(reader.readVarString(), equals(longStr));
+      });
+    });
   });
 }
