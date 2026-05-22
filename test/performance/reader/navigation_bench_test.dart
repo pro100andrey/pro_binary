@@ -192,8 +192,6 @@ class SeekRandomAccessBenchmark extends BenchmarkBase {
 
   @override
   void run() {
-    // Disable lint for using for-in to emphasize the benchmark nature
-    // ignore: prefer_foreach
     for (final pos in positions) {
       reader.seek(pos);
     }

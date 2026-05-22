@@ -10,7 +10,7 @@ class PoolAcquireNewBenchmark extends BenchmarkBase {
 
   @override
   void setup() {
-    BinaryWriterPool.clear();
+    // BinaryWriterPool.clear();
   }
 
   @override
@@ -22,6 +22,8 @@ class PoolAcquireNewBenchmark extends BenchmarkBase {
       final writer = BinaryWriterPool.acquire();
       BinaryWriterPool.release(writer);
     }
+
+    print('Pool size after acquire/release: ${BinaryWriterPool.stats.pooled}');
   }
 }
 
@@ -31,19 +33,16 @@ class PoolAcquireNewBenchmark extends BenchmarkBase {
 class PoolAcquireReusedBenchmark extends BenchmarkBase {
   PoolAcquireReusedBenchmark() : super('Pool: acquire reused writer');
 
-  late List<BinaryWriter> writers;
-
   @override
   void setup() {
     BinaryWriterPool.clear();
-    writers = <BinaryWriter>[];
+
     // Pre-fill pool with released writers
     for (var i = 0; i < 10; i++) {
       final writer = BinaryWriterPool.acquire()
         ..writeBytes(List.generate(100, (j) => j % 256));
-      writers.add(writer);
+      BinaryWriterPool.release(writer);
     }
-    writers.forEach(BinaryWriterPool.release);
   }
 
   @override
@@ -64,14 +63,14 @@ class PoolAcquireReusedBenchmark extends BenchmarkBase {
 class PoolReleaseBenchmark extends BenchmarkBase {
   PoolReleaseBenchmark() : super('Pool: release writer');
 
-  late List<BinaryWriter> writers;
-
   @override
   void setup() {
     BinaryWriterPool.clear();
-    writers = <BinaryWriter>[];
+
     for (var i = 0; i < 100; i++) {
-      writers.add(BinaryWriterPool.acquire());
+      final writer = BinaryWriterPool.acquire();
+
+      BinaryWriterPool.release(writer);
     }
   }
 
@@ -80,8 +79,8 @@ class PoolReleaseBenchmark extends BenchmarkBase {
 
   @override
   void run() {
-    for (final writer in writers) {
-      writer.writeBytes(List.generate(50, (j) => j % 256));
+    for (var i = 0; i < 100; i++) {
+      final writer = BinaryWriterPool.acquire();
       BinaryWriterPool.release(writer);
     }
   }

@@ -738,6 +738,7 @@ final class _WriterState {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void ensureSize(int size) {
+    assert(!_isInPool, 'Cannot ensure size on a pooled writer');
     if (offset + size <= capacity) {
       return;
     }
@@ -748,6 +749,7 @@ final class _WriterState {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void ensureOneByte() {
+    assert(!_isInPool, 'Cannot ensure size on a pooled writer');
     if (offset + 1 <= capacity) {
       return;
     }
@@ -758,6 +760,7 @@ final class _WriterState {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void ensureTwoBytes() {
+    assert(!_isInPool, 'Cannot ensure size on a pooled writer');
     if (offset + 2 <= capacity) {
       return;
     }
@@ -768,6 +771,7 @@ final class _WriterState {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void ensureFourBytes() {
+    assert(!_isInPool, 'Cannot ensure size on a pooled writer');
     if (offset + 4 <= capacity) {
       return;
     }
@@ -778,6 +782,7 @@ final class _WriterState {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void ensureEightBytes() {
+    assert(!_isInPool, 'Cannot ensure size on a pooled writer');
     if (offset + 8 <= capacity) {
       return;
     }
@@ -903,7 +908,6 @@ int getUtf8Length(String value) {
 }
 
 // Disable lint to allow static-only class for pooling
-// ignore: avoid_classes_with_only_static_members
 /// Object pool for reusing [BinaryWriter] instances to reduce GC pressure.
 ///
 /// This pool maintains a cache of [BinaryWriter] instances with their
@@ -952,6 +956,7 @@ int getUtf8Length(String value) {
 /// - Use [clear] to free pooled memory explicitly
 ///
 /// See also: [BinaryWriter], [stats] for pool monitoring
+// ignore: avoid_classes_with_only_static_members
 abstract final class BinaryWriterPool {
   // The internal pool of reusable writer states.
   static final _pool = <_WriterState>[];
@@ -992,7 +997,7 @@ abstract final class BinaryWriterPool {
   /// final writer = BinaryWriterPool.acquire();
   /// try {
   ///   writer.writeUint32(123);
-  ///   return writer.toBytes();
+  ///   return writer.takeBytes();
   /// } finally {
   ///   BinaryWriterPool.release(writer);
   /// }
@@ -1003,10 +1008,16 @@ abstract final class BinaryWriterPool {
     if (_pool.isNotEmpty) {
       _acquireHit++;
       final state = _pool.removeLast().._isInPool = false;
+
+      if (state.capacity < defaultBufferSize) {
+        state.ensureSize(defaultBufferSize);
+      }
+
       return BinaryWriter._(state);
     }
 
     _acquireMiss++;
+
     return BinaryWriter(initialBufferSize: defaultBufferSize);
   }
 
@@ -1028,7 +1039,7 @@ abstract final class BinaryWriterPool {
   /// writer.writeUint32(42);
   /// final bytes = writer.toBytes();
   /// BinaryWriterPool.release(writer);
-  /// // DON'T USE: writer.writeString('invalid');
+  /// // DON'T USE writer here - it's returned to the pool and may be reused!
   /// ```
   ///
   /// Parameters:

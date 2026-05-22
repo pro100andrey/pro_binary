@@ -1,3 +1,11 @@
+## 3.0.1
+
+- **fix**: Added missing `ensureSize` check in `BinaryWriterPool.acquire` to guarantee buffer capacity when reusing writers.
+- **improvement**: Updated lint rules to `pro_lints/recommended.yaml` and resolved related lint issues.
+- **deps**: Updated `pro_lints`, `test`, and `meta` dependencies to latest versions.
+- **test**: Refactored pool benchmarks for better accuracy and reliability.
+- **docs**: Fixed minor typos and improved documentation for `BinaryWriterPool`.
+
 ## 3.0.0
 
 **Improvements:**
