@@ -817,61 +817,52 @@ final class _WriterState {
   @pragma('dart2js:tryInline')
   void ensureSize(int size) {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
-    if (offset + size <= capacity) {
-      return;
+    if (offset + size > capacity) {
+      _expand(size);
     }
-
-    _expand(size);
   }
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void ensureOneByte() {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
-    if (offset + 1 <= capacity) {
-      return;
+    if (offset + 1 > capacity) {
+      _expand(1);
     }
-
-    _expand(1);
   }
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void ensureTwoBytes() {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
-    if (offset + 2 <= capacity) {
-      return;
+    if (offset + 2 > capacity) {
+      _expand(2);
     }
-
-    _expand(2);
   }
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void ensureFourBytes() {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
-    if (offset + 4 <= capacity) {
-      return;
+    if (offset + 4 > capacity) {
+      _expand(4);
     }
-
-    _expand(4);
   }
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void ensureEightBytes() {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
-    if (offset + 8 <= capacity) {
-      return;
+    if (offset + 8 > capacity) {
+      _expand(8);
     }
-
-    _expand(8);
   }
 
   /// Expands the buffer to accommodate additional data.
   ///
   /// Uses exponential growth (1.5x) for better memory efficiency,
   /// but ensures the buffer is always large enough for the requested size.
+  @pragma('vm:never-inline')
   void _expand(int size) {
     final req = offset + size;
     // Grow by 1.5x (exponential growth with better memory efficiency)
