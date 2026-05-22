@@ -75,28 +75,40 @@ jobs:
 
       - name: Run Benchmarks (JIT)
         run: |
-          dart run benchmark_harness:bench --flavor jit --target test/performance/serialization_bench.dart
-          dart run benchmark_harness:bench --flavor jit --target test/performance/deserialization_bench.dart
-          dart run benchmark_harness:bench --flavor jit --target test/performance/strings_bench.dart
-          dart run benchmark_harness:bench --flavor jit --target test/performance/pool_bench.dart
+          echo "### 🚀 JIT Benchmarks (Dart VM)" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor jit --target test/performance/serialization_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor jit --target test/performance/deserialization_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor jit --target test/performance/strings_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor jit --target test/performance/pool_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Run Benchmarks (AOT)
         run: |
-          dart run benchmark_harness:bench --flavor aot --target test/performance/serialization_bench.dart
-          dart run benchmark_harness:bench --flavor aot --target test/performance/deserialization_bench.dart
-          dart run benchmark_harness:bench --flavor aot --target test/performance/strings_bench.dart
-          dart run benchmark_harness:bench --flavor aot --target test/performance/pool_bench.dart
+          echo "### ⚡ AOT Benchmarks (Native)" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor aot --target test/performance/serialization_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor aot --target test/performance/deserialization_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor aot --target test/performance/strings_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor aot --target test/performance/pool_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Run Benchmarks (JS)
         run: |
-          dart run benchmark_harness:bench --flavor js --target test/performance/serialization_bench.dart
-          dart run benchmark_harness:bench --flavor js --target test/performance/deserialization_bench.dart
-          dart run benchmark_harness:bench --flavor js --target test/performance/strings_bench.dart
-          dart run benchmark_harness:bench --flavor js --target test/performance/pool_bench.dart
+          echo "### 🌐 JS Benchmarks (V8)" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor js --target test/performance/serialization_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor js --target test/performance/deserialization_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor js --target test/performance/strings_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor js --target test/performance/pool_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Run Benchmarks (WASM)
         run: |
-          dart run benchmark_harness:bench --flavor wasm --target test/performance/serialization_bench.dart
-          dart run benchmark_harness:bench --flavor wasm --target test/performance/deserialization_bench.dart
-          dart run benchmark_harness:bench --flavor wasm --target test/performance/strings_bench.dart
-          dart run benchmark_harness:bench --flavor wasm --target test/performance/pool_bench.dart
+          echo "### ⚙️ WASM Benchmarks" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor wasm --target test/performance/serialization_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor wasm --target test/performance/deserialization_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor wasm --target test/performance/strings_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          dart run benchmark_harness:bench --flavor wasm --target test/performance/pool_bench.dart | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
