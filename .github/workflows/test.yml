@@ -53,3 +53,47 @@ jobs:
         with:
           file: ./coverage/lcov.info
           fail_ci_if_error: false
+
+  benchmark:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Run Benchmarks (JIT)
+        run: |
+          dart run benchmark_harness:bench --flavor jit --target test/performance/serialization_bench.dart
+          dart run benchmark_harness:bench --flavor jit --target test/performance/deserialization_bench.dart
+          dart run benchmark_harness:bench --flavor jit --target test/performance/strings_bench.dart
+          dart run benchmark_harness:bench --flavor jit --target test/performance/pool_bench.dart
+
+      - name: Run Benchmarks (AOT)
+        run: |
+          dart run benchmark_harness:bench --flavor aot --target test/performance/serialization_bench.dart
+          dart run benchmark_harness:bench --flavor aot --target test/performance/deserialization_bench.dart
+          dart run benchmark_harness:bench --flavor aot --target test/performance/strings_bench.dart
+          dart run benchmark_harness:bench --flavor aot --target test/performance/pool_bench.dart
+
+      - name: Run Benchmarks (JS)
+        run: |
+          dart run benchmark_harness:bench --flavor js --target test/performance/serialization_bench.dart
+          dart run benchmark_harness:bench --flavor js --target test/performance/deserialization_bench.dart
+          dart run benchmark_harness:bench --flavor js --target test/performance/strings_bench.dart
+          dart run benchmark_harness:bench --flavor js --target test/performance/pool_bench.dart
+
+      - name: Run Benchmarks (WASM)
+        run: |
+          dart run benchmark_harness:bench --flavor wasm --target test/performance/serialization_bench.dart
+          dart run benchmark_harness:bench --flavor wasm --target test/performance/deserialization_bench.dart
+          dart run benchmark_harness:bench --flavor wasm --target test/performance/strings_bench.dart
+          dart run benchmark_harness:bench --flavor wasm --target test/performance/pool_bench.dart
