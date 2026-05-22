@@ -60,12 +60,23 @@ class User {
 
 ### 2. High-Frequency writes (Pooling)
 Avoid GC pressure by reusing writer instances.
+
+**Recommended (Safe & Concise):**
+```dart
+final data = BinaryWriterPool.withWriter((writer) {
+  writer.writeUint32(1);
+  writer.writeVarString('Dart Rocks!');
+  return writer.toBytes(); // View of the buffer
+});
+```
+
+**Low-level API:**
 ```dart
 final writer = BinaryWriterPool.acquire();
 try {
   writer.writeUint32(1);
-  final data = writer.toBytes(); // View of the buffer
-  // ... process data ...
+  writer.writeVarString('Dart Rocks!');
+  final data = writer.toBytes();
 } finally {
   BinaryWriterPool.release(writer);
 }
@@ -85,11 +96,11 @@ if (reader.hasBytes(4)) {
 
 VarInt encoding reduces payload size by up to **75%** for small values:
 
-| Value | VarInt Size | Fixed Uint32 | Savings |
-| :--- | :--- | :--- | :--- |
-| `0..127` | 1 byte | 4 bytes | **75%** |
-| `128..16,383` | 2 bytes | 4 bytes | **50%** |
-| `16,384..2,097,151` | 3 bytes | 4 bytes | **25%** |
+| Value               | VarInt Size | Fixed Uint32 | Savings |
+| :------------------ | :---------- | :----------- | :------ |
+| `0..127`            | 1 byte      | 4 bytes      | **75%** |
+| `128..16,383`       | 2 bytes     | 4 bytes      | **50%** |
+| `16,384..2,097,151` | 3 bytes     | 4 bytes      | **25%** |
 
 *Use `writeVarUint` for lengths/counts and `writeVarInt` (ZigZag) for signed deltas.*
 

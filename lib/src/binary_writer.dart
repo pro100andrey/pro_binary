@@ -1090,6 +1090,29 @@ abstract final class BinaryWriterPool {
     return BinaryWriter(initialBufferSize: defaultBufferSize);
   }
 
+  /// Acquires a writer, executes the given [action], and automatically
+  /// releases the writer back to the pool.
+  ///
+  /// This is the recommended way to use the pool as it ensures the writer
+  /// is always released even if an exception occurs.
+  ///
+  /// Example:
+  /// ```dart
+  /// final bytes = BinaryWriterPool.withWriter((writer) {
+  ///   writer.writeUint32(42);
+  ///   return writer.takeBytes();
+  /// });
+  /// ```
+  static T withWriter<T>(T Function(BinaryWriter writer) action,
+      [int defaultBufferSize = _defaultBufferSize]) {
+    final writer = acquire(defaultBufferSize);
+    try {
+      return action(writer);
+    } finally {
+      release(writer);
+    }
+  }
+
   /// Returns a [BinaryWriter] to the pool for future reuse.
   ///
   /// The writer is reset (offset cleared) and stored for future [acquire]
@@ -1183,6 +1206,12 @@ abstract final class BinaryWriterPool {
   /// BinaryWriterPool.clear();  // All pooled writers discarded
   /// ```
   static void clear() {
+    // Assist GC by breaking links to potentially large byte buffers
+    for (var i = 0; i < _pool.length; i++) {
+      final state = _pool[i];
+      state.list = Uint8List(0);
+      state.data = ByteData(0);
+    }
     _pool.clear();
     _acquireHit = 0;
     _acquireMiss = 0;

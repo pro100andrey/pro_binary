@@ -90,26 +90,44 @@ extension type const BinaryReader._(_ReaderState _rs) {
       return byte;
     }
 
-    // Multi-byte VarInt (optimized for 2-3 byte case)
+    // Multi-byte VarInt (Optimized: unrolled first 3 bytes)
     var result = byte & 0x7f;
-    var shift = 7;
 
-    // Process remaining bytes: up to 9 more (total 10 max)
-    for (var i = 1; i < 10; i++) {
+    // 2nd byte
+    if (offset >= len) {
+      throw RangeError('VarInt out of bounds (truncated)');
+    }
+    byte = list[offset++];
+    result |= (byte & 0x7f) << 7;
+    if ((byte & 0x80) == 0) {
+      _rs.offset = offset;
+      return result;
+    }
+
+    // 3rd byte
+    if (offset >= len) {
+      throw RangeError('VarInt out of bounds (truncated)');
+    }
+    byte = list[offset++];
+    result |= (byte & 0x7f) << 14;
+    if ((byte & 0x80) == 0) {
+      _rs.offset = offset;
+      return result;
+    }
+
+    // Fallback loop for remaining bytes (up to 10 total)
+    var shift = 21;
+    for (var i = 3; i < 10; i++) {
       if (offset >= len) {
-        throw RangeError(
-          'VarInt out of bounds: offset=$offset length=$len (truncated)',
-        );
+        throw RangeError('VarInt out of bounds (truncated)');
       }
       byte = list[offset++];
-
       result |= (byte & 0x7f) << shift;
 
       if ((byte & 0x80) == 0) {
         _rs.offset = offset;
         return result;
       }
-
       shift += 7;
     }
 
