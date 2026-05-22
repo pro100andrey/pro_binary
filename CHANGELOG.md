@@ -1,10 +1,15 @@
 ## 3.0.1
 
+- **feat**: Added "concise" API features for a more idiomatic experience:
+  - `BinaryReader`: Added `operator []` for absolute byte access (e.g., `reader[0]`).
+  - `BinaryReader`: Added `call()` method for shorthand byte reading (e.g., `reader(10)`).
+  - `BinaryWriter`: Added `call()` method for shorthand byte writing (e.g., `writer([1, 2, 3])`).
 - **fix**: Added missing `ensureSize` check in `BinaryWriterPool.acquire` to guarantee buffer capacity when reusing writers.
 - **improvement**: Updated lint rules to `pro_lints/recommended.yaml` and resolved related lint issues.
 - **deps**: Updated `pro_lints`, `test`, and `meta` dependencies to latest versions.
 - **test**: Refactored pool benchmarks for better accuracy and reliability.
 - **docs**: Fixed minor typos and improved documentation for `BinaryWriterPool`.
+- **docs**: Complete README overhaul with a focus on recipes and technical clarity.
 
 ## 3.0.0
 

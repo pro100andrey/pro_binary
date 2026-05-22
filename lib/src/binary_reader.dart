@@ -637,6 +637,30 @@ extension type const BinaryReader._(_ReaderState _rs) {
     _rs.offset = 0;
   }
 
+  /// Returns the byte at the specified absolute [index] in the buffer.
+  ///
+  /// This allows random access without affecting the current [offset].
+  ///
+  /// Example:
+  /// ```dart
+  /// final firstByte = reader[0];
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int operator [](int index) => _rs.list[index];
+
+  /// Reads [length] bytes from the current position.
+  ///
+  /// This is a concise alias for [readBytes].
+  ///
+  /// Example:
+  /// ```dart
+  /// final data = reader(10); // Same as reader.readBytes(10)
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  Uint8List call(int length) => readBytes(length);
+
   /// Internal method to check if enough bytes are available to read.
   ///
   /// Throws an assertion error in debug mode if not enough bytes.

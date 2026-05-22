@@ -605,6 +605,18 @@ extension type BinaryWriter._(_WriterState _ws) {
     writeUint8(value ? 1 : 0);
   }
 
+  /// Writes a sequence of bytes.
+  ///
+  /// This is a concise alias for [writeBytes].
+  ///
+  /// Example:
+  /// ```dart
+  /// writer([1, 2, 3]); // Same as writer.writeBytes([1, 2, 3])
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void call(List<int> bytes) => writeBytes(bytes);
+
   /// Extracts all written bytes and resets the writer.
   ///
   /// After calling this method, the writer is reset and ready for reuse.
