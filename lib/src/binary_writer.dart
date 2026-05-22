@@ -582,9 +582,75 @@ extension type BinaryWriter._(_WriterState _ws) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void writeVarString(String value, {bool allowMalformed = true}) {
-    final utf8Length = getUtf8Length(value);
-    writeVarUint(utf8Length);
+    final len = value.length;
+    if (len == 0) {
+      writeVarUint(0);
+      return;
+    }
+
+    // Step 1: Optimistic estimation of VarInt size based on string length.
+    // Most strings are ASCII, where byte length == character length.
+    int estimatedVarIntSize;
+    if (len < 0x80) {
+      estimatedVarIntSize = 1;
+    } else if (len < 0x4000) {
+      estimatedVarIntSize = 2;
+    } else if (len < 0x200000) {
+      estimatedVarIntSize = 3;
+    } else if (len < 0x10000000) {
+      estimatedVarIntSize = 4;
+    } else {
+      estimatedVarIntSize = 5;
+    }
+
+    // Ensure enough space for the worst-case scenario (3 bytes per UTF-16 unit)
+    _ws.ensureSize(estimatedVarIntSize + len * 3);
+    final startOffset = _ws.offset;
+
+    // Step 2: Skip space for the estimated VarInt length
+    _ws.offset += estimatedVarIntSize;
+
+    // Step 3: Write the actual string data
     writeString(value, allowMalformed: allowMalformed);
+
+    final byteLength = _ws.offset - (startOffset + estimatedVarIntSize);
+
+    // Step 4: Check if our estimate was correct for the actual byte length
+    int actualVarIntSize;
+    if (byteLength < 0x80) {
+      actualVarIntSize = 1;
+    } else if (byteLength < 0x4000) {
+      actualVarIntSize = 2;
+    } else if (byteLength < 0x200000) {
+      actualVarIntSize = 3;
+    } else if (byteLength < 0x10000000) {
+      actualVarIntSize = 4;
+    } else {
+      actualVarIntSize = 5;
+    }
+
+    // Step 5: If the estimate was wrong, shift the string data
+    if (actualVarIntSize != estimatedVarIntSize) {
+      final shift = actualVarIntSize - estimatedVarIntSize;
+      if (shift > 0) {
+        _ws.ensureSize(shift);
+      }
+
+      // Fast native memory shift using setRange (memmove)
+      _ws.list.setRange(
+        startOffset + actualVarIntSize,
+        _ws.offset + shift,
+        _ws.list,
+        startOffset + estimatedVarIntSize,
+      );
+      _ws.offset += shift;
+    }
+
+    // Step 6: Backtrack and write the actual VarInt length
+    final finalOffset = _ws.offset;
+    _ws.offset = startOffset;
+    writeVarUint(byteLength);
+    _ws.offset = finalOffset;
   }
 
   /// Writes a boolean value as a single byte.

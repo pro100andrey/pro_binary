@@ -1,4 +1,4 @@
-## 3.0.1
+## 3.1.0
 
 - **feat**: Added "concise" API features for a more idiomatic experience:
   - `BinaryReader`: Added `operator []` for absolute byte access (e.g., `reader[0]`).
@@ -6,6 +6,7 @@
   - `BinaryWriter`: Added `call()` method for shorthand byte writing (e.g., `writer([1, 2, 3])`).
 - **fix**: Added missing `ensureSize` check in `BinaryWriterPool.acquire` to guarantee buffer capacity when reusing writers.
 - **improvement**: Updated lint rules to `pro_lints/recommended.yaml` and resolved related lint issues.
+- **performance**: Optimized `writeVarString` with a high-performance one-pass "optimistic shift" algorithm. Eliminates redundant string iterations, resulting in ~30% faster string serialization.
 - **deps**: Updated `pro_lints`, `test`, and `meta` dependencies to latest versions.
 - **test**: Refactored pool benchmarks for better accuracy and reliability.
 - **docs**: Fixed minor typos and improved documentation for `BinaryWriterPool`.

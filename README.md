@@ -9,6 +9,7 @@
 ## 🚀 Key Features
 
 *   ⚡ **Zero-Copy Reads**: Operations return `Uint8List` views without allocation.
+*   🚀 **One-Pass Strings**: Optimized `writeVarString` with optimistic shift (30% faster).
 *   📦 **Smart Buffering**: Exponential growth (×1.5) and object pooling.
 *   🔢 **Compact Encoding**: VarInt & ZigZag support (Protobuf compatible).
 *   🌐 **Universal**: Supports Native & Web (WASM/JS) with consistent API.

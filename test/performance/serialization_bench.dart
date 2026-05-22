@@ -78,8 +78,9 @@ class LargeArrayWriteBenchmark extends BenchmarkBase {
 
   @override
   void run() {
-    writer..reset()
-    ..writeVarUint(data.length);
+    writer
+      ..reset()
+      ..writeVarUint(data.length);
     for (final val in data) {
       writer.writeUint32(val);
     }
