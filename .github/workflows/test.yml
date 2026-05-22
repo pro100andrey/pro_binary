@@ -41,8 +41,11 @@ jobs:
       - name: Analyze code
         run: dart analyze --fatal-infos
       
-      - name: Run tests
+      - name: Run tests (VM)
         run: dart test -x benchmark
+
+      - name: Run tests (Web/Chrome)
+        run: dart test -p chrome -x benchmark
       
       - name: Run tests with coverage
         if: matrix.os == 'ubuntu-latest' && matrix.sdk == 'stable'
@@ -60,7 +63,7 @@ jobs:
   benchmark:
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
