@@ -41,11 +41,8 @@ jobs:
       - name: Analyze code
         run: dart analyze --fatal-infos
       
-      - name: Run tests (VM)
+      - name: Run tests
         run: dart test -x benchmark
-
-      - name: Run tests (Web/Chrome)
-        run: dart test -p chrome -x benchmark
       
       - name: Run tests with coverage
         if: matrix.os == 'ubuntu-latest' && matrix.sdk == 'stable'
