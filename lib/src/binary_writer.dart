@@ -582,9 +582,75 @@ extension type BinaryWriter._(_WriterState _ws) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void writeVarString(String value, {bool allowMalformed = true}) {
-    final utf8Length = getUtf8Length(value);
-    writeVarUint(utf8Length);
+    final len = value.length;
+    if (len == 0) {
+      writeVarUint(0);
+      return;
+    }
+
+    // Step 1: Optimistic estimation of VarInt size based on string length.
+    // Most strings are ASCII, where byte length == character length.
+    int estimatedVarIntSize;
+    if (len < 0x80) {
+      estimatedVarIntSize = 1;
+    } else if (len < 0x4000) {
+      estimatedVarIntSize = 2;
+    } else if (len < 0x200000) {
+      estimatedVarIntSize = 3;
+    } else if (len < 0x10000000) {
+      estimatedVarIntSize = 4;
+    } else {
+      estimatedVarIntSize = 5;
+    }
+
+    // Ensure enough space for the worst-case scenario (3 bytes per UTF-16 unit)
+    _ws.ensureSize(estimatedVarIntSize + len * 3);
+    final startOffset = _ws.offset;
+
+    // Step 2: Skip space for the estimated VarInt length
+    _ws.offset += estimatedVarIntSize;
+
+    // Step 3: Write the actual string data
     writeString(value, allowMalformed: allowMalformed);
+
+    final byteLength = _ws.offset - (startOffset + estimatedVarIntSize);
+
+    // Step 4: Check if our estimate was correct for the actual byte length
+    int actualVarIntSize;
+    if (byteLength < 0x80) {
+      actualVarIntSize = 1;
+    } else if (byteLength < 0x4000) {
+      actualVarIntSize = 2;
+    } else if (byteLength < 0x200000) {
+      actualVarIntSize = 3;
+    } else if (byteLength < 0x10000000) {
+      actualVarIntSize = 4;
+    } else {
+      actualVarIntSize = 5;
+    }
+
+    // Step 5: If the estimate was wrong, shift the string data
+    if (actualVarIntSize != estimatedVarIntSize) {
+      final shift = actualVarIntSize - estimatedVarIntSize;
+      if (shift > 0) {
+        _ws.ensureSize(shift);
+      }
+
+      // Fast native memory shift using setRange (memmove)
+      _ws.list.setRange(
+        startOffset + actualVarIntSize,
+        _ws.offset + shift,
+        _ws.list,
+        startOffset + estimatedVarIntSize,
+      );
+      _ws.offset += shift;
+    }
+
+    // Step 6: Backtrack and write the actual VarInt length
+    final finalOffset = _ws.offset;
+    _ws.offset = startOffset;
+    writeVarUint(byteLength);
+    _ws.offset = finalOffset;
   }
 
   /// Writes a boolean value as a single byte.
@@ -604,6 +670,18 @@ extension type BinaryWriter._(_WriterState _ws) {
   void writeBool(bool value) {
     writeUint8(value ? 1 : 0);
   }
+
+  /// Writes a sequence of bytes.
+  ///
+  /// This is a concise alias for [writeBytes].
+  ///
+  /// Example:
+  /// ```dart
+  /// writer([1, 2, 3]); // Same as writer.writeBytes([1, 2, 3])
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void call(List<int> bytes) => writeBytes(bytes);
 
   /// Extracts all written bytes and resets the writer.
   ///
@@ -738,57 +816,53 @@ final class _WriterState {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void ensureSize(int size) {
-    if (offset + size <= capacity) {
-      return;
+    assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+    if (offset + size > capacity) {
+      _expand(size);
     }
-
-    _expand(size);
   }
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void ensureOneByte() {
-    if (offset + 1 <= capacity) {
-      return;
+    assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+    if (offset + 1 > capacity) {
+      _expand(1);
     }
-
-    _expand(1);
   }
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void ensureTwoBytes() {
-    if (offset + 2 <= capacity) {
-      return;
+    assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+    if (offset + 2 > capacity) {
+      _expand(2);
     }
-
-    _expand(2);
   }
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void ensureFourBytes() {
-    if (offset + 4 <= capacity) {
-      return;
+    assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+    if (offset + 4 > capacity) {
+      _expand(4);
     }
-
-    _expand(4);
   }
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void ensureEightBytes() {
-    if (offset + 8 <= capacity) {
-      return;
+    assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+    if (offset + 8 > capacity) {
+      _expand(8);
     }
-
-    _expand(8);
   }
 
   /// Expands the buffer to accommodate additional data.
   ///
   /// Uses exponential growth (1.5x) for better memory efficiency,
   /// but ensures the buffer is always large enough for the requested size.
+  @pragma('vm:never-inline')
   void _expand(int size) {
     final req = offset + size;
     // Grow by 1.5x (exponential growth with better memory efficiency)
@@ -903,7 +977,6 @@ int getUtf8Length(String value) {
 }
 
 // Disable lint to allow static-only class for pooling
-// ignore: avoid_classes_with_only_static_members
 /// Object pool for reusing [BinaryWriter] instances to reduce GC pressure.
 ///
 /// This pool maintains a cache of [BinaryWriter] instances with their
@@ -952,6 +1025,7 @@ int getUtf8Length(String value) {
 /// - Use [clear] to free pooled memory explicitly
 ///
 /// See also: [BinaryWriter], [stats] for pool monitoring
+// ignore: avoid_classes_with_only_static_members
 abstract final class BinaryWriterPool {
   // The internal pool of reusable writer states.
   static final _pool = <_WriterState>[];
@@ -992,7 +1066,7 @@ abstract final class BinaryWriterPool {
   /// final writer = BinaryWriterPool.acquire();
   /// try {
   ///   writer.writeUint32(123);
-  ///   return writer.toBytes();
+  ///   return writer.takeBytes();
   /// } finally {
   ///   BinaryWriterPool.release(writer);
   /// }
@@ -1003,11 +1077,42 @@ abstract final class BinaryWriterPool {
     if (_pool.isNotEmpty) {
       _acquireHit++;
       final state = _pool.removeLast().._isInPool = false;
+
+      if (state.capacity < defaultBufferSize) {
+        state.ensureSize(defaultBufferSize);
+      }
+
       return BinaryWriter._(state);
     }
 
     _acquireMiss++;
+
     return BinaryWriter(initialBufferSize: defaultBufferSize);
+  }
+
+  /// Acquires a writer, executes the given [action], and automatically
+  /// releases the writer back to the pool.
+  ///
+  /// This is the recommended way to use the pool as it ensures the writer
+  /// is always released even if an exception occurs.
+  ///
+  /// Example:
+  /// ```dart
+  /// final bytes = BinaryWriterPool.withWriter((writer) {
+  ///   writer.writeUint32(42);
+  ///   return writer.takeBytes();
+  /// });
+  /// ```
+  static T withWriter<T>(
+    T Function(BinaryWriter writer) action, [
+    int defaultBufferSize = _defaultBufferSize,
+  ]) {
+    final writer = acquire(defaultBufferSize);
+    try {
+      return action(writer);
+    } finally {
+      release(writer);
+    }
   }
 
   /// Returns a [BinaryWriter] to the pool for future reuse.
@@ -1028,7 +1133,7 @@ abstract final class BinaryWriterPool {
   /// writer.writeUint32(42);
   /// final bytes = writer.toBytes();
   /// BinaryWriterPool.release(writer);
-  /// // DON'T USE: writer.writeString('invalid');
+  /// // DON'T USE writer here - it's returned to the pool and may be reused!
   /// ```
   ///
   /// Parameters:
@@ -1103,6 +1208,12 @@ abstract final class BinaryWriterPool {
   /// BinaryWriterPool.clear();  // All pooled writers discarded
   /// ```
   static void clear() {
+    // Assist GC by breaking links to potentially large byte buffers
+    for (var i = 0; i < _pool.length; i++) {
+      _pool[i]
+        ..list = Uint8List(0)
+        ..data = ByteData(0);
+    }
     _pool.clear();
     _acquireHit = 0;
     _acquireMiss = 0;

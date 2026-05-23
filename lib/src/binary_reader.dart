@@ -90,26 +90,44 @@ extension type const BinaryReader._(_ReaderState _rs) {
       return byte;
     }
 
-    // Multi-byte VarInt (optimized for 2-3 byte case)
+    // Multi-byte VarInt (Optimized: unrolled first 3 bytes)
     var result = byte & 0x7f;
-    var shift = 7;
 
-    // Process remaining bytes: up to 9 more (total 10 max)
-    for (var i = 1; i < 10; i++) {
+    // 2nd byte
+    if (offset >= len) {
+      throw RangeError('VarInt out of bounds (truncated)');
+    }
+    byte = list[offset++];
+    result |= (byte & 0x7f) << 7;
+    if ((byte & 0x80) == 0) {
+      _rs.offset = offset;
+      return result;
+    }
+
+    // 3rd byte
+    if (offset >= len) {
+      throw RangeError('VarInt out of bounds (truncated)');
+    }
+    byte = list[offset++];
+    result |= (byte & 0x7f) << 14;
+    if ((byte & 0x80) == 0) {
+      _rs.offset = offset;
+      return result;
+    }
+
+    // Fallback loop for remaining bytes (up to 10 total)
+    var shift = 21;
+    for (var i = 3; i < 10; i++) {
       if (offset >= len) {
-        throw RangeError(
-          'VarInt out of bounds: offset=$offset length=$len (truncated)',
-        );
+        throw RangeError('VarInt out of bounds (truncated)');
       }
       byte = list[offset++];
-
       result |= (byte & 0x7f) << shift;
 
       if ((byte & 0x80) == 0) {
         _rs.offset = offset;
         return result;
       }
-
       shift += 7;
     }
 
@@ -636,6 +654,30 @@ extension type const BinaryReader._(_ReaderState _rs) {
   void reset() {
     _rs.offset = 0;
   }
+
+  /// Returns the byte at the specified absolute [index] in the buffer.
+  ///
+  /// This allows random access without affecting the current [offset].
+  ///
+  /// Example:
+  /// ```dart
+  /// final firstByte = reader[0];
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int operator [](int index) => _rs.list[index];
+
+  /// Reads [length] bytes from the current position.
+  ///
+  /// This is a concise alias for [readBytes].
+  ///
+  /// Example:
+  /// ```dart
+  /// final data = reader(10); // Same as reader.readBytes(10)
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  Uint8List call(int length) => readBytes(length);
 
   /// Internal method to check if enough bytes are available to read.
   ///
