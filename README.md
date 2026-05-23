@@ -121,8 +121,8 @@ VarInt encoding reduces payload size by up to **75%** for small values:
 ## Testing & Performance
 
 We maintain a rigorous test suite:
-*   ✅ **Native (JIT/AOT)**: Optimized for raw performance.
-*   ✅ **Web (WASM/JS)**: Cross-platform consistency.
+*  **Native (JIT/AOT)**: Optimized for raw performance.
+*  **Web (WASM/JS)**: Cross-platform consistency.
 
 Run benchmarks to see it in action:
 ```bash
