@@ -6,33 +6,33 @@
 
 **High-performance binary serialization for Dart.** Optimized for speed, zero-copy reads, and Protocol Buffers-compatible encoding.
 
-## 🚀 Key Features
+## Key Features
 
-*   ⚡ **Zero-Copy Reads**: Operations return `Uint8List` views without allocation.
-*   🚀 **One-Pass Strings**: Optimized `writeVarString` with optimistic shift (30% faster).
-*   📦 **Smart Buffering**: Exponential growth (×1.5) and object pooling.
-*   🔢 **Compact Encoding**: VarInt & ZigZag support (Protobuf compatible).
-*   🌐 **Universal**: Supports Native & Web (WASM/JS) with consistent API.
-*   🎯 **Modern API**: Leverages Dart Extension Types for zero-overhead abstractions.
+* **Zero-Copy Reads**: Operations return `Uint8List` views without allocation.
+* **One-Pass Strings**: Optimized `writeVarString` with optimistic shift (30% faster).
+* **Smart Buffering**: Exponential growth (×1.5) and object pooling.
+* **Compact Encoding**: VarInt & ZigZag support (Protobuf compatible).
+* **Universal**: Supports Native & Web (WASM/JS) with consistent API.
+* **Modern API**: Leverages Dart Extension Types for zero-overhead abstractions.
 
-## 📦 Installation
+## Installation
 
 ```yaml
 dependencies:
   pro_binary: ^3.0.1
 ```
 
-## ⚡ Quick Start
+## Quick Start
 
 ```dart
 import 'package:pro_binary/pro_binary.dart';
 
 // Serialize
-final writer = BinaryWriter();
-writer
+final writer = BinaryWriter()
   ..writeUint32(42)
   ..writeVarString('Dart 🚀')
   ..writeBool(true);
+
 final bytes = writer.takeBytes();
 
 // Deserialize
@@ -42,7 +42,7 @@ print(reader.readVarString()); // Dart 🚀
 print(reader.readBool());      // true
 ```
 
-## 🛠️ Recipes & Patterns
+##  Recipes & Patterns
 
 ### 1. Efficient Object Serialization
 ```dart
@@ -92,7 +92,7 @@ if (reader.hasBytes(4)) {
 }
 ```
 
-## 🔢 VarInt Efficiency
+## VarInt Efficiency
 
 VarInt encoding reduces payload size by up to **75%** for small values:
 
@@ -104,7 +104,7 @@ VarInt encoding reduces payload size by up to **75%** for small values:
 
 *Use `writeVarUint` for lengths/counts and `writeVarInt` (ZigZag) for signed deltas.*
 
-## 📚 API Reference Summary
+## API Reference Summary
 
 ### **BinaryWriter**
 *   **Fixed:** `writeUint8`, `writeInt16`, `writeUint32`, `writeInt64`, `writeFloat64`, `writeBool`.
@@ -118,7 +118,7 @@ VarInt encoding reduces payload size by up to **75%** for small values:
 *   **Data:** `readBytes`, `readVarBytes`, `readString`, `readVarString`, `readRemainingBytes`.
 *   **Navigation:** `skip(n)`, `seek(p)`, `rewind(n)`, `peekBytes(n)`, `[index]`.
 
-## 🧪 Testing & Performance
+## Testing & Performance
 
 We maintain a rigorous test suite:
 *   ✅ **Native (JIT/AOT)**: Optimized for raw performance.
@@ -129,6 +129,6 @@ Run benchmarks to see it in action:
 dart run benchmark_harness:bench --flavor aot --target test/performance/serialization_bench.dart
 ```
 
-## 📄 License
+## License
 
 MIT License. See [LICENSE](LICENSE) for details.

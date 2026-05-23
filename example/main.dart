@@ -1,76 +1,71 @@
-// Disable lint rule for demonstration purposes
+// Example demonstrating best practices for using `pro_binary` in a Dart
 // ignore_for_file: avoid_print
-
-import 'dart:typed_data';
-
 import 'package:pro_binary/pro_binary.dart';
 
-void main() {
-  writeExample();
-  readExample();
-  errorHandlingExample();
-  bufferManagementExample();
-}
+/// A simple domain model to demonstrate serialization best practices.
+class User {
+  User({
+    required this.id,
+    required this.name,
+    required this.isActive,
+    required this.score,
+  });
 
-void writeExample() {
-  print('=== Writing Binary Data ===');
+  /// Recommended pattern: Factory for deserialization.
+  factory User.decode(BinaryReader r) => User(
+    id: r.readVarUint(),
+    name: r.readVarString(),
+    isActive: r.readBool(),
+    score: r.readFloat64(),
+  );
 
-  final writer = BinaryWriter()
-    ..writeUint8(42)
-    ..writeInt32(-1000, .little)
-    ..writeFloat64(3.14159)
-    ..writeString('Hello, World!');
+  final int id;
+  final String name;
+  final bool isActive;
+  final double score;
 
-  final bytes = writer.takeBytes();
-  print('Written ${bytes.length} bytes: $bytes\n');
-}
-
-void readExample() {
-  print('=== Reading Binary Data ===');
-
-  final buffer = Uint8List.fromList([
-    42, 24, 252, 255, 255, // uint8 + int32
-    31, 133, 235, 81, 184, 30, 9, 64, // float64
-    72, 101, 108, 108, 111, // "Hello"
-  ]);
-
-  final reader = BinaryReader(buffer);
-
-  print('uint8:   ${reader.readUint8()}');
-  print('int32:   ${reader.readInt32(.little)}');
-  print('float64: ${reader.readFloat64()}');
-  print('string:  ${reader.readString(5)}');
-  print('Position: ${reader.offset}/${buffer.length}\n');
-}
-
-void errorHandlingExample() {
-  print('=== Error Handling ===');
-
-  final buffer = Uint8List(2); // Only 2 bytes
-  final reader = BinaryReader(buffer);
-
-  try {
-    reader.readUint32(); // Needs 4 bytes
-  } on Object catch (e) {
-    print('Caught: $e\n');
+  /// Recommended pattern: Static method for serialization.
+  void encode(BinaryWriter w) {
+    w
+      ..writeVarUint(id)
+      ..writeVarString(name)
+      ..writeBool(isActive)
+      ..writeFloat64(score);
   }
+
+  @override
+  String toString() =>
+      'User(id: $id, name: "$name", active: $isActive, score: $score)';
 }
 
-void bufferManagementExample() {
-  print('=== Buffer Management ===');
+void main() {
+  // 1. Using the high-level Pool API (Best for performance)
+  print('Step 1: Serializing via Pool...');
+  final bytes = BinaryWriterPool.withWriter((writer) {
+    User(id: 101, name: 'Dart 🚀', isActive: true, score: 99.5).encode(writer);
+    return writer.toBytes(); // View of the pooled buffer
+  });
 
-  final writer = BinaryWriter()
-    ..writeUint8(1)
-    ..writeUint8(2);
+  print('Serialized length: ${bytes.length} bytes\n');
 
-  // Inspect without consuming
-  print('Current buffer: ${writer.toBytes()}');
+  // 2. Using the Concise API for reading
+  print('Step 2: Deserializing...');
+  final reader = BinaryReader(bytes);
 
-  writer.writeUint8(3);
-  print('After adding: ${writer.toBytes()}');
+  // Concise peek via operator []
+  final firstByte = reader[0];
+  print('Peek first byte: 0x${firstByte.toRadixString(16).padLeft(2, '0')}');
 
-  // Take and reset
-  final result = writer.takeBytes();
-  print('Final result: $result');
-  print('After takeBytes: ${writer.toBytes()}');
+  final decodedUser = User.decode(reader);
+  print('Decoded user: $decodedUser\n');
+
+  // 3. Concise byte operations (Callable syntax)
+  print('Step 3: Concise data writing...');
+  final writer = BinaryWriter();
+  writer([0xAA, 0xBB, 0xCC]); // Shorthand for writeBytes
+
+  final r2 = BinaryReader(writer.takeBytes());
+  print('Read back 2 bytes concisely: ${r2(2)}'); // Shorthand for readBytes(2)
+
+  print('\nAll examples completed successfully!');
 }
