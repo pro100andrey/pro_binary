@@ -19,7 +19,7 @@
 
 ```yaml
 dependencies:
-  pro_binary: ^3.0.1
+  pro_binary: ^3.2.0
 ```
 
 ## Quick Start
@@ -40,6 +40,10 @@ final reader = BinaryReader(bytes);
 print(reader.readUint32());    // 42
 print(reader.readVarString()); // Dart 🚀
 print(reader.readBool());      // true
+
+// From List<int>
+final bytesList = <int>[0x01, 0x02, 0x03, 0x04];
+final reader2 = BinaryReader.fromList(bytesList);
 ```
 
 ##  Recipes & Patterns
@@ -52,9 +56,15 @@ class User {
 
   User(this.id, this.name);
 
-  void encode(BinaryWriter w) => w..writeVarUint(id)..writeVarString(name);
+  void encode(BinaryWriter w) => w
+    ..writeVarUint(id)
+    ..writeVarString(name);
 
-  factory User.decode(BinaryReader r) => User(r.readVarUint(), r.readVarString());
+  factory User.decode(BinaryReader r) =>
+    User(
+      r.readVarUint(), 
+      r.readVarString(),
+    );
 }
 ```
 
@@ -116,7 +126,7 @@ VarInt encoding reduces payload size by up to **75%** for small values:
 *   **Fixed:** `readUint8`, `readInt16`, `readUint32`, `readInt64`, `readFloat64`, `readBool`.
 *   **Variable:** `readVarUint`, `readVarInt`.
 *   **Data:** `readBytes`, `readVarBytes`, `readString`, `readVarString`, `readRemainingBytes`.
-*   **Navigation:** `skip(n)`, `seek(p)`, `rewind(n)`, `peekBytes(n)`, `[index]`.
+*   **Navigation:** `skip(n)`, `seek(p)`, `rewind(n)`, `peekBytes(n)`, `peekByte()`, `[index]`.
 
 ## Testing & Performance
 
