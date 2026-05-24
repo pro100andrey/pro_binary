@@ -884,5 +884,3 @@ final class _WriterState {
     capacity = newCapacity;
   }
 }
-
-

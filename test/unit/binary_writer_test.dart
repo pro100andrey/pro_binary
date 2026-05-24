@@ -2242,6 +2242,24 @@ void main() {
       expect(BinaryWriterPool.stats.discardedLargeBuffers, equals(2));
     });
 
+    test('discardedLargeBuffers does not increment when pool is full', () {
+      expect(BinaryWriterPool.stats.discardedLargeBuffers, equals(0));
+
+      // Create 33 writers and release them all at once
+      // The pool can only hold 32, so the 33rd should be discarded
+      final writers = <BinaryWriter>[];
+      for (var i = 0; i < 33; i++) {
+        writers.add(BinaryWriterPool.acquire()..writeUint32(i));
+      }
+      for (final writer in writers) {
+        BinaryWriterPool.release(writer);
+      }
+
+      expect(BinaryWriterPool.stats.pooled, equals(32));
+      // discardedLargeBuffers only counts large buffers, not pool-full discards
+      expect(BinaryWriterPool.stats.discardedLargeBuffers, equals(0));
+    });
+
     test('totalAcquires returns sum of hits and misses', () {
       expect(BinaryWriterPool.stats.totalAcquires, equals(0));
 
