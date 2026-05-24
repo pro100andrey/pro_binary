@@ -131,7 +131,8 @@ abstract final class BinaryWriterPool {
   ///
   /// Parameters:
   /// - [action]: The function to execute with the acquired writer
-  /// - [initialBufferSizer]: Initial buffer size for new writers (defaults to 1 KiB)
+  /// - [initialBufferSizer]: Initial buffer size for new writers
+  ///   (defaults to 1 KiB)
   ///
   /// Example:
   /// ```dart
