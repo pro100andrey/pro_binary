@@ -790,13 +790,13 @@ final class _WriterState {
   }
 
   /// Current write position in the buffer.
-  late int offset;
+  int offset;
 
   /// Cached buffer capacity to avoid repeated length checks.
-  late int capacity;
+  int capacity;
 
   /// Underlying byte buffer.
-  late Uint8List list;
+  Uint8List list;
 
   /// ByteData view of the underlying buffer for efficient writes.
   late ByteData data;

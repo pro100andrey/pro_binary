@@ -732,7 +732,7 @@ final class _ReaderState {
   final int length;
 
   /// Current read position in the buffer.
-  late int offset;
+   int offset;
 
   /// Offset of the buffer view within its underlying [ByteBuffer].
   /// Necessary for creating accurate subviews.
