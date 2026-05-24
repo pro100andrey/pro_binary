@@ -98,6 +98,14 @@ abstract final class BinaryWriterPool {
   ///
   /// Returns: A [BinaryWriter] ready for use.
   static BinaryWriter acquire([int defaultBufferSize = _defaultBufferSize]) {
+    if (defaultBufferSize <= 0) {
+      throw RangeError.value(
+        defaultBufferSize,
+        'defaultBufferSize',
+        'Must be positive',
+      );
+    }
+
     if (_pool.isNotEmpty) {
       _acquireHit++;
       final state = _pool.removeLast().._isInPool = false;
