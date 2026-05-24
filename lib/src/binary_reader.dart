@@ -667,6 +667,22 @@ extension type const BinaryReader._(_ReaderState _rs) {
   @pragma('dart2js:tryInline')
   int operator [](int index) => _rs.list[index];
 
+  /// Returns the byte at the current read position without advancing the offset.
+  ///
+  /// This is a convenience method for peeking at the next byte to be read.
+  ///
+  /// Example:
+  /// ```dart
+  /// final nextByte = reader.peekByte();
+  /// if (nextByte == 0x42) {
+  ///   // Handle type 0x42
+  /// }
+  /// final actualByte = reader.readUint8(); // Now read it
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int peekByte() => _rs.list[_rs.offset];
+
   /// Reads [length] bytes from the current position.
   ///
   /// This is a concise alias for [readBytes].

@@ -1,3 +1,32 @@
+## 3.2.0
+
+**BREAKING CHANGES:**
+
+- **BinaryWriterPool**: renamed `_defaultBufferSize` → `_initialBufferSizer` (and parameter `defaultBufferSize` → `initialBufferSizer` in `acquire()` and `withWriter()`)
+
+**New Features:**
+
+- **BinaryWriterPool**: added `_discardedPoolFull` counter — tracks writers discarded due to pool full (max 32)
+- **BinaryWriter**: added `_varIntSize(int value)` — helper function for VarInt size calculation (switch expression)
+- **BinaryReader**: added `peekByte()` — returns byte at current position without advancing offset
+
+**Fixes:**
+
+- **BinaryWriterPool**: added validation for `initialBufferSizer` in `acquire()` — throws `RangeError` for invalid size
+- **BinaryWriterPool**: `_initializeBuffer()` now resets `_isInPool = false`, correct `takeBytes()` → `release()` flow for pooled writers
+- **BinaryWriterPool**: `clear()` now resets `_isInPool` for pooled writers
+- **BinaryReader/BinaryWriter**: removed unnecessary `late` from `_ReaderState` and `_WriterState` (offset, capacity, list)
+- **BinaryReader**: removed redundant bounds check in `peekBytes()` (already guarded by `_checkBounds`)
+
+**Refactoring:**
+
+- **_WriterState**: renamed `_validated` → `_fromSize`
+- **string_utils.dart**: replaced JSDoc tags `@param`/`@return` with Dart style (`Parameters:`/`Returns:`)
+
+**Tests:**
+
+- Added tests for pool statistics, edge cases takeBytes/reset/release
+
 ## 3.1.0
 
 - **feat**: Added `BinaryWriterPool.withWriter()` for safer and more concise object pool usage.

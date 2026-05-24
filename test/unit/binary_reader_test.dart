@@ -2092,6 +2092,32 @@ void main() {
           expect(() => reader.peekBytes(1, 11), throwsA(isA<RangeError>()));
         },
       );
+
+      test('peekByte returns byte at current position without advancing', () {
+        final reader = BinaryReader(Uint8List.fromList([0x42, 0x43, 0x44]));
+        expect(reader.peekByte(), equals(0x42));
+        expect(reader.offset, equals(0));
+      });
+
+      test('peekByte after read returns next byte', () {
+        final reader = BinaryReader(Uint8List.fromList([0x42, 0x43, 0x44]));
+        reader.readUint8();
+        expect(reader.peekByte(), equals(0x43));
+        expect(reader.offset, equals(1));
+      });
+
+      test('peekByte at end returns last byte', () {
+        final reader = BinaryReader(Uint8List.fromList([0x42]));
+        expect(reader.peekByte(), equals(0x42));
+        expect(reader.offset, equals(0));
+      });
+
+      test('peekByte multiple times returns same value', () {
+        final reader = BinaryReader(Uint8List.fromList([0x42, 0x43]));
+        expect(reader.peekByte(), equals(0x42));
+        expect(reader.peekByte(), equals(0x42));
+        expect(reader.peekByte(), equals(0x42));
+      });
     });
   });
 }
