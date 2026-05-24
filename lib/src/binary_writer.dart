@@ -761,6 +761,7 @@ final class _WriterState {
 
   _WriterState._fromSize(int size)
     : _size = size,
+      _isInPool = false,
       capacity = (size + 63) & ~63,
       offset = 0,
       list = Uint8List((size + 63) & ~63) {
@@ -793,7 +794,9 @@ final class _WriterState {
   /// Initial buffer size.
   final int _size;
 
-  var _isInPool = false;
+  /// Whether this writer is currently in the pool (not available for direct
+  /// use).
+  bool _isInPool;
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
