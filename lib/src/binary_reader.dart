@@ -685,10 +685,6 @@ extension type const BinaryReader._(_ReaderState _rs) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void _checkBounds(int bytes, String type, [int? offset]) {
-    if (bytes < 0) {
-      throw RangeError.value(bytes, 'bytes', 'Bytes must be non-negative');
-    }
-
     final start = offset ?? _rs.offset;
     final end = start + bytes;
 
