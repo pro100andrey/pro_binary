@@ -2100,8 +2100,8 @@ void main() {
       });
 
       test('peekByte after read returns next byte', () {
-        final reader = BinaryReader(Uint8List.fromList([0x42, 0x43, 0x44]));
-        reader.readUint8();
+        final reader = BinaryReader(Uint8List.fromList([0x42, 0x43, 0x44]))
+          ..readUint8();
         expect(reader.peekByte(), equals(0x43));
         expect(reader.offset, equals(1));
       });
@@ -2117,6 +2117,37 @@ void main() {
         expect(reader.peekByte(), equals(0x42));
         expect(reader.peekByte(), equals(0x42));
         expect(reader.peekByte(), equals(0x42));
+      });
+
+      test('fromList creates reader from List<int>', () {
+        final bytes = <int>[0x01, 0x02, 0x03, 0x04];
+        final reader = BinaryReader.fromList(bytes);
+        expect(reader.readUint8(), equals(1));
+        expect(reader.readUint8(), equals(2));
+        expect(reader.readUint8(), equals(3));
+        expect(reader.readUint8(), equals(4));
+      });
+
+      test('fromList copies data, original list can be modified', () {
+        final bytes = <int>[0x01, 0x02, 0x03, 0x04];
+        final reader = BinaryReader.fromList(bytes);
+        expect(reader.readUint8(), equals(1));
+        bytes[0] = 0xFF;
+        reader.reset();
+        expect(reader.readUint8(), equals(1));
+      });
+
+      test('fromList works with Uint8List', () {
+        final bytes = Uint8List.fromList([0x01, 0x02, 0x03, 0x04]);
+        final reader = BinaryReader.fromList(bytes);
+        expect(reader.readUint32(), equals(0x01020304));
+      });
+
+      test('fromList with empty list', () {
+        final reader = BinaryReader.fromList(<int>[]);
+        expect(reader.length, equals(0));
+        expect(reader.availableBytes, equals(0));
+        expect(reader.readUint8, throwsA(isA<RangeError>()));
       });
     });
   });

@@ -9,6 +9,7 @@
 - **BinaryWriterPool**: added `_discardedPoolFull` counter — tracks writers discarded due to pool full (max 32)
 - **BinaryWriter**: added `_varIntSize(int value)` — helper function for VarInt size calculation (switch expression)
 - **BinaryReader**: added `peekByte()` — returns byte at current position without advancing offset
+- **BinaryReader**: added `BinaryReader.fromList(List<int>)` — convenient constructor for `List<int>`
 
 **Fixes:**
 
