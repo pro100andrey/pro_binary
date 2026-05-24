@@ -2143,7 +2143,7 @@ void main() {
 
       expect(stats.pooled, equals(0));
       expect(stats.maxPoolSize, equals(32));
-      expect(stats.defaultBufferSize, equals(1024));
+      expect(stats.initialBufferSizer, equals(1024));
       expect(stats.maxReusableCapacity, equals(64 * 1024));
     });
 
@@ -2258,6 +2258,52 @@ void main() {
       expect(BinaryWriterPool.stats.pooled, equals(32));
       // discardedLargeBuffers only counts large buffers, not pool-full discards
       expect(BinaryWriterPool.stats.discardedLargeBuffers, equals(0));
+    });
+
+    test('discardedPoolFull increments when pool is full', () {
+      expect(BinaryWriterPool.stats.discardedPoolFull, equals(0));
+
+      // Create 33 writers and release them all at once
+      // The pool can only hold 32, so the 33rd should be discarded
+      final writers = <BinaryWriter>[];
+      for (var i = 0; i < 33; i++) {
+        writers.add(BinaryWriterPool.acquire()..writeUint32(i));
+      }
+      for (final writer in writers) {
+        BinaryWriterPool.release(writer);
+      }
+
+      expect(BinaryWriterPool.stats.pooled, equals(32));
+      expect(BinaryWriterPool.stats.discardedPoolFull, equals(1));
+    });
+
+    test('takeBytes() then release() works correctly', () {
+      final writer = BinaryWriterPool.acquire()..writeUint32(42);
+      final bytes = writer.takeBytes();
+      expect(bytes.length, equals(4));
+      expect(BinaryWriterPool.stats.pooled, equals(0));
+
+      BinaryWriterPool.release(writer);
+      expect(BinaryWriterPool.stats.pooled, equals(1));
+
+      final writer2 = BinaryWriterPool.acquire();
+      expect(writer2, isNotNull);
+      BinaryWriterPool.release(writer2);
+    });
+
+    test('reset() then release() works correctly', () {
+      final writer = BinaryWriterPool.acquire()
+        ..writeUint32(42)
+        ..reset();
+      expect(writer.bytesWritten, equals(0));
+      expect(BinaryWriterPool.stats.pooled, equals(0));
+
+      BinaryWriterPool.release(writer);
+      expect(BinaryWriterPool.stats.pooled, equals(1));
+
+      final writer2 = BinaryWriterPool.acquire();
+      expect(writer2, isNotNull);
+      BinaryWriterPool.release(writer2);
     });
 
     test('totalAcquires returns sum of hits and misses', () {

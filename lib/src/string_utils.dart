@@ -23,8 +23,10 @@ part of 'binary_writer.dart';
 /// // vs text.length would be 15 characters
 /// ```
 ///
-/// @param s The input string.
-/// @return The number of bytes needed for UTF-8 encoding.
+/// Parameters:
+/// - [value]: The input string.
+///
+/// Returns: The number of bytes needed for UTF-8 encoding.
 int getUtf8Length(String value) {
   if (value.isEmpty) {
     return 0;

@@ -593,18 +593,7 @@ extension type BinaryWriter._(_WriterState _ws) {
 
     // Step 1: Optimistic estimation of VarInt size based on string length.
     // Most strings are ASCII, where byte length == character length.
-    int estimatedVarIntSize;
-    if (len < 0x80) {
-      estimatedVarIntSize = 1;
-    } else if (len < 0x4000) {
-      estimatedVarIntSize = 2;
-    } else if (len < 0x200000) {
-      estimatedVarIntSize = 3;
-    } else if (len < 0x10000000) {
-      estimatedVarIntSize = 4;
-    } else {
-      estimatedVarIntSize = 5;
-    }
+    final estimatedVarIntSize = _varIntSize(len);
 
     // Ensure enough space for the worst-case scenario (3 bytes per UTF-16 unit)
     _ws.ensureSize(estimatedVarIntSize + len * 3);
@@ -619,18 +608,7 @@ extension type BinaryWriter._(_WriterState _ws) {
     final byteLength = _ws.offset - (startOffset + estimatedVarIntSize);
 
     // Step 4: Check if our estimate was correct for the actual byte length
-    int actualVarIntSize;
-    if (byteLength < 0x80) {
-      actualVarIntSize = 1;
-    } else if (byteLength < 0x4000) {
-      actualVarIntSize = 2;
-    } else if (byteLength < 0x200000) {
-      actualVarIntSize = 3;
-    } else if (byteLength < 0x10000000) {
-      actualVarIntSize = 4;
-    } else {
-      actualVarIntSize = 5;
-    }
+    final actualVarIntSize = _varIntSize(byteLength);
 
     // Step 5: If the estimate was wrong, shift the string data
     if (actualVarIntSize != estimatedVarIntSize) {
@@ -655,6 +633,17 @@ extension type BinaryWriter._(_WriterState _ws) {
     writeVarUint(byteLength);
     _ws.offset = finalOffset;
   }
+
+  /// Returns the number of bytes needed to encode [value] as a VarInt.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int _varIntSize(int value) => switch (value) {
+    < 0x80 => 1,
+    < 0x4000 => 2,
+    < 0x200000 => 3,
+    < 0x10000000 => 4,
+    _ => 5,
+  };
 
   /// Writes a boolean value as a single byte.
   ///
@@ -768,9 +757,9 @@ extension type BinaryWriter._(_WriterState _ws) {
 /// Separated from the extension type to allow efficient inline operations.
 final class _WriterState {
   _WriterState(int initialBufferSize)
-    : this._validated(_validateInitialBufferSize(initialBufferSize));
+    : this._fromSize(_validateInitialBufferSize(initialBufferSize));
 
-  _WriterState._validated(int size)
+  _WriterState._fromSize(int size)
     : _size = size,
       capacity = (size + 63) & ~63,
       offset = 0,
@@ -814,6 +803,7 @@ final class _WriterState {
     data = list.buffer.asByteData();
     capacity = alignedSize;
     offset = 0;
+    _isInPool = false;
   }
 
   @pragma('vm:prefer-inline')
