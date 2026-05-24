@@ -31,6 +31,20 @@ extension type const BinaryReader._(_ReaderState _rs) {
   /// bytes.
   BinaryReader(Uint8List buffer) : this._(_ReaderState(buffer));
 
+  /// Creates a new [BinaryReader] from the given byte list.
+  ///
+  /// The input list will be copied into a [Uint8List] buffer.
+  /// This is useful when you have a [List<int>] instead of [Uint8List].
+  ///
+  /// Example:
+  /// ```dart
+  /// final bytes = <int>[0x01, 0x02, 0x03, 0x04];
+  /// final reader = BinaryReader.fromList(bytes);
+  /// final value = reader.readUint32();
+  /// ```
+  factory BinaryReader.fromList(List<int> buffer) =>
+      BinaryReader(Uint8List.fromList(buffer));
+
   /// Returns the number of bytes remaining to be read.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
@@ -667,6 +681,23 @@ extension type const BinaryReader._(_ReaderState _rs) {
   @pragma('dart2js:tryInline')
   int operator [](int index) => _rs.list[index];
 
+  /// Returns the byte at the current read position without advancing the
+  /// offset.
+  ///
+  /// This is a convenience method for peeking at the next byte to be read.
+  ///
+  /// Example:
+  /// ```dart
+  /// final nextByte = reader.peekByte();
+  /// if (nextByte == 0x42) {
+  ///   // Handle type 0x42
+  /// }
+  /// final actualByte = reader.readUint8(); // Now read it
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int peekByte() => _rs.list[_rs.offset];
+
   /// Reads [length] bytes from the current position.
   ///
   /// This is a concise alias for [readBytes].
@@ -685,10 +716,6 @@ extension type const BinaryReader._(_ReaderState _rs) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void _checkBounds(int bytes, String type, [int? offset]) {
-    if (bytes < 0) {
-      throw RangeError.value(bytes, 'bytes', 'Bytes must be non-negative');
-    }
-
     final start = offset ?? _rs.offset;
     final end = start + bytes;
 
@@ -732,7 +759,7 @@ final class _ReaderState {
   final int length;
 
   /// Current read position in the buffer.
-  late int offset;
+  int offset;
 
   /// Offset of the buffer view within its underlying [ByteBuffer].
   /// Necessary for creating accurate subviews.
