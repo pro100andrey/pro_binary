@@ -1,3 +1,21 @@
+## 3.3.0
+
+**BREAKING CHANGES:**
+
+- **BinaryReader**: removed `reset()` method — use `seek(0)` instead
+
+**New Features:**
+
+- **BinaryReader**: added `rebind(Uint8List)` — rebinds the reader to a new buffer without allocating a new instance (useful for streaming scenarios)
+
+**Fixes:**
+
+- **BinaryReader**: added bounds check to `peekByte()` — now throws `RangeError` consistently like other read methods
+
+**Tests:**
+
+- Added tests for `BinaryReader.rebind()` — normal rebind, partial reads, zero-length buffer, identity preservation, multiple rebinds, non-zero buffer offset
+
 ## 3.2.0
 
 **BREAKING CHANGES:**

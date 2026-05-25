@@ -10,7 +10,7 @@ import 'dart:typed_data';
 /// - Byte arrays and strings
 ///
 /// The reader maintains an internal offset that advances as data is read.
-/// Use [reset] to restart reading from the beginning.
+/// Use [seek] with position `0` to restart reading from the beginning.
 ///
 /// Example:
 /// ```dart
@@ -24,7 +24,7 @@ import 'dart:typed_data';
 /// // Check remaining data
 /// print('Bytes left: ${reader.availableBytes}');
 /// ```
-extension type const BinaryReader._(_ReaderState _rs) {
+extension type BinaryReader._(_ReaderState _rs) {
   /// Creates a new [BinaryReader] from the given byte buffer.
   ///
   /// The reader will start at position 0 and can read up to `buffer.length`
@@ -589,6 +589,26 @@ extension type const BinaryReader._(_ReaderState _rs) {
     return _rs.data.buffer.asUint8List(bOffset + peekOffset, length);
   }
 
+  /// Returns the byte at the current read position without advancing the
+  /// offset.
+  ///
+  /// This is a convenience method for peeking at the next byte to be read.
+  ///
+  /// Example:
+  /// ```dart
+  /// final nextByte = reader.peekByte();
+  /// if (nextByte == 0x42) {
+  ///   // Handle type 0x42
+  /// }
+  /// final actualByte = reader.readUint8(); // Now read it
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int peekByte() {
+    _checkBounds(1, 'Peek Byte');
+    return _rs.list[_rs.offset];
+  }
+
   /// Advances the read position by the specified number of bytes.
   ///
   /// This is useful for skipping over data you don't need to process.
@@ -660,13 +680,18 @@ extension type const BinaryReader._(_ReaderState _rs) {
     _rs.offset -= length;
   }
 
-  /// Resets the read position to the beginning of the buffer.
+
+  /// Rebinds the reader to a new buffer without creating a new [BinaryReader].
   ///
-  /// This allows re-reading the same data without creating a new reader.
+  /// Resets the read position and replaces the internal buffer with [buffer].
+  /// This is useful for streaming scenarios where you want to reuse a reader
+  /// with new data without allocating a new [BinaryReader] or [_ReaderState].
+  ///
+/// After rebinding, the reader starts at position 0 of the new buffer.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  void reset() {
-    _rs.offset = 0;
+  void rebind(Uint8List buffer) {
+    _rs.rebind(buffer);
   }
 
   /// Returns the byte at the specified absolute [index] in the buffer.
@@ -680,23 +705,6 @@ extension type const BinaryReader._(_ReaderState _rs) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int operator [](int index) => _rs.list[index];
-
-  /// Returns the byte at the current read position without advancing the
-  /// offset.
-  ///
-  /// This is a convenience method for peeking at the next byte to be read.
-  ///
-  /// Example:
-  /// ```dart
-  /// final nextByte = reader.peekByte();
-  /// if (nextByte == 0x42) {
-  ///   // Handle type 0x42
-  /// }
-  /// final actualByte = reader.readUint8(); // Now read it
-  /// ```
-  @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  int peekByte() => _rs.list[_rs.offset];
 
   /// Reads [length] bytes from the current position.
   ///
@@ -747,21 +755,36 @@ final class _ReaderState {
       offset = 0;
 
   /// Direct access to the underlying byte list.
-  final Uint8List list;
+  Uint8List list;
 
   /// Efficient view for typed data access (getInt32, getFloat64, etc.).
-  final ByteData data;
+  ByteData data;
 
   /// The underlying byte buffer.
-  final ByteBuffer buffer;
+  ByteBuffer buffer;
 
   /// Total length of the buffer in bytes.
-  final int length;
+  int length;
 
   /// Current read position in the buffer.
   int offset;
 
   /// Offset of the buffer view within its underlying [ByteBuffer].
   /// Necessary for creating accurate subviews.
-  final int baseOffset;
+  int baseOffset;
+
+  /// Rebinds this state to a new buffer without creating a new [_ReaderState].
+  ///
+  /// Updates all buffer-related fields and resets [offset] to 0.
+  /// The old buffer is discarded and becomes eligible for GC.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void rebind(Uint8List buffer) {
+    list = buffer;
+    data = ByteData.sublistView(buffer).asUnmodifiableView();
+    this.buffer = buffer.buffer;
+    length = buffer.length;
+    baseOffset = buffer.offsetInBytes;
+    offset = 0;
+  }
 }

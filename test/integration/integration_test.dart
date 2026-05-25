@@ -550,23 +550,6 @@ void main() {
         expect(reader.readUint32(), equals(42));
       });
 
-      test('reset reader after partial read', () {
-        final writer = BinaryWriter()
-          ..writeUint32(100)
-          ..writeUint32(200)
-          ..writeUint32(300);
-
-        final bytes = writer.takeBytes();
-        final reader = BinaryReader(bytes);
-
-        expect(reader.readUint32(), equals(100));
-        expect(reader.offset, equals(4));
-
-        reader.reset();
-        expect(reader.offset, equals(0));
-        expect(reader.readUint32(), equals(100));
-      });
-
       test('offset tracking during read', () {
         final writer = BinaryWriter()
           ..writeUint8(1)
