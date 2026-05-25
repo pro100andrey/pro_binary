@@ -629,7 +629,7 @@ extension type BinaryWriter._(_WriterState _ws) {
 
     // Step 6: Backtrack and write the actual VarInt length
     final finalOffset = _ws.offset;
-    _ws.offset = startOffset;
+    seek(startOffset);
     writeVarUint(byteLength);
     _ws.offset = finalOffset;
   }
@@ -719,6 +719,58 @@ extension type BinaryWriter._(_WriterState _ws) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   Uint8List toBytes() => Uint8List.sublistView(_ws.list, 0, _ws.offset);
+
+  /// Sets the write position to the specified byte offset.
+  ///
+  /// Subsequent writes will start from this new position.
+  /// Use to go back and overwrite data, or to skip ahead.
+  ///
+  /// Throws [RangeError] if [position] is negative or exceeds [bytesWritten].
+  ///
+  /// Example:
+  /// ```dart
+  /// writer.writeUint32(42);
+  /// writer.writeUint32(100);
+  /// writer.seek(0);  // Go back to the beginning
+  /// writer.writeUint32(99);  // Overwrite 42 with 99
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void seek(int position) {
+    if (position < 0 || position > _ws.offset) {
+      throw RangeError.range(position, 0, _ws.offset, 'position');
+    }
+
+    _ws.offset = position;
+  }
+
+  /// Writes a byte at the specified [position] without changing the current
+  /// write position.
+  ///
+  /// This is useful for overwriting data at a known offset (e.g., updating a
+  /// length field after writing the payload).
+  ///
+  /// Throws [RangeError] if [position] is negative or exceeds [bytesWritten].
+  ///
+  /// Example:
+  /// ```dart
+  /// writer.writeUint32(10);  // Write length placeholder
+  /// writer.writeString('data');
+  /// writer.writeUint8At(0, 15);  // Overwrite length at position 0
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void writeUint8At(int position, int value) {
+     if (position < 0 || position > _ws.offset) {
+       throw RangeError.range(position, 0, _ws.offset, 'position');
+     }
+
+     _checkRange(value, 0, 255, 'Uint8');
+     _ws.list[position] = value;
+     if (position == _ws.offset) {
+       _ws.offset = position + 1;
+     }
+   }
 
   /// Resets the writer to its initial state, discarding all written data.
   @pragma('vm:prefer-inline')

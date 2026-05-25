@@ -7,6 +7,9 @@
 **New Features:**
 
 - **BinaryReader**: added `rebind(Uint8List)` — rebinds the reader to a new buffer without allocating a new instance (useful for streaming scenarios)
+- **BinaryWriter**: added `seek(int position)` — sets the write position to the specified byte offset (useful for backtracking and overwriting data mid-stream)
+- **BinaryWriter**: added `writeUint8At(int position, int value)` — writes a byte at the specified position without changing the current write position
+- **BinaryWriter**: `writeVarString` now uses `seek` internally for VarInt length rewriting
 
 **Fixes:**
 
@@ -15,6 +18,9 @@
 **Tests:**
 
 - Added tests for `BinaryReader.rebind()` — normal rebind, partial reads, zero-length buffer, identity preservation, multiple rebinds, non-zero buffer offset
+- Added tests for `BinaryWriter.seek()` — seek to position 0, middle, end, negative position, beyond bytesWritten, overwrite, preserve bytesWritten
+- Added tests for `BinaryWriter.writeUint8At()` — overwrite at position 0/middle/end, no change to bytesWritten/write position, negative position, beyond bytesWritten, value exceeding 255, negative value, empty writer
+- Added integration tests for `writeVarString` with `seek` — ASCII, non-ASCII, emoji
 
 ## 3.2.0
 
