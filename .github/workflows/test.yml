@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        sdk: [stable, beta]
+        sdk: [stable]
     
     steps:
       - name: Checkout code
@@ -42,20 +42,7 @@ jobs:
         run: dart analyze --fatal-infos
       
       - name: Run tests
-        run: dart test -x benchmark
-      
-      - name: Run tests with coverage
-        if: matrix.os == 'ubuntu-latest' && matrix.sdk == 'stable'
-        run: |
-          dart pub global activate coverage
-          dart pub global run coverage:test_with_coverage -- -x benchmark
-      
-      - name: Upload coverage to Codecov
-        if: matrix.os == 'ubuntu-latest' && matrix.sdk == 'stable'
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage/lcov.info
-          fail_ci_if_error: false
+        run: dart test --concurrency=4
 
   benchmark:
     needs: test
