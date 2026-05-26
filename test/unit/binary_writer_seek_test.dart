@@ -13,8 +13,8 @@ void main() {
       writer
         ..writeUint8(1)
         ..writeUint8(2)
-        ..writeUint8(3);
-      writer.seek(0);
+        ..writeUint8(3)
+        ..seek(0);
       expect(writer.bytesWritten, equals(0));
       expect(writer.toBytes(), isEmpty);
     });
@@ -24,18 +24,18 @@ void main() {
         ..writeUint8(1)
         ..writeUint8(2)
         ..writeUint8(3)
-        ..writeUint8(4);
-      writer.seek(2);
-      writer.writeUint8(99);
+        ..writeUint8(4)
+        ..seek(2)
+        ..writeUint8(99);
       expect(writer.toBytes(), equals([1, 2, 99]));
     });
 
     test('seeks to end (bytesWritten)', () {
       writer
         ..writeUint8(1)
-        ..writeUint8(2);
-      writer.seek(2);
-      writer.writeUint8(3);
+        ..writeUint8(2)
+        ..seek(2)
+        ..writeUint8(3);
       expect(writer.toBytes(), equals([1, 2, 3]));
     });
 
@@ -51,9 +51,9 @@ void main() {
     test('seek and overwrite at beginning', () {
       writer
         ..writeUint32(0x11223344)
-        ..writeUint32(0xAABBCCDD);
-      writer.seek(0);
-      writer.writeUint32(0x99887766);
+        ..writeUint32(0xAABBCCDD)
+        ..seek(0)
+        ..writeUint32(0x99887766);
       expect(writer.toBytes(), equals([0x99, 0x88, 0x77, 0x66]));
     });
 
@@ -61,9 +61,9 @@ void main() {
       writer
         ..writeUint8(1)
         ..writeUint8(2)
-        ..writeUint8(3);
-      writer.seek(1);
-      writer.writeUint8(99);
+        ..writeUint8(3)
+        ..seek(1)
+        ..writeUint8(99);
       expect(writer.bytesWritten, equals(2));
     });
   });
@@ -79,8 +79,8 @@ void main() {
       writer
         ..writeUint8(1)
         ..writeUint8(2)
-        ..writeUint8(3);
-      writer.writeUint8At(0, 99);
+        ..writeUint8(3)
+        ..writeUint8At(0, 99);
       expect(writer.toBytes(), equals([99, 2, 3]));
     });
 
@@ -88,8 +88,8 @@ void main() {
       writer
         ..writeUint8(1)
         ..writeUint8(2)
-        ..writeUint8(3);
-      writer.writeUint8At(1, 99);
+        ..writeUint8(3)
+        ..writeUint8At(1, 99);
       expect(writer.toBytes(), equals([1, 99, 3]));
     });
 
@@ -97,16 +97,16 @@ void main() {
       writer
         ..writeUint8(1)
         ..writeUint8(2)
-        ..writeUint8(3);
-      writer.writeUint8At(2, 99);
+        ..writeUint8(3)
+        ..writeUint8At(2, 99);
       expect(writer.toBytes(), equals([1, 2, 99]));
     });
 
     test('does not change bytesWritten', () {
       writer
         ..writeUint8(1)
-        ..writeUint8(2);
-      writer.writeUint8At(0, 99);
+        ..writeUint8(2)
+        ..writeUint8At(0, 99);
       expect(writer.bytesWritten, equals(2));
     });
 
@@ -114,9 +114,9 @@ void main() {
       writer
         ..writeUint8(1)
         ..writeUint8(2)
-        ..writeUint8(3);
-      writer.writeUint8At(1, 99);
-      writer.writeUint8(4);
+        ..writeUint8(3)
+        ..writeUint8At(1, 99)
+        ..writeUint8(4);
       expect(writer.toBytes(), equals([1, 99, 3, 4]));
     });
 

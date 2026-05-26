@@ -761,16 +761,16 @@ extension type BinaryWriter._(_WriterState _ws) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void writeUint8At(int position, int value) {
-     if (position < 0 || position > _ws.offset) {
-       throw RangeError.range(position, 0, _ws.offset, 'position');
-     }
+    if (position < 0 || position > _ws.offset) {
+      throw RangeError.range(position, 0, _ws.offset, 'position');
+    }
 
-     _checkRange(value, 0, 255, 'Uint8');
-     _ws.list[position] = value;
-     if (position == _ws.offset) {
-       _ws.offset = position + 1;
-     }
-   }
+    _checkRange(value, 0, 255, 'Uint8');
+    _ws.list[position] = value;
+    if (position == _ws.offset) {
+      _ws.offset = position + 1;
+    }
+  }
 
   /// Resets the writer to its initial state, discarding all written data.
   @pragma('vm:prefer-inline')

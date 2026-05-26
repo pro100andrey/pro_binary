@@ -680,14 +680,13 @@ extension type BinaryReader._(_ReaderState _rs) {
     _rs.offset -= length;
   }
 
-
   /// Rebinds the reader to a new buffer without creating a new [BinaryReader].
   ///
   /// Resets the read position and replaces the internal buffer with [buffer].
   /// This is useful for streaming scenarios where you want to reuse a reader
   /// with new data without allocating a new [BinaryReader] or [_ReaderState].
   ///
-/// After rebinding, the reader starts at position 0 of the new buffer.
+  /// After rebinding, the reader starts at position 0 of the new buffer.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void rebind(Uint8List buffer) {
