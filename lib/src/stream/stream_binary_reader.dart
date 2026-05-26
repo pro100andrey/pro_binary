@@ -383,6 +383,9 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   Uint8List readBytes(int length) {
+    if (length < 0) {
+      throw RangeError.value(length, 'length', 'Length must be non-negative');
+    }
     if (length == 0) {
       return Uint8List(0);
     }
@@ -445,6 +448,9 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   String readString(int length, {bool allowMalformed = false}) {
+    if (length < 0) {
+      throw RangeError.value(length, 'length', 'Length must be non-negative');
+    }
     if (length == 0) {
       return '';
     }
@@ -476,6 +482,9 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void skip(int length) {
+    if (length < 0) {
+      throw RangeError.value(length, 'length', 'Length must be non-negative');
+    }
     _checkAvailable(length);
     var remaining = length;
 
