@@ -26,9 +26,7 @@ part 'string_utils.dart';
 /// writer.writeFloat64(3.14);
 /// // Write length-prefixed string
 /// final text = 'Hello, World!';
-/// final utf8Bytes = utf8.encode(text);
-/// writer.writeVarUint(utf8Bytes.length);
-/// writer.writeString(text);
+/// writer.writeVarString(text);
 /// // Extract bytes and optionally reuse writer
 /// final bytes = writer.takeBytes(); // Resets writer for reuse
 /// // or: final bytes = writer.toBytes(); // Keeps writer state
@@ -337,6 +335,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   @pragma('dart2js:tryInline')
   void writeFloat32(double value, [Endian endian = .big]) {
     _ws.ensureFourBytes();
+
     _ws.data.setFloat32(_ws.offset, value, endian);
     _ws.offset += 4;
   }
@@ -353,6 +352,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   @pragma('dart2js:tryInline')
   void writeFloat64(double value, [Endian endian = .big]) {
     _ws.ensureEightBytes();
+
     _ws.data.setFloat64(_ws.offset, value, endian);
     _ws.offset += 8;
   }
@@ -375,6 +375,7 @@ extension type BinaryWriter._(_WriterState _ws) {
     if (offset < 0) {
       throw RangeError.value(offset, 'offset', 'Offset must be non-negative');
     }
+
     if (offset > bytes.length) {
       throw RangeError.range(offset, 0, bytes.length, 'offset');
     }
@@ -445,7 +446,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// final text = 'Hello, 世界! 🌍';
   /// final utf8Bytes = utf8.encode(text);
   /// writer.writeVarUint(utf8Bytes.length);  // Write byte length
-  /// writer.writeString(text);                // Write string data
+  /// writer.writeBytes(utf8Bytes);            // Write pre-encoded string data
   /// // Or for simple fixed-length strings:
   /// writer.writeString('MAGIC');  // No length prefix needed
   /// ```
@@ -578,8 +579,8 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// ```
   /// This is equivalent to:
   /// ```dart
-  /// final utf8Bytes = utf8.encode(text);
-  /// writer.writeVarUint(utf8Bytes.length);
+  /// final byteLength = getUtf8Length(text);
+  /// writer.writeVarUint(byteLength);
   /// writer.writeString(text);
   /// ```
   @pragma('vm:prefer-inline')
@@ -588,6 +589,7 @@ extension type BinaryWriter._(_WriterState _ws) {
     final len = value.length;
     if (len == 0) {
       writeVarUint(0);
+
       return;
     }
 
@@ -629,7 +631,7 @@ extension type BinaryWriter._(_WriterState _ws) {
 
     // Step 6: Backtrack and write the actual VarInt length
     final finalOffset = _ws.offset;
-    _ws.offset = startOffset;
+    seek(startOffset);
     writeVarUint(byteLength);
     _ws.offset = finalOffset;
   }
@@ -719,6 +721,58 @@ extension type BinaryWriter._(_WriterState _ws) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   Uint8List toBytes() => Uint8List.sublistView(_ws.list, 0, _ws.offset);
+
+  /// Sets the write position to the specified byte offset.
+  ///
+  /// Subsequent writes will start from this new position.
+  /// Use to go back and overwrite data, or to skip ahead.
+  ///
+  /// Throws [RangeError] if [position] is negative or exceeds [bytesWritten].
+  ///
+  /// Example:
+  /// ```dart
+  /// writer.writeUint32(42);
+  /// writer.writeUint32(100);
+  /// writer.seek(0);  // Go back to the beginning
+  /// writer.writeUint32(99);  // Overwrite 42 with 99
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void seek(int position) {
+    if (position < 0 || position > _ws.offset) {
+      throw RangeError.range(position, 0, _ws.offset, 'position');
+    }
+
+    _ws.offset = position;
+  }
+
+  /// Writes a byte at the specified [position] without changing the current
+  /// write position.
+  ///
+  /// This is useful for overwriting data at a known offset (e.g., updating a
+  /// length field after writing the payload).
+  ///
+  /// Throws [RangeError] if [position] is negative or exceeds [bytesWritten].
+  ///
+  /// Example:
+  /// ```dart
+  /// writer.writeUint32(10);  // Write length placeholder
+  /// writer.writeString('data');
+  /// writer.writeUint8At(0, 15);  // Overwrite length at position 0
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void writeUint8At(int position, int value) {
+    if (position < 0 || position > _ws.offset) {
+      throw RangeError.range(position, 0, _ws.offset, 'position');
+    }
+
+    _checkRange(value, 0, 255, 'Uint8');
+    _ws.list[position] = value;
+    if (position == _ws.offset) {
+      _ws.offset = position + 1;
+    }
+  }
 
   /// Resets the writer to its initial state, discarding all written data.
   @pragma('vm:prefer-inline')

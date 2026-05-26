@@ -1,3 +1,25 @@
+## 4.0.0
+
+**BREAKING CHANGES:**
+
+- **BinaryReader**: removed `reset()` method — use `seek(0)` instead
+
+**New Features:**
+
+- **BinaryReader**: added `rebind(Uint8List)` — rebinds the reader to a new buffer without allocating a new instance (useful for streaming scenarios)
+- **BinaryWriter**: added `seek(int position)` — sets the write position to the specified byte offset (useful for backtracking and overwriting data mid-stream)
+- **BinaryWriter**: added `writeUint8At(int position, int value)` — writes a byte at the specified position without changing the current write position
+- **BinaryWriter**: `writeVarString` now uses `seek` internally for VarInt length rewriting
+- **Stream API**: added `StreamBinaryReader` — chunk-based reader for asynchronous streaming data with bookmark/rollback/commit transactional model
+- **Stream API**: added `BinaryStreamTransformer<T>` — abstract `StreamTransformer` for parsing binary messages from streams with automatic `NotEnoughDataException` handling
+- **Stream API**: added `NotEnoughDataException` — carries `required`/`available` byte counts for debugging incomplete data scenarios
+
+**Fixes:**
+
+- **BinaryReader**: added bounds check to `peekByte()` — now throws `RangeError` consistently like other read methods
+
+**Tests:** Improved all tests
+
 ## 3.2.0
 
 **BREAKING CHANGES:**

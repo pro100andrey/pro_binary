@@ -11,7 +11,8 @@
 * **Zero-Copy Reads**: Operations return `Uint8List` views without allocation.
 * **One-Pass Strings**: Optimized `writeVarString` with optimistic shift (30% faster).
 * **Smart Buffering**: Exponential growth (×1.5) and object pooling.
-* **Compact Encoding**: VarInt & ZigZag support (Protobuf compatible).
+* **Compact Encoding**: VarInt & ZigZag support
+* **Stream Parsing**: `StreamBinaryReader` and `BinaryStreamTransformer` for async data.
 * **Universal**: Supports Native & Web (WASM/JS) with consistent API.
 * **Modern API**: Leverages Dart Extension Types for zero-overhead abstractions.
 
@@ -19,7 +20,7 @@
 
 ```yaml
 dependencies:
-  pro_binary: ^3.2.0
+  pro_binary: ^4.0.0
 ```
 
 ## Quick Start
@@ -46,7 +47,7 @@ final bytesList = <int>[0x01, 0x02, 0x03, 0x04];
 final reader2 = BinaryReader.fromList(bytesList);
 ```
 
-##  Recipes & Patterns
+## Recipes & Patterns
 
 ### 1. Efficient Object Serialization
 ```dart
@@ -92,47 +93,66 @@ try {
 }
 ```
 
-### 3. Binary Packets (Manual navigation)
+### 3. Stream Parsing (Async Binary Messages)
+Process binary data arriving in chunks over a stream.
+
+**Custom Transformer:**
+```dart
+class MessageParser extends BinaryStreamTransformer<Message> {
+  @override
+  Message? parse(StreamBinaryReader reader) {
+    // Return null when not enough data yet
+    if (!reader.hasBytes(4)) return null;
+    final id = reader.readUint32();
+    final name = reader.readVarString();
+    return Message(id, name);
+  }
+}
+
+// Usage:
+stream.transform(MessageParser()).listen((msg) => print(msg));
+```
+
+**Manual Chunk Reading:**
+```dart
+final reader = StreamBinaryReader();
+reader.addChunk(chunk1);
+reader.addChunk(chunk2);
+
+reader.bookmark();
+try {
+  final id = reader.readUint32();
+  final name = reader.readVarString();
+  reader.commit(); // Success — consumed
+} on NotEnoughDataException {
+  reader.rollback(); // Wait for more data
+}
+```
+
+### 4. Binary Packets (Manual navigation)
 ```dart
 final reader = BinaryReader(bytes);
 final type = reader[0]; // Absolute peek via operator []
 reader.skip(1);
 if (reader.hasBytes(4)) {
-  final payload = reader(4); // Concise call syntax for readBytes
+  final payload = reader(4); // Concise call syntax for readBytes.
 }
 ```
 
-## VarInt Efficiency
+## API Overview
 
-VarInt encoding reduces payload size by up to **75%** for small values:
+Full API documentation: https://pub.dev/documentation/pro_binary/latest/pro_binary/
 
-| Value               | VarInt Size | Fixed Uint32 | Savings |
-| :------------------ | :---------- | :----------- | :------ |
-| `0..127`            | 1 byte      | 4 bytes      | **75%** |
-| `128..16,383`       | 2 bytes     | 4 bytes      | **50%** |
-| `16,384..2,097,151` | 3 bytes     | 4 bytes      | **25%** |
+| Class                            | Description                                                                                                        |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **BinaryWriter**                 | Encode data: fixed types, VarInt/ZigZag, strings, bytes. Supports `takeBytes()`, `toBytes()`, `reset()`, `seek()`. |
+| **BinaryReader**                 | Decode data: all fixed/variable types, navigation (`skip`, `seek`, `rewind`, `peek`), `rebind()` for reuse.        |
+| **StreamBinaryReader**           | Async streaming: chunk-based reading with `bookmark`/`rollback`/`commit` transactional model.                      |
+| **BinaryStreamTransformer\<T\>** | Stream parser: extend and implement `parse()` to process binary streams.                                           |
+| **BinaryWriterPool**             | Object pool: `acquire()`/`release()` or `withWriter()` for high-frequency writes.                                  |
+| **getUtf8Length**                | Utility: calculate UTF-8 byte length without encoding.                                                             |
 
-*Use `writeVarUint` for lengths/counts and `writeVarInt` (ZigZag) for signed deltas.*
-
-## API Reference Summary
-
-### **BinaryWriter**
-*   **Fixed:** `writeUint8`, `writeInt16`, `writeUint32`, `writeInt64`, `writeFloat64`, `writeBool`.
-*   **Variable:** `writeVarUint` (unsigned), `writeVarInt` (signed).
-*   **Data:** `writeBytes`, `writeVarBytes`, `writeString`, `writeVarString`.
-*   **Management:** `takeBytes()` (reset), `toBytes()` (view), `reset()`.
-
-### **BinaryReader**
-*   **Fixed:** `readUint8`, `readInt16`, `readUint32`, `readInt64`, `readFloat64`, `readBool`.
-*   **Variable:** `readVarUint`, `readVarInt`.
-*   **Data:** `readBytes`, `readVarBytes`, `readString`, `readVarString`, `readRemainingBytes`.
-*   **Navigation:** `skip(n)`, `seek(p)`, `rewind(n)`, `peekBytes(n)`, `peekByte()`, `[index]`.
-
-## Testing & Performance
-
-We maintain a rigorous test suite:
-*  **Native (JIT/AOT)**: Optimized for raw performance.
-*  **Web (WASM/JS)**: Cross-platform consistency.
+## Performance
 
 Run benchmarks to see it in action:
 ```bash

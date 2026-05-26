@@ -25,7 +25,7 @@ class SimpleMessageReadBenchmark extends BenchmarkBase {
 
   @override
   void run() {
-    reader.reset();
+    reader.seek(0);
     _checksum += reader.readUint32();
     _checksum += reader.readFloat32().toInt();
     _checksum += reader.readBool() ? 1 : 0;
@@ -70,7 +70,7 @@ class ComplexProfileReadBenchmark extends BenchmarkBase {
 
   @override
   void run() {
-    reader.reset();
+    reader.seek(0);
     _checksum += reader.readVarUint();
     _checksum += reader.readVarString().length;
     _checksum += reader.readVarString().length;
@@ -114,7 +114,7 @@ class LargeArrayReadBenchmark extends BenchmarkBase {
 
   @override
   void run() {
-    reader.reset();
+    reader.seek(0);
     final count = reader.readVarUint();
     for (var i = 0; i < count; i++) {
       _checksum += reader.readUint32();
