@@ -91,8 +91,8 @@ extension type BinaryReader._(_ReaderState _rs) {
   int readVarUint() {
     final list = _rs.list;
     final len = _rs.length;
-    var offset = _rs.offset;
 
+    var offset = _rs.offset;
     if (offset >= len) {
       throw RangeError('VarInt out of bounds: offset=$offset length=$len');
     }
@@ -111,8 +111,10 @@ extension type BinaryReader._(_ReaderState _rs) {
     if (offset >= len) {
       throw RangeError('VarInt out of bounds (truncated)');
     }
+
     byte = list[offset++];
     result |= (byte & 0x7f) << 7;
+
     if ((byte & 0x80) == 0) {
       _rs.offset = offset;
       return result;
@@ -122,8 +124,10 @@ extension type BinaryReader._(_ReaderState _rs) {
     if (offset >= len) {
       throw RangeError('VarInt out of bounds (truncated)');
     }
+
     byte = list[offset++];
     result |= (byte & 0x7f) << 14;
+
     if ((byte & 0x80) == 0) {
       _rs.offset = offset;
       return result;
@@ -135,6 +139,7 @@ extension type BinaryReader._(_ReaderState _rs) {
       if (offset >= len) {
         throw RangeError('VarInt out of bounds (truncated)');
       }
+
       byte = list[offset++];
       result |= (byte & 0x7f) << shift;
 
@@ -142,6 +147,7 @@ extension type BinaryReader._(_ReaderState _rs) {
         _rs.offset = offset;
         return result;
       }
+
       shift += 7;
     }
 
@@ -264,6 +270,7 @@ extension type BinaryReader._(_ReaderState _rs) {
 
     final value = _rs.data.getUint32(_rs.offset, endian);
     _rs.offset += 4;
+
     return value;
   }
 
@@ -281,8 +288,10 @@ extension type BinaryReader._(_ReaderState _rs) {
   @pragma('dart2js:tryInline')
   int readInt32([Endian endian = .big]) {
     _checkBounds(4, 'Int32');
+
     final value = _rs.data.getInt32(_rs.offset, endian);
     _rs.offset += 4;
+
     return value;
   }
 
@@ -305,8 +314,10 @@ extension type BinaryReader._(_ReaderState _rs) {
   @pragma('dart2js:tryInline')
   int readUint64([Endian endian = .big]) {
     _checkBounds(8, 'Uint64');
+
     final value = _rs.data.getUint64(_rs.offset, endian);
     _rs.offset += 8;
+
     return value;
   }
 
@@ -326,8 +337,10 @@ extension type BinaryReader._(_ReaderState _rs) {
   @pragma('dart2js:tryInline')
   int readInt64([Endian endian = .big]) {
     _checkBounds(8, 'Int64');
+
     final value = _rs.data.getInt64(_rs.offset, endian);
     _rs.offset += 8;
+
     return value;
   }
 
@@ -369,6 +382,7 @@ extension type BinaryReader._(_ReaderState _rs) {
 
     final value = _rs.data.getFloat64(_rs.offset, endian);
     _rs.offset += 8;
+
     return value;
   }
 
@@ -394,6 +408,7 @@ extension type BinaryReader._(_ReaderState _rs) {
     if (length < 0) {
       throw RangeError.value(length, 'length', 'Length must be non-negative');
     }
+
     _checkBounds(length, 'Bytes');
 
     // Create a view of the underlying buffer without copying
@@ -446,6 +461,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   @pragma('dart2js:tryInline')
   Uint8List readVarBytes() {
     final length = readVarUint();
+
     return readBytes(length);
   }
 
@@ -508,6 +524,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   @pragma('dart2js:tryInline')
   String readVarString({bool allowMalformed = false}) {
     final length = readVarUint();
+
     return readString(length, allowMalformed: allowMalformed);
   }
 
@@ -524,6 +541,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   @pragma('dart2js:tryInline')
   bool readBool() {
     final value = readUint8();
+
     return value != 0;
   }
 
@@ -547,6 +565,7 @@ extension type BinaryReader._(_ReaderState _rs) {
     if (length < 0) {
       throw RangeError.value(length, 'length', 'Length must be non-negative');
     }
+
     return (_rs.offset + length) <= _rs.length;
   }
 
@@ -585,8 +604,9 @@ extension type BinaryReader._(_ReaderState _rs) {
     _checkBounds(length, 'Peek Bytes', peekOffset);
 
     final bOffset = _rs.baseOffset;
+    final bytes = _rs.data.buffer.asUint8List(bOffset + peekOffset, length);
 
-    return _rs.data.buffer.asUint8List(bOffset + peekOffset, length);
+    return bytes;
   }
 
   /// Returns the byte at the current read position without advancing the
@@ -606,6 +626,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   @pragma('dart2js:tryInline')
   int peekByte() {
     _checkBounds(1, 'Peek Byte');
+
     return _rs.list[_rs.offset];
   }
 
@@ -630,6 +651,7 @@ extension type BinaryReader._(_ReaderState _rs) {
     if (length < 0) {
       throw RangeError.value(length, 'length', 'Length must be non-negative');
     }
+
     _checkBounds(length, 'Skip');
 
     _rs.offset += length;
@@ -652,6 +674,7 @@ extension type BinaryReader._(_ReaderState _rs) {
     if (position < 0 || position > _rs.length) {
       throw RangeError.range(position, 0, _rs.length, 'position');
     }
+
     _rs.offset = position;
   }
 
@@ -672,11 +695,13 @@ extension type BinaryReader._(_ReaderState _rs) {
     if (length < 0) {
       throw RangeError.value(length, 'length', 'Length must be non-negative');
     }
+
     if (_rs.offset - length < 0) {
       throw RangeError(
         'Cannot rewind $length bytes from offset ${_rs.offset}',
       );
     }
+
     _rs.offset -= length;
   }
 
@@ -778,12 +803,12 @@ final class _ReaderState {
   /// The old buffer is discarded and becomes eligible for GC.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  void rebind(Uint8List buffer) {
-    list = buffer;
-    data = ByteData.sublistView(buffer).asUnmodifiableView();
-    this.buffer = buffer.buffer;
-    length = buffer.length;
-    baseOffset = buffer.offsetInBytes;
+  void rebind(Uint8List newBuffer) {
+    list = newBuffer;
+    data = ByteData.sublistView(newBuffer).asUnmodifiableView();
+    buffer = newBuffer.buffer;
+    length = newBuffer.length;
+    baseOffset = newBuffer.offsetInBytes;
     offset = 0;
   }
 }

@@ -337,6 +337,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   @pragma('dart2js:tryInline')
   void writeFloat32(double value, [Endian endian = .big]) {
     _ws.ensureFourBytes();
+
     _ws.data.setFloat32(_ws.offset, value, endian);
     _ws.offset += 4;
   }
@@ -353,6 +354,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   @pragma('dart2js:tryInline')
   void writeFloat64(double value, [Endian endian = .big]) {
     _ws.ensureEightBytes();
+
     _ws.data.setFloat64(_ws.offset, value, endian);
     _ws.offset += 8;
   }
@@ -375,6 +377,7 @@ extension type BinaryWriter._(_WriterState _ws) {
     if (offset < 0) {
       throw RangeError.value(offset, 'offset', 'Offset must be non-negative');
     }
+    
     if (offset > bytes.length) {
       throw RangeError.range(offset, 0, bytes.length, 'offset');
     }
@@ -588,6 +591,7 @@ extension type BinaryWriter._(_WriterState _ws) {
     final len = value.length;
     if (len == 0) {
       writeVarUint(0);
+
       return;
     }
 
