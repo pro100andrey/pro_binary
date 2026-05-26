@@ -19,7 +19,7 @@ void main() {
       expect(writer.takeBytes(), [1]);
     });
 
-    test('writes negative Int8 value as two\'s complement', () {
+    test("writes negative Int8 value as two's complement", () {
       writer.writeInt8(-1);
       expect(writer.takeBytes(), [255]);
     });
