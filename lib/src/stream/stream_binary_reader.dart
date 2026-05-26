@@ -164,6 +164,8 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads an 8-bit unsigned integer (0-255).
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 1 byte is available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readUint8() {
@@ -179,6 +181,8 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads an 8-bit signed integer (-128 to 127).
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 1 byte is available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readInt8() {
@@ -195,6 +199,8 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   /// Reads a boolean value (1 byte).
   ///
   /// A byte value of 0 is interpreted as `false`, any non-zero value as `true`.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 1 byte is available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   bool readBool() {
@@ -210,6 +216,10 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads a 16-bit unsigned integer.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 2 bytes are available.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readUint16([Endian endian = Endian.big]) {
@@ -227,6 +237,10 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads a 16-bit signed integer.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 2 bytes are available.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readInt16([Endian endian = Endian.big]) {
@@ -244,6 +258,10 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads a 32-bit unsigned integer.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 4 bytes are available.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readUint32([Endian endian = Endian.big]) {
@@ -261,6 +279,10 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads a 32-bit signed integer.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 4 bytes are available.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readInt32([Endian endian = Endian.big]) {
@@ -278,6 +300,10 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads a 64-bit unsigned integer.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 8 bytes are available.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readUint64([Endian endian = Endian.big]) {
@@ -295,6 +321,10 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads a 64-bit signed integer.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 8 bytes are available.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readInt64([Endian endian = Endian.big]) {
@@ -312,6 +342,10 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads a 32-bit floating-point number.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 4 bytes are available.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   double readFloat32([Endian endian = Endian.big]) {
@@ -329,6 +363,10 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads a 64-bit floating-point number.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 8 bytes are available.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   double readFloat64([Endian endian = Endian.big]) {
@@ -354,6 +392,8 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads an unsigned variable-length integer (VarInt format).
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 1 byte is available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readVarUint() {
@@ -383,6 +423,8 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads a signed variable-length integer (ZigZag encoding).
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 1 byte is available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readVarInt() {
@@ -391,6 +433,9 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads a sequence of bytes.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than [length] bytes are
+  /// available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   Uint8List readBytes(int length) {
@@ -445,11 +490,16 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads all currently available bytes across all chunks.
+  ///
+  /// Throws [NotEnoughDataException] if no bytes are available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   Uint8List readRemainingBytes() => readBytes(_s.availableBytes);
 
   /// Reads a length-prefixed byte array.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 1 byte is available for the
+  /// length prefix.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   Uint8List readVarBytes() {
@@ -458,6 +508,9 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads a UTF-8 encoded string of the specified byte length.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than [length] bytes are
+  /// available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   String readString(int length, {bool allowMalformed = false}) {
@@ -484,6 +537,9 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Reads a length-prefixed UTF-8 encoded string.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than 1 byte is available for the
+  ///  length prefix.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   String readVarString({bool allowMalformed = false}) {
@@ -492,6 +548,9 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 
   /// Advances the read position by the specified number of bytes.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than [length] bytes are
+  /// available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void skip(int length) {

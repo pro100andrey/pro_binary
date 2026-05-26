@@ -10,6 +10,7 @@ import 'stream_binary_reader.dart';
 /// from the stream.
 ///
 /// To use it, extend this class and implement the [parse] method.
+/// Return the parsed object, or `null` if there is not enough data yet.
 ///
 /// Example:
 /// ```dart

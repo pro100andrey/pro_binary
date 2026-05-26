@@ -14,6 +14,7 @@ import 'dart:typed_data';
 ///
 /// Example:
 /// ```dart
+/// final bytes = Uint8List.fromList([0x00, 0x01, 0x02, 0x03]);
 /// final reader = BinaryReader(bytes);
 /// // Read various data types
 /// final id = reader.readUint32();
@@ -85,7 +86,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// ```
   ///
   /// Throws [FormatException] if the VarInt exceeds 10 bytes (malformed data).
-  /// Asserts bounds in debug mode if attempting to read past buffer end.
+  /// Throws [RangeError] if attempting to read past buffer end.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readVarUint() {
@@ -186,7 +187,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// final version = reader.readUint8();  // Protocol version
   /// ```
   ///
-  /// Asserts bounds in debug mode if insufficient bytes are available.
+  /// Throws [RangeError] if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readUint8() {
@@ -202,7 +203,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// final offset = reader.readInt8();  // Small delta value
   /// ```
   ///
-  /// Asserts bounds in debug mode if insufficient bytes are available.
+  /// Throws [RangeError] if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readInt8() {
@@ -220,7 +221,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// final port = reader.readUint16();  // Network port number
   /// ```
   ///
-  /// Asserts bounds in debug mode if insufficient bytes are available.
+  /// Throws [RangeError] if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readUint16([Endian endian = .big]) {
@@ -241,7 +242,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// final temperature = reader.readInt16();  // -100 to 100°C
   /// ```
   ///
-  /// Asserts bounds in debug mode if insufficient bytes are available.
+  /// Throws [RangeError] if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readInt16([Endian endian = .big]) {
@@ -262,7 +263,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// final timestamp = reader.readUint32();  // Unix timestamp
   /// ```
   ///
-  /// Asserts bounds in debug mode if insufficient bytes are available.
+  /// Throws [RangeError] if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readUint32([Endian endian = .big]) {
@@ -283,7 +284,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// final coordinate = reader.readInt32();  // GPS coordinate
   /// ```
   ///
-  /// Asserts bounds in debug mode if insufficient bytes are available.
+  /// Throws [RangeError] if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readInt32([Endian endian = .big]) {
@@ -309,7 +310,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// final id = reader.readUint64();  // Large unique identifier
   /// ```
   ///
-  /// Asserts bounds in debug mode if insufficient bytes are available.
+  /// Throws [RangeError] if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readUint64([Endian endian = .big]) {
@@ -332,7 +333,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// final nanoseconds = reader.readInt64();  // High-precision time
   /// ```
   ///
-  /// Asserts bounds in debug mode if insufficient bytes are available.
+  /// Throws [RangeError] if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int readInt64([Endian endian = .big]) {
@@ -353,7 +354,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// final temperature = reader.readFloat32();  // 25.5°C
   /// ```
   ///
-  /// Asserts bounds in debug mode if insufficient bytes are available.
+  /// Throws [RangeError] if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   double readFloat32([Endian endian = .big]) {
@@ -374,7 +375,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// final price = reader.readFloat64();  // $123.45
   /// ```
   ///
-  /// Asserts bounds in debug mode if insufficient bytes are available.
+  /// Throws [RangeError] if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   double readFloat64([Endian endian = .big]) {
@@ -401,7 +402,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   ///
   /// **Performance:** Zero-copy operation using buffer views.
   ///
-  /// Asserts bounds in debug mode if insufficient bytes are available.
+  /// Throws [RangeError] if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   Uint8List readBytes(int length) {
@@ -456,7 +457,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   ///
   /// **Performance:** Zero-copy operation using buffer views.
   ///
-  /// Asserts bounds in debug mode if insufficient bytes are available.
+  /// Throws [RangeError] if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   Uint8List readVarBytes() {
@@ -536,7 +537,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// ```dart
   /// final isActive = reader.readBool();  // Read active flag
   /// ```
-  /// Asserts bounds in debug mode if insufficient bytes are available.
+  /// Throws [RangeError] if insufficient bytes are available.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   bool readBool() {
@@ -578,7 +579,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// [offset] specifies where to start peeking (defaults to current position).
   ///
   /// Returns a view of the buffer without copying data.
-  /// Asserts bounds in debug mode if peeking past buffer end.
+  /// Throws [RangeError] if peeking past buffer end.
   ///
   /// Example:
   /// ```dart
@@ -635,7 +636,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// This is useful for skipping over data you don't need to process.
   /// More efficient than reading and discarding data.
   ///
-  /// Asserts bounds in debug mode if skipping past buffer end.
+  /// Throws [RangeError] if skipping past buffer end.
   ///
   /// Example:
   /// ```dart
@@ -660,7 +661,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// Sets the read position to the specified byte offset.
   ///
   /// This allows random access within the buffer.
-  /// Asserts bounds in debug mode if position is out of range.
+  /// Throws [RangeError] if position is out of range.
   ///
   /// Example:
   /// ```dart
@@ -681,7 +682,7 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// Moves the read position backwards by the specified number of bytes.
   ///
   /// This allows re-reading previously read data.
-  /// Asserts bounds in debug mode if rewinding before the start of the buffer.
+  /// Throws [RangeError] if rewinding before the start of the buffer.
   ///
   /// Example:
   /// ```dart

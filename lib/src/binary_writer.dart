@@ -26,9 +26,7 @@ part 'string_utils.dart';
 /// writer.writeFloat64(3.14);
 /// // Write length-prefixed string
 /// final text = 'Hello, World!';
-/// final utf8Bytes = utf8.encode(text);
-/// writer.writeVarUint(utf8Bytes.length);
-/// writer.writeString(text);
+/// writer.writeVarString(text);
 /// // Extract bytes and optionally reuse writer
 /// final bytes = writer.takeBytes(); // Resets writer for reuse
 /// // or: final bytes = writer.toBytes(); // Keeps writer state
@@ -448,7 +446,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// final text = 'Hello, 世界! 🌍';
   /// final utf8Bytes = utf8.encode(text);
   /// writer.writeVarUint(utf8Bytes.length);  // Write byte length
-  /// writer.writeString(text);                // Write string data
+  /// writer.writeBytes(utf8Bytes);            // Write pre-encoded string data
   /// // Or for simple fixed-length strings:
   /// writer.writeString('MAGIC');  // No length prefix needed
   /// ```
@@ -581,8 +579,8 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// ```
   /// This is equivalent to:
   /// ```dart
-  /// final utf8Bytes = utf8.encode(text);
-  /// writer.writeVarUint(utf8Bytes.length);
+  /// final byteLength = getUtf8Length(text);
+  /// writer.writeVarUint(byteLength);
   /// writer.writeString(text);
   /// ```
   @pragma('vm:prefer-inline')
