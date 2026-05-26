@@ -67,9 +67,11 @@ abstract class BinaryStreamTransformer<T>
 
   /// Parses a single message from the [reader].
   ///
-  /// Return the parsed object, or `null` if there is not enough data to
-  /// complete the message. You can also just read freely, and if a
-  /// [NotEnoughDataException] is thrown, the transformer will automatically
-  /// catch it, rollback the  reader's state, and wait for more data.
+  /// Return the parsed object, or `null` if there is not enough data.
+  /// Alternatively, throw [NotEnoughDataException] explicitly.
+  /// Both approaches trigger automatic rollback and wait for more data.
+  ///
+  /// **Recommendation:** prefer throwing [NotEnoughDataException] for
+  /// explicit control, or return `null` for simple "not yet ready" cases.
   T? parse(StreamBinaryReader reader);
 }

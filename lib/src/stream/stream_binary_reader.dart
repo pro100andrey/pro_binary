@@ -196,7 +196,17 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   /// A byte value of 0 is interpreted as `false`, any non-zero value as `true`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  bool readBool() => readUint8() != 0;
+  bool readBool() {
+    _checkAvailable(1);
+    final cr = _s.currentReader!;
+    final val = cr.readUint8();
+    _s.availableBytes -= 1;
+    if (cr.availableBytes == 0) {
+      _advanceChunk();
+    }
+
+    return val != 0;
+  }
 
   /// Reads a 16-bit unsigned integer.
   @pragma('vm:prefer-inline')
@@ -387,8 +397,9 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
       throw RangeError.value(length, 'length', 'Length must be non-negative');
     }
     if (length == 0) {
-      return Uint8List(0);
+      return _emptyBytes;
     }
+
     _checkAvailable(length);
 
     final cr = _s.currentReader!;
@@ -398,6 +409,7 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
       if (cr.availableBytes == 0) {
         _advanceChunk();
       }
+
       return bytes;
     }
 
@@ -557,3 +569,6 @@ final class _StreamReaderState {
     bookmarkAvailableBytes = newAvail;
   }
 }
+
+/// Empty bytes cache
+final _emptyBytes = Uint8List(0);
