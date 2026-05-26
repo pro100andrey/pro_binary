@@ -46,6 +46,7 @@ abstract class BinaryStreamTransformer<T>
   Stream<T> _parseLoop(StreamBinaryReader reader) async* {
     while (reader.availableBytes > 0) {
       reader.bookmark();
+      final bytesBefore = reader.availableBytes;
       try {
         final result = parse(reader);
         if (result == null) {
@@ -53,6 +54,11 @@ abstract class BinaryStreamTransformer<T>
           break; // Wait for more data
         } else {
           reader.commit();
+          if (reader.availableBytes == bytesBefore) {
+            // parse() returned a result without consuming any data —
+            // break to avoid an infinite loop
+            break;
+          }
           yield result;
         }
       } on NotEnoughDataException {

@@ -168,6 +168,7 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   @pragma('dart2js:tryInline')
   int readUint8() {
     _checkAvailable(1);
+    // Invariant: availableBytes > 0 implies currentReader != null
     final cr = _s.currentReader!;
     final val = cr.readUint8();
     _s.availableBytes -= 1;
