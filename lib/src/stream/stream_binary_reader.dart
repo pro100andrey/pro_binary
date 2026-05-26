@@ -65,11 +65,15 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void bookmark() {
-    _s.bookmarks.add((
-      absoluteIndex: _s.currentAbsoluteIndex,
-      readerOffset: _s.currentReader?.offset ?? 0,
-      availableBytes: _s.availableBytes,
-    ));
+    if (_s.bookmarkCount >= _s.bookmarkAbsoluteIndex.length) {
+      _s._growBookmarks();
+    }
+
+    final count = _s.bookmarkCount;
+    _s.bookmarkAbsoluteIndex[count] = _s.currentAbsoluteIndex;
+    _s.bookmarkReaderOffset[count] = _s.currentReader?.offset ?? 0;
+    _s.bookmarkAvailableBytes[count] = _s.availableBytes;
+    _s.bookmarkCount++;
   }
 
   /// Restores the reader to the state of the last [bookmark].
@@ -78,24 +82,29 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void rollback() {
-    if (_s.bookmarks.isEmpty) {
+    if (_s.bookmarkCount == 0) {
       throw StateError('No bookmark to rollback to');
     }
 
-    final bm = _s.bookmarks.removeLast();
-    _s.currentAbsoluteIndex = bm.absoluteIndex;
-    _s.availableBytes = bm.availableBytes;
+    _s.bookmarkCount--;
+    final count = _s.bookmarkCount;
+    final absIndex = _s.bookmarkAbsoluteIndex[count];
+    final readerOffset = _s.bookmarkReaderOffset[count];
+    final availableBytes = _s.bookmarkAvailableBytes[count];
+
+    _s.currentAbsoluteIndex = absIndex;
+    _s.availableBytes = availableBytes;
 
     if (_s.chunks.isNotEmpty) {
-      final relativeIndex = _s.currentAbsoluteIndex - _s.queueStartIndex;
+      final relativeIndex = absIndex - _s.queueStartIndex;
       final targetChunk = _s.chunks.elementAt(relativeIndex);
       final cr = _s.currentReader;
       if (cr != null) {
         cr
           ..rebind(targetChunk)
-          ..seek(bm.readerOffset);
+          ..seek(readerOffset);
       } else {
-        _s.currentReader = BinaryReader(targetChunk)..seek(bm.readerOffset);
+        _s.currentReader = BinaryReader(targetChunk)..seek(readerOffset);
       }
     } else {
       _s.currentReader = null;
@@ -108,11 +117,11 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void commit() {
-    if (_s.bookmarks.isEmpty) {
+    if (_s.bookmarkCount == 0) {
       throw StateError('No bookmark to commit');
     }
 
-    _s.bookmarks.removeLast();
+    _s.bookmarkCount--;
     _prune();
   }
 
@@ -120,7 +129,7 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   @pragma('dart2js:tryInline')
   void _advanceChunk() {
     _s.currentAbsoluteIndex++;
-    if (_s.bookmarks.isEmpty) {
+    if (_s.bookmarkCount == 0) {
       _s.chunks.removeFirst();
       _s.queueStartIndex++;
     }
@@ -136,9 +145,9 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void _prune() {
-    final minNeeded = _s.bookmarks.isEmpty
+    final minNeeded = _s.bookmarkCount == 0
         ? _s.currentAbsoluteIndex
-        : _s.bookmarks.first.absoluteIndex;
+        : _s.bookmarkAbsoluteIndex[0];
 
     while (_s.queueStartIndex < minNeeded) {
       _s.chunks.removeFirst();
@@ -498,8 +507,6 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   }
 }
 
-typedef _Bookmark = ({int absoluteIndex, int readerOffset, int availableBytes});
-
 /// Internal state holder for [StreamBinaryReader].
 final class _StreamReaderState {
   _StreamReaderState()
@@ -507,13 +514,37 @@ final class _StreamReaderState {
       currentAbsoluteIndex = 0,
       queueStartIndex = 0,
       chunks = ListQueue<Uint8List>(),
-      bookmarks = [];
+      bookmarkAbsoluteIndex = Int32List(16),
+      bookmarkReaderOffset = Int32List(16),
+      bookmarkAvailableBytes = Int32List(16),
+      bookmarkCount = 0;
 
   final ListQueue<Uint8List> chunks;
-  final List<_Bookmark> bookmarks;
 
   int currentAbsoluteIndex;
   int queueStartIndex;
   int availableBytes;
   BinaryReader? currentReader;
+
+  // Zero-allocation bookmarks using parallel arrays
+  Int32List bookmarkAbsoluteIndex;
+  Int32List bookmarkReaderOffset;
+  Int32List bookmarkAvailableBytes;
+  int bookmarkCount;
+
+  @pragma('vm:never-inline')
+  void _growBookmarks() {
+    final newCapacity = bookmarkAbsoluteIndex.length * 2;
+    final newAbsIndex = Int32List(newCapacity);
+    final newOffset = Int32List(newCapacity);
+    final newAvail = Int32List(newCapacity);
+
+    newAbsIndex.setRange(0, bookmarkCount, bookmarkAbsoluteIndex);
+    newOffset.setRange(0, bookmarkCount, bookmarkReaderOffset);
+    newAvail.setRange(0, bookmarkCount, bookmarkAvailableBytes);
+
+    bookmarkAbsoluteIndex = newAbsIndex;
+    bookmarkReaderOffset = newOffset;
+    bookmarkAvailableBytes = newAvail;
+  }
 }
