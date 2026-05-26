@@ -4,9 +4,9 @@ import 'package:pro_binary/pro_binary.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('Integrated Types Tests', () {
+  group('Integration Types', () {
     group('String handling', () {
-      test('write and read mixed Unicode string', () {
+      test('round-trip writes and reads mixed Unicode string', () {
         final writer = BinaryWriter();
         const str = 'ASCII_Юникод_中文_🌍';
         writer.writeString(str);
@@ -16,7 +16,7 @@ void main() {
     });
 
     group('Float special values', () {
-      test('write and read special floats', () {
+      test('round-trip writes and reads special floats', () {
         final writer = BinaryWriter()
           ..writeFloat32(double.nan)
           ..writeFloat64(double.infinity);
@@ -27,7 +27,7 @@ void main() {
     });
 
     group('Variable-length types', () {
-      test('write and read VarUint and VarInt', () {
+      test('round-trip writes and reads VarUint and VarInt', () {
         final writer = BinaryWriter()
           ..writeVarUint(300)
           ..writeVarInt(-100);
@@ -36,7 +36,7 @@ void main() {
         expect(reader.readVarInt(), equals(-100));
       });
 
-      test('write and read VarBytes and VarString', () {
+      test('round-trip writes and reads VarBytes and VarString', () {
         final writer = BinaryWriter()
           ..writeVarBytes([1, 2, 3])
           ..writeVarString('Hello');
@@ -47,7 +47,7 @@ void main() {
     });
 
     group('Boolean operations', () {
-      test('write and read multiple booleans', () {
+      test('round-trip writes and reads multiple booleans', () {
         final writer = BinaryWriter()
           ..writeBool(true)
           ..writeBool(false)
@@ -60,7 +60,7 @@ void main() {
     });
 
     group('Large data cycles', () {
-      test('write and read large data set', () {
+      test('round-trip writes and reads large data set', () {
         final writer = BinaryWriter();
         final data = Uint8List.fromList(List.generate(1000, (i) => i % 256));
         writer.writeBytes(data);

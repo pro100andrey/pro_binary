@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 void main() {
   group('BinaryReader String Operations', () {
-    test('readString correctly', () {
+    test('readString decodes UTF-8 bytes to original string', () {
       const str = 'Hello, world!';
       final encoded = utf8.encode(str);
       final reader = BinaryReader(Uint8List.fromList(encoded));

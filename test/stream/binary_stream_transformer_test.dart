@@ -19,8 +19,8 @@ class MyTransformer extends BinaryStreamTransformer<StringMessage> {
 }
 
 void main() {
-  group('BinaryStreamTransformer', () {
-    test('parses stream of messages across chunks', () async {
+  group('BinaryStreamTransformer Message Parsing', () {
+    test('parses messages from stream across chunks', () async {
       final writer = BinaryWriter()
         // Message 1
         ..writeUint32(1)

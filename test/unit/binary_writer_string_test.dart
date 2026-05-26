@@ -12,12 +12,12 @@ void main() {
     });
 
     group('UTF-8 encoding', () {
-      test('encode ASCII characters correctly', () {
+      test('encode ASCII characters to matching bytes', () {
         writer.writeString('ABC123');
         expect(writer.takeBytes(), equals([65, 66, 67, 49, 50, 51]));
       });
 
-      test('encode Cyrillic characters correctly', () {
+      test('encode Cyrillic characters as multi-byte UTF-8', () {
         writer.writeString('Привет');
         final bytes = writer.takeBytes();
 
@@ -25,7 +25,7 @@ void main() {
         expect(reader.readString(bytes.length), equals('Привет'));
       });
 
-      test('encode Chinese characters correctly', () {
+      test('encode Chinese characters as multi-byte UTF-8', () {
         const str = '你好世界';
         writer.writeString(str);
         final bytes = writer.takeBytes();
@@ -34,7 +34,7 @@ void main() {
         expect(reader.readString(bytes.length), equals(str));
       });
 
-      test('encode mixed Unicode string correctly', () {
+      test('encode mixed ASCII, Cyrillic, CJK, and emoji in single string', () {
         const str = 'Hello мир 世界 🌍';
         writer.writeString(str);
         final bytes = writer.takeBytes();

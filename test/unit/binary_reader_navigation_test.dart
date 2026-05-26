@@ -5,14 +5,14 @@ import 'package:test/test.dart';
 
 void main() {
   group('BinaryReader Navigation', () {
-    test('skip method correctly updates the offset', () {
+    test('skip advances offset by specified bytes', () {
       final buffer = Uint8List.fromList([0x00, 0x01, 0x02, 0x03, 0x04]);
       final reader = BinaryReader(buffer)..skip(2);
       expect(reader.offset, equals(2));
       expect(reader.readUint8(), equals(0x02));
     });
 
-    test('seek method sets position correctly', () {
+    test('seek sets offset to specified position', () {
       final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
       final reader = BinaryReader(buffer)..seek(2);
       expect(reader.offset, equals(2));
@@ -23,7 +23,7 @@ void main() {
       expect(reader.readUint8(), equals(1));
     });
 
-    test('rewind method moves back correctly', () {
+    test('rewind decreases offset without reading', () {
       final buffer = Uint8List.fromList([1, 2, 3, 4, 5]);
       final reader = BinaryReader(buffer)
         ..readBytes(3) // offset 3
@@ -41,7 +41,7 @@ void main() {
     });
 
     group('baseOffset handling', () {
-      test('readBytes works correctly with non-zero baseOffset', () {
+      test('readBytes returns correct bytes with non-zero baseOffset', () {
         final largeBuffer = Uint8List.fromList(List.generate(100, (i) => i));
         final subBuffer = Uint8List.sublistView(largeBuffer, 50, 60);
         final reader = BinaryReader(subBuffer);

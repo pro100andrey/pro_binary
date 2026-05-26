@@ -54,12 +54,12 @@ abstract class BinaryStreamTransformer<T>
           break; // Wait for more data
         } else {
           reader.commit();
+          yield result;
           if (reader.availableBytes == bytesBefore) {
             // parse() returned a result without consuming any data —
             // break to avoid an infinite loop
             break;
           }
-          yield result;
         }
       } on NotEnoughDataException {
         reader.rollback();

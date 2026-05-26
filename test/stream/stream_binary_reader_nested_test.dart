@@ -2,14 +2,14 @@ import 'package:pro_binary/pro_binary.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('StreamBinaryReader - Nested Bookmarks', () {
+  group('StreamBinaryReader Bookmark Operations', () {
     late StreamBinaryReader reader;
 
     setUp(() {
       reader = StreamBinaryReader();
     });
 
-    test('nested bookmarks and rollbacks', () {
+    test('supports nested bookmarks with rollback', () {
       reader
         ..addChunk([1, 2, 3, 4])
         ..bookmark(); // B1
@@ -25,7 +25,7 @@ void main() {
       expect(reader.readUint8(), equals(1));
     });
 
-    test('commit and rollback mix', () {
+    test('handles commit and rollback mix', () {
       reader
         ..addChunk([1, 2, 3])
         ..bookmark()

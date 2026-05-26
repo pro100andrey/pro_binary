@@ -2,32 +2,32 @@ import 'package:pro_binary/pro_binary.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('Basic Integration Tests', () {
-    test('write and read single Uint8', () {
+  group('Integration Basic Types', () {
+    test('writes and reads single Uint8', () {
       final writer = BinaryWriter()..writeUint8(42);
       final reader = BinaryReader(writer.takeBytes());
       expect(reader.readUint8(), equals(42));
     });
 
-    test('write and read single Int8', () {
+    test('writes and reads single Int8', () {
       final writer = BinaryWriter()..writeInt8(-42);
       final reader = BinaryReader(writer.takeBytes());
       expect(reader.readInt8(), equals(-42));
     });
 
-    test('write and read Uint16 with big-endian', () {
+    test('writes and reads Uint16 with big-endian', () {
       final writer = BinaryWriter()..writeUint16(65535);
       final reader = BinaryReader(writer.takeBytes());
       expect(reader.readUint16(), equals(65535));
     });
 
-    test('write and read Float32', () {
+    test('writes and reads Float32', () {
       final writer = BinaryWriter()..writeFloat32(3.14159);
       final reader = BinaryReader(writer.takeBytes());
       expect(reader.readFloat32(), closeTo(3.14159, 0.00001));
     });
 
-    test('write and read basic cycles for all fixed types', () {
+    test('round-trip writes and reads all fixed types', () {
       final writer = BinaryWriter()
         ..writeUint8(1)
         ..writeInt8(-1)

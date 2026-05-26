@@ -4,7 +4,7 @@ import 'package:pro_binary/pro_binary.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('BinaryReader Edge Cases', () {
+  group('BinaryReader Edge Cases and Validation', () {
     test('read beyond buffer throws RangeError', () {
       final buffer = Uint8List.fromList([0x01, 0x02]);
       final reader = BinaryReader(buffer);
@@ -43,7 +43,7 @@ void main() {
         expect(reader.offset, equals(0));
       });
 
-      test('call() is an alias for readBytes', () {
+      test('call reads bytes and advances offset', () {
         final buffer = Uint8List.fromList([10, 20, 30, 40]);
         final reader = BinaryReader(buffer);
         expect(reader.call(2), equals([10, 20]));
@@ -67,8 +67,8 @@ void main() {
       });
     });
 
-    group('Coverage edge cases', () {
-      test('peekByte returns byte without advancing', () {
+    group('Internal buffer access', () {
+      test('peekByte returns byte without advancing offset', () {
         final reader = BinaryReader(Uint8List.fromList([0x42, 0x43]));
         expect(reader.peekByte(), equals(0x42));
         expect(reader.offset, equals(0));

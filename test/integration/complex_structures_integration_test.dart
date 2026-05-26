@@ -2,8 +2,8 @@ import 'package:pro_binary/pro_binary.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('Complex Structures Integration Tests', () {
-    test('write and read sequence of different types', () {
+  group('Integration Complex Structures', () {
+    test('round-trip writes and reads sequence of different types', () {
       final writer = BinaryWriter()
         ..writeUint8(255)
         ..writeInt8(-128)
@@ -30,7 +30,7 @@ void main() {
     });
 
     group('Real-world message format simulation', () {
-      test('protocol with header and payload', () {
+      test('parses protocol with header and payload', () {
         final writer = BinaryWriter()
           // Header
           ..writeUint8(1) // version

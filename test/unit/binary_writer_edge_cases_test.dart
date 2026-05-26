@@ -35,17 +35,17 @@ void main() {
     });
 
     group('Edge cases', () {
-      test('handle empty string correctly', () {
+      test('writes empty string with zero bytes', () {
         writer.writeString('');
         expect(writer.bytesWritten, equals(0));
       });
 
-      test('handle empty byte array correctly', () {
+      test('writes empty byte array with zero bytes', () {
         writer.writeBytes([]);
         expect(writer.bytesWritten, equals(0));
       });
 
-      test('handle Float32 special values correctly', () {
+      test('writes Float32 NaN and infinity values', () {
         writer
           ..writeFloat32(double.nan)
           ..writeFloat32(double.infinity)

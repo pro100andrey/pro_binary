@@ -2,8 +2,8 @@ import 'package:pro_binary/pro_binary.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('Robustness Integration Tests', () {
-    test('Round-trip validation for all types', () {
+  group('Integration Robustness', () {
+    test('validates round-trip for all types', () {
       final writer = BinaryWriter()
         ..writeUint8(255)
         ..writeInt16(-32768)
@@ -21,7 +21,7 @@ void main() {
       expect(reader.readBool(), isTrue);
     });
 
-    test('Stress test - many small operations', () {
+    test('handles stress test with many small operations', () {
       final writer = BinaryWriter();
       for (var i = 0; i < 1000; i++) {
         writer.writeUint8(i % 256);
@@ -33,7 +33,7 @@ void main() {
       }
     });
 
-    test('Boundary conditions - writing exactly to buffer boundary', () {
+    test('handles boundary conditions writing exactly to buffer boundary', () {
       final writer = BinaryWriter(initialBufferSize: 8)
         //
         // ignore: avoid_js_rounded_ints

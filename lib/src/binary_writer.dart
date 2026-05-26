@@ -377,7 +377,7 @@ extension type BinaryWriter._(_WriterState _ws) {
     if (offset < 0) {
       throw RangeError.value(offset, 'offset', 'Offset must be non-negative');
     }
-    
+
     if (offset > bytes.length) {
       throw RangeError.range(offset, 0, bytes.length, 'offset');
     }

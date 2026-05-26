@@ -14,12 +14,12 @@ void main() {
       expect(writer.takeBytes(), isEmpty);
     });
 
-    test('writes single Uint8 value correctly', () {
+    test('writes single Uint8 value to buffer', () {
       writer.writeUint8(1);
       expect(writer.takeBytes(), [1]);
     });
 
-    test('writes negative Int8 value correctly', () {
+    test('writes negative Int8 value as two\'s complement', () {
       writer.writeInt8(-1);
       expect(writer.takeBytes(), [255]);
     });
@@ -115,7 +115,7 @@ void main() {
         expect(writer.takeBytes(), equals([0x00]));
       });
 
-      test('writes multiple boolean values correctly', () {
+      test('writes multiple boolean values to buffer', () {
         writer
           ..writeBool(true)
           ..writeBool(false)
@@ -140,7 +140,7 @@ void main() {
         expect(reader.readBool(), isTrue);
       });
 
-      test('updates bytesWritten correctly', () {
+      test('increments bytesWritten for each boolean write', () {
         expect(writer.bytesWritten, equals(0));
 
         writer.writeBool(true);
@@ -172,7 +172,7 @@ void main() {
       expect(writer.takeBytes(), [2]);
     });
 
-    test('track bytesWritten correctly', () {
+    test('tracks bytesWritten for mixed type writes', () {
       writer.writeUint8(1);
       expect(writer.bytesWritten, equals(1));
 

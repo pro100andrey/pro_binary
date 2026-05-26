@@ -5,14 +5,14 @@ import 'package:test/test.dart';
 
 void main() {
   group('BinaryReader Basic Operations', () {
-    test('reads Uint8 correctly', () {
+    test('reads Uint8 value from single byte', () {
       final buffer = Uint8List.fromList([0x01]);
       final reader = BinaryReader(buffer);
       expect(reader.readUint8(), equals(1));
       expect(reader.availableBytes, equals(0));
     });
 
-    test('reads Int8 correctly', () {
+    test('reads Int8 value from single byte', () {
       final buffer = Uint8List.fromList([0xFF]);
       final reader = BinaryReader(buffer);
       expect(reader.readInt8(), equals(-1));
@@ -31,25 +31,25 @@ void main() {
       expect(reader.readUint16(.little), equals(256));
     });
 
-    test('reads Uint32 correctly', () {
+    test('reads Uint32 value from four bytes', () {
       final buffer = Uint8List.fromList([0x00, 0x01, 0x00, 0x00]);
       final reader = BinaryReader(buffer);
       expect(reader.readUint32(), equals(65536));
     });
 
-    test('reads Uint64 correctly', () {
+    test('reads Uint64 value from eight bytes', () {
       final buffer = Uint8List.fromList([0, 0, 0, 1, 0, 0, 0, 0]);
       final reader = BinaryReader(buffer);
       expect(reader.readUint64(), equals(4294967296));
     });
 
-    test('reads Float32 correctly', () {
+    test('reads Float32 value from four bytes', () {
       final buffer = Uint8List.fromList([0x40, 0x49, 0x0F, 0xDB]);
       final reader = BinaryReader(buffer);
       expect(reader.readFloat32(), closeTo(3.1415927, 0.0000001));
     });
 
-    test('reads Float64 correctly', () {
+    test('reads Float64 value from eight bytes', () {
       final buffer = Uint8List.fromList([
         0x40,
         0x09,
@@ -67,7 +67,7 @@ void main() {
       );
     });
 
-    test('readBool correctly', () {
+    test('reads boolean values from single bytes', () {
       final buffer = Uint8List.fromList([0x01, 0x00]);
       final reader = BinaryReader(buffer);
       expect(reader.readBool(), isTrue);
