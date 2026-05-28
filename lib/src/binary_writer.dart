@@ -1,8 +1,6 @@
 import 'dart:typed_data';
 
-// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER
-// for explanation of max safe integer in JavaScript.
-import 'constants_native.dart' if (dart.library.js_util) 'constants_web.dart';
+import 'constants.dart';
 
 part 'binary_writer_pool.dart';
 part 'string_utils.dart';
@@ -79,6 +77,7 @@ extension type BinaryWriter._(_WriterState _ws) {
       _ws.ensureOneByte();
       _ws.list[offset++] = value;
       _ws.offset = offset;
+
       return;
     }
 
@@ -94,6 +93,7 @@ extension type BinaryWriter._(_WriterState _ws) {
     if (v < 0x80) {
       list[offset++] = v;
       _ws.offset = offset;
+
       return;
     }
 
@@ -105,6 +105,7 @@ extension type BinaryWriter._(_WriterState _ws) {
     if (v < 0x80) {
       list[offset++] = v;
       _ws.offset = offset;
+
       return;
     }
 
@@ -116,6 +117,7 @@ extension type BinaryWriter._(_WriterState _ws) {
     if (v < 0x80) {
       list[offset++] = v;
       _ws.offset = offset;
+
       return;
     }
 
@@ -442,13 +444,17 @@ extension type BinaryWriter._(_WriterState _ws) {
   ///
   /// Example:
   /// ```dart
-  /// // Length-prefixed string (recommended for most protocols)
+  /// // 1. Easy way (highly optimized)
+  /// writer.writeVarString('Hello, 世界! 🌍');
+  ///
+  /// // 2. Manual length-prefixed string (if data is already encoded)
   /// final text = 'Hello, 世界! 🌍';
   /// final utf8Bytes = utf8.encode(text);
   /// writer.writeVarUint(utf8Bytes.length);  // Write byte length
   /// writer.writeBytes(utf8Bytes);            // Write pre-encoded string data
-  /// // Or for simple fixed-length strings:
-  /// writer.writeString('MAGIC');  // No length prefix needed
+  ///
+  /// // 3. Fixed-length strings (no prefix)
+  /// writer.writeString('MAGIC');
   /// ```
   ///
   /// **Performance:** Highly optimized for ASCII-heavy strings.
@@ -589,56 +595,69 @@ extension type BinaryWriter._(_WriterState _ws) {
     final len = value.length;
     if (len == 0) {
       writeVarUint(0);
-
       return;
     }
 
-    // Step 1: Optimistic estimation of VarInt size based on string length.
-    // Most strings are ASCII, where byte length == character length.
-    final estimatedVarIntSize = _varIntSize(len);
+    // 1. Optimistically estimate the VarInt size based on string character
+    // length. For pure ASCII strings, byte length matches character length
+    // exactly.
+    final estimatedSize = _varIntSize(len);
 
-    // Ensure enough space for the worst-case scenario (3 bytes per UTF-16 unit)
-    _ws.ensureSize(estimatedVarIntSize + len * 3);
+    // Cache the initial offset locally to avoid redundant heap lookups.
     final startOffset = _ws.offset;
 
-    // Step 2: Skip space for the estimated VarInt length
-    _ws.offset += estimatedVarIntSize;
+    // Ensure enough space for the prefix and the worst-case UTF-8 scenario
+    // (3 bytes per unit).
+    _ws
+      ..ensureSize(estimatedSize + len * 3)
+      // 2. Reserve space for the estimated length prefix using a fast direct
+      // assignment.
+      ..offset = startOffset + estimatedSize;
 
-    // Step 3: Write the actual string data
+    // 3. Write the actual string data directly into the buffer.
     writeString(value, allowMalformed: allowMalformed);
 
-    final byteLength = _ws.offset - (startOffset + estimatedVarIntSize);
+    // Cache the offset immediately after writing to determine the exact byte 
+    // length.
+    var currentOffset = _ws.offset;
+    final byteLength = currentOffset - (startOffset + estimatedSize);
 
-    // Step 4: Check if our estimate was correct for the actual byte length
-    final actualVarIntSize = _varIntSize(byteLength);
+    // 4. Determine the actual VarInt size required for the encoded byte length.
+    final actualSize = _varIntSize(byteLength);
 
-    // Step 5: If the estimate was wrong, shift the string data
-    if (actualVarIntSize != estimatedVarIntSize) {
-      final shift = actualVarIntSize - estimatedVarIntSize;
+    // 5. If the optimistic estimate was wrong (e.g., due to multi-byte UTF-8 
+    // characters), shift the written string data to accommodate the actual 
+    //VarInt size.
+    if (actualSize != estimatedSize) {
+      final shift = actualSize - estimatedSize;
       if (shift > 0) {
         _ws.ensureSize(shift);
       }
 
-      // Fast native memory shift using setRange (memmove)
+      // Perform a fast native memory shift (memmove) using setRange.
       _ws.list.setRange(
-        startOffset + actualVarIntSize,
-        _ws.offset + shift,
+        startOffset + actualSize,
+        currentOffset + shift,
         _ws.list,
-        startOffset + estimatedVarIntSize,
+        startOffset + estimatedSize,
       );
-      _ws.offset += shift;
+
+      // Adjust the local tracker instead of modifying the heap property 
+      // repeatedly.
+      currentOffset += shift;
     }
 
-    // Step 6: Backtrack and write the actual VarInt length
-    final finalOffset = _ws.offset;
-    seek(startOffset);
+    // 6. Backtrack to the start offset and write the authentic VarInt length
+    // prefix.
+    _ws.offset = startOffset;
     writeVarUint(byteLength);
-    _ws.offset = finalOffset;
+
+    // 7. Advance the buffer's final offset to the absolute end of the payload.
+    _ws.offset = currentOffset;
   }
 
-  /// Returns the number of bytes needed to encode [value] as a VarInt.
   @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
+  @pragma('vm:prefer-inline')
   int _varIntSize(int value) => switch (value) {
     < 0x80 => 1,
     < 0x4000 => 2,
@@ -646,6 +665,68 @@ extension type BinaryWriter._(_WriterState _ws) {
     < 0x10000000 => 4,
     _ => 5,
   };
+
+  /// Writes a UTF-8 encoded string prefixed with a fixed-width length.
+  ///
+  /// The length prefix size is determined by [lengthEncoding].
+  ///
+  /// [value] is the string to write.
+  /// [lengthEncoding] specifies the size of the length prefix (defaults to 
+  /// [LengthEncoding.u8]).
+  /// [allowMalformed] if true, malformed UTF-8 sequences will be replaced
+  /// with U+FFFD.
+  ///
+  /// This is useful when you want to avoid VarInt encoding for lengths or
+  /// when the format requires a specific fixed-width length prefix.
+  ///
+  /// Example:
+  /// ```dart
+  /// writer.writeStringFixed('Hello', lengthEncoding: LengthEncoding.u16);
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('vm:prefer-inline')
+  void writeStringFixed(
+    String value, {
+    LengthEncoding lengthEncoding = .u8,
+    bool allowMalformed = true,
+  }) {
+    final len = value.length;
+    if (len == 0) {
+      _writeLength(0, lengthEncoding);
+      return;
+    }
+
+    final sizeInBytes = lengthEncoding.sizeInBytes;
+    _ws.ensureSize(sizeInBytes + len * 3);
+
+    final startOffset = _ws.offset;
+
+    _ws.offset = startOffset + sizeInBytes;
+
+    writeString(value, allowMalformed: allowMalformed);
+
+    final finalOffset = _ws.offset;
+    final byteLength = finalOffset - (startOffset + sizeInBytes);
+
+    _ws.offset = startOffset;
+    _writeLength(byteLength, lengthEncoding);
+    _ws.offset = finalOffset;
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void _writeLength(int length, LengthEncoding encoding) {
+    switch (encoding) {
+      case .u8:
+        writeUint8(length);
+      case .u16:
+        writeUint16(length);
+      case .u32:
+        writeUint32(length);
+      case .u64:
+        writeUint64(length);
+    }
+  }
 
   /// Writes a boolean value as a single byte.
   ///

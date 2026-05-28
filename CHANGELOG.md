@@ -1,4 +1,22 @@
-## 4.0.0
+<!-- markdownlint-disable-file MD025 -->
+
+# 5.0.0
+
+- **BREAKING CHANGES:**
+  - **Stream API**: rewritten architecture — `StreamBinaryReader` now `implements TransactionalReader<List<int>>` with delegation to state
+  - **`NotEnoughDataException`**: message changed from `required $required bytes` to `required $required`
+
+- **New Features:**
+  - **Strings**: added `writeStringFixed` and `readStringFixed` for fixed-width length-prefixed strings.
+  - **Stream API**: added `TransactionalReader<TChunk>` interface for abstracting transactional read model
+  - **Stream API**: added `ChunkedTransactionalState<TChunk>` base class for managing chunk queue and bookmarks
+  - **Stream API**: added `TransactionalStreamTransformer<TMessage, TChunk, TReader>` — generic `StreamTransformer` for parsing streams
+  - **Stream API**: `BinaryStreamTransformer` now extends `TransactionalStreamTransformer`
+  - **BinaryWriter**: improved `writeVarString` documentation with examples
+  - **BinaryReader**: `peekByte()` added bounds check — throws `RangeError`
+  - **Examples**: full restructuring — removed `example/main.dart`, added `example/basic/`, `example/network_streaming/`, `example/file_streaming/`
+
+# 4.0.0
 
 **BREAKING CHANGES:**
 
@@ -20,7 +38,7 @@
 
 **Tests:** Improved all tests
 
-## 3.2.0
+# 3.2.0
 
 **BREAKING CHANGES:**
 
@@ -50,7 +68,7 @@
 
 - Added tests for pool statistics, edge cases takeBytes/reset/release
 
-## 3.1.0
+# 3.1.0
 
 - **feat**: Added `BinaryWriterPool.withWriter()` for safer and more concise object pool usage.
 - **feat**: Added modern API features for a more idiomatic experience:
@@ -68,7 +86,7 @@
 - **docs**: Fixed minor typos and improved documentation for `BinaryWriterPool`.
 - **docs**: Complete README overhaul with a focus on recipes and technical clarity.
 
-## 3.0.0
+# 3.0.0
 
 **Improvements:**
 
@@ -97,12 +115,12 @@
 
 - **fix**: Resolved known issues
 
-## 2.2.0
+# 2.2.0
 
  **test**: Added integration tests for new error handling features
  **deps**: Update internal dependencies to latest versions
 
-## 2.1.0
+# 2.1.0
 
 - **feat**: Added detailed error messages with context (offset, available bytes)
 - **feat**: Added `toBytes()` method in `BinaryWriter` (returns buffer without reset)
@@ -114,16 +132,16 @@
 - **test**: Added new tests for boundary checks and new methods
 - **docs**: Updated documentation with better examples and error handling
 
-## 2.0.0
+# 2.0.0
 
 - Update dependencies
 - sdk: ^3.6.0
 
-## 1.1.1
+# 1.1.1
 
 - fix: warnings
 
-## 1.1.0
+# 1.1.0
 
 - fix: Increased test coverage, providing more comprehensive validation for edge cases.
 - performance: Optimized buffer management to reduce memory reallocations and improve efficiency.
@@ -138,15 +156,15 @@
   - feat: Added `bytesRead` property to monitor the total number of bytes read from the buffer.
   - feat: Introduced `reset` method, allowing users to reset the reading position to the start of the buffer for convenient re-reading.
 
-## 1.0.2
+# 1.0.2
 
 - docs: Updated documentation.
 
-## 1.0.1
+# 1.0.1
 
 - docs: Updated documentation.
 - feat: Added `example` directory with basic usage examples.
 
-## 1.0.0
+# 1.0.0
 
 - Initial release.

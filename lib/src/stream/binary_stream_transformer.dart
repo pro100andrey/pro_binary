@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'stream_binary_reader.dart';
+import 'transactional_reader.dart';
+import 'transactional_stream_transformer.dart';
 
 /// A [StreamTransformer] that simplifies parsing binary messages from a stream.
 ///
 /// It manages an internal [StreamBinaryReader] and handles
-/// [NotEnoughDataException]  by automatically rolling back the reader state
+/// [NotEnoughDataException] by automatically rolling back the reader state
 /// and waiting for more data
 /// from the stream.
 ///
@@ -27,50 +29,12 @@ import 'stream_binary_reader.dart';
 /// stream.transform(MyMessageTransformer()).listen((msg) => print(msg.name));
 /// ```
 abstract class BinaryStreamTransformer<T>
-    extends StreamTransformerBase<List<int>, T> {
+    extends TransactionalStreamTransformer<T, List<int>, StreamBinaryReader> {
   /// Creates a new [BinaryStreamTransformer].
   const BinaryStreamTransformer();
 
   @override
-  Stream<T> bind(Stream<List<int>> stream) async* {
-    final reader = StreamBinaryReader();
-
-    await for (final chunk in stream) {
-      reader.addChunk(chunk);
-      yield* _parseLoop(reader);
-    }
-
-    // Final attempt to parse remaining data after stream is closed
-    yield* _parseLoop(reader);
-  }
-
-  Stream<T> _parseLoop(StreamBinaryReader reader) async* {
-    while (reader.availableBytes > 0) {
-      reader.bookmark();
-      final bytesBefore = reader.availableBytes;
-      try {
-        final result = parse(reader);
-        if (result == null) {
-          reader.rollback();
-          break; // Wait for more data
-        } else {
-          reader.commit();
-          yield result;
-          if (reader.availableBytes == bytesBefore) {
-            // parse() returned a result without consuming any data —
-            // break to avoid an infinite loop
-            break;
-          }
-        }
-      } on NotEnoughDataException {
-        reader.rollback();
-        break; // Wait for more data
-      } catch (e) {
-        reader.rollback();
-        rethrow;
-      }
-    }
-  }
+  StreamBinaryReader createReader() => StreamBinaryReader();
 
   /// Parses a single message from the [reader].
   ///
@@ -80,5 +44,6 @@ abstract class BinaryStreamTransformer<T>
   ///
   /// **Recommendation:** prefer throwing [NotEnoughDataException] for
   /// explicit control, or return `null` for simple "not yet ready" cases.
+  @override
   T? parse(StreamBinaryReader reader);
 }

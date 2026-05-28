@@ -112,8 +112,34 @@ class StandardDartNaiveBench extends BenchmarkBase {
   }
 }
 
+class FixedStringBench extends BenchmarkBase {
+  FixedStringBench(String name, this.payload, this.encoding)
+    : super('String [$name] (Fixed ${encoding.name})');
+
+  final String payload;
+  final LengthEncoding encoding;
+  late BinaryWriter writer;
+
+  @override
+  void setup() {
+    writer = BinaryWriter(initialBufferSize: payload.length * 3 + 10);
+  }
+
+  @override
+  void run() {
+    writer
+      ..reset()
+      ..writeStringFixed(payload, lengthEncoding: encoding);
+
+    if (writer.bytesWritten == 0) {
+      throw Exception();
+    }
+  }
+}
+
 void runComparison(String name, String payload) {
   OnePassStringBench(name, payload).report();
+  FixedStringBench(name, payload, LengthEncoding.u32).report();
   TwoPassStringBench(name, payload).report();
   StandardDartCorrectBench(name, payload).report();
   StandardDartNaiveBench(name, payload).report();

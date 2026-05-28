@@ -302,7 +302,7 @@ void main() {
             (e) => e.toString(),
             'toString',
             allOf(
-              contains('required 4 bytes'),
+              contains('required 4'),
               contains('2 available'),
             ),
           ),

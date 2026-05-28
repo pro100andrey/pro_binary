@@ -308,5 +308,37 @@ void main() {
         expect(bytes, equals([42, 43]));
       });
     });
+
+    group('writeStringFixed', () {
+      test('write with LengthEncoding.u8', () {
+        writer.writeStringFixed('ABC');
+        expect(writer.takeBytes(), equals([3, 65, 66, 67]));
+      });
+
+      test('write with LengthEncoding.u16', () {
+        writer.writeStringFixed('ABC', lengthEncoding: LengthEncoding.u16);
+        expect(writer.takeBytes(), equals([0, 3, 65, 66, 67]));
+      });
+
+      test('write empty string with LengthEncoding.u32', () {
+        writer.writeStringFixed('', lengthEncoding: LengthEncoding.u32);
+        expect(writer.takeBytes(), equals([0, 0, 0, 0]));
+      });
+
+      test('write multi-byte string with LengthEncoding.u8', () {
+        writer.writeStringFixed('Привет');
+        final bytes = writer.takeBytes();
+        expect(bytes[0], equals(12)); // 6 characters * 2 bytes
+        expect(utf8.decode(bytes.sublist(1)), equals('Привет'));
+      });
+
+      test('write with LengthEncoding.u64', () {
+        writer.writeStringFixed('DART', lengthEncoding: LengthEncoding.u64);
+        final bytes = writer.takeBytes();
+        expect(bytes.length, equals(8 + 4));
+        expect(bytes.sublist(0, 8), equals([0, 0, 0, 0, 0, 0, 0, 4]));
+        expect(utf8.decode(bytes.sublist(8)), equals('DART'));
+      });
+    });
   });
 }

@@ -75,5 +75,20 @@ void main() {
 
       expect(reader.readVarString(), equals('Stream'));
     });
+
+    test('readStringFixed handles chunk boundary', () {
+      final writer = BinaryWriter()
+        ..writeStringFixed('Streaming', lengthEncoding: LengthEncoding.u16);
+      final bytes = writer.takeBytes();
+
+      reader
+        ..addChunk(bytes.sublist(0, 5))
+        ..addChunk(bytes.sublist(5));
+
+      expect(
+        reader.readStringFixed(lengthEncoding: LengthEncoding.u16),
+        equals('Streaming'),
+      );
+    });
   });
 }

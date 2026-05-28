@@ -1,26 +1,11 @@
-import 'dart:collection';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:meta/meta.dart';
+
 import '../binary_reader.dart';
-
-/// Exception thrown when [StreamBinaryReader] does not have enough data
-/// to complete a read operation.
-class NotEnoughDataException implements Exception {
-  /// Creates a new [NotEnoughDataException].
-  const NotEnoughDataException(this.required, this.available);
-
-  /// The number of bytes required to complete the operation.
-  final int required;
-
-  /// The number of bytes currently available in the reader.
-  final int available;
-
-  @override
-  String toString() =>
-      'NotEnoughDataException: required $required bytes, but only '
-      '$available available.';
-}
+import '../constants.dart';
+import 'transactional_reader.dart';
 
 /// A reader designed for asynchronous streaming data that spans multiple
 /// chunks.
@@ -32,30 +17,25 @@ class NotEnoughDataException implements Exception {
 ///
 /// It supports a transactional model ([bookmark], [rollback], [commit]) which
 /// is essential for stream parsing when a message might be incomplete.
-extension type StreamBinaryReader._(_StreamReaderState _s) {
+extension type StreamBinaryReader._(_StreamReaderState _s)
+    implements TransactionalReader<List<int>> {
   /// Creates a new [StreamBinaryReader].
   StreamBinaryReader() : this._(_StreamReaderState());
 
   /// The total number of unread bytes currently available across all chunks.
+  @redeclare
   int get availableBytes => _s.availableBytes;
 
   /// Adds a new chunk of data to the reader.
-  void addChunk(List<int> bytes) {
-    final chunk = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
-    if (chunk.isEmpty) {
-      return;
-    }
-
-    _s.chunks.add(chunk);
-    _s.availableBytes += chunk.length;
-
-    if (_s.currentReader == null) {
-      final relativeIndex = _s.currentAbsoluteIndex - _s.queueStartIndex;
-      if (relativeIndex >= 0 && relativeIndex < _s.chunks.length) {
-        _s.currentReader = BinaryReader(_s.chunks.elementAt(relativeIndex));
-      }
-    }
-  }
+  ///
+  /// **Performance Tip:** For maximum performance, it is highly recommended to
+  /// pass a [Uint8List]. If a standard `List<int>` is provided, it will be
+  /// copied into a new [Uint8List] internally, which incurs a performance cost.
+  ///
+  /// Most streams from `dart:io` (like `File.openRead` or `Socket`) yield
+  /// [Uint8List] even though they are typed as `Stream<List<int>>`.
+  @redeclare
+  void addChunk(List<int> bytes) => _s.addChunk(bytes);
 
   /// Creates a checkpoint of the current reader state.
   ///
@@ -64,96 +44,28 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
   /// [rollback] to restore the state and wait for more data.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  void bookmark() {
-    if (_s.bookmarkCount >= _s.bookmarkAbsoluteIndex.length) {
-      _s._growBookmarks();
-    }
-
-    final count = _s.bookmarkCount;
-    _s.bookmarkAbsoluteIndex[count] = _s.currentAbsoluteIndex;
-    _s.bookmarkReaderOffset[count] = _s.currentReader?.offset ?? 0;
-    _s.bookmarkAvailableBytes[count] = _s.availableBytes;
-    _s.bookmarkCount++;
-  }
+  @redeclare
+  void bookmark() => _s.bookmark();
 
   /// Restores the reader to the state of the last [bookmark].
   ///
   /// This removes the last bookmark from the stack.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  void rollback() {
-    if (_s.bookmarkCount == 0) {
-      throw StateError('No bookmark to rollback to');
-    }
-
-    _s.bookmarkCount--;
-    final count = _s.bookmarkCount;
-    final absIndex = _s.bookmarkAbsoluteIndex[count];
-    final readerOffset = _s.bookmarkReaderOffset[count];
-    final availableBytes = _s.bookmarkAvailableBytes[count];
-
-    _s.currentAbsoluteIndex = absIndex;
-    _s.availableBytes = availableBytes;
-
-    if (_s.chunks.isNotEmpty) {
-      final relativeIndex = absIndex - _s.queueStartIndex;
-      final targetChunk = _s.chunks.elementAt(relativeIndex);
-      final cr = _s.currentReader;
-      if (cr != null) {
-        cr
-          ..rebind(targetChunk)
-          ..seek(readerOffset);
-      } else {
-        _s.currentReader = BinaryReader(targetChunk)..seek(readerOffset);
-      }
-    } else {
-      _s.currentReader = null;
-    }
-  }
+  @redeclare
+  void rollback() => _s.rollback();
 
   /// Removes the last [bookmark] without restoring the state.
   ///
   /// Call this when a message has been successfully and fully parsed.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  void commit() {
-    if (_s.bookmarkCount == 0) {
-      throw StateError('No bookmark to commit');
-    }
-
-    _s.bookmarkCount--;
-    _prune();
-  }
+  @redeclare
+  void commit() => _s.commit();
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  void _advanceChunk() {
-    _s.currentAbsoluteIndex++;
-    if (_s.bookmarkCount == 0) {
-      _s.chunks.removeFirst();
-      _s.queueStartIndex++;
-    }
-
-    final relativeIndex = _s.currentAbsoluteIndex - _s.queueStartIndex;
-    if (relativeIndex < _s.chunks.length) {
-      _s.currentReader!.rebind(_s.chunks.elementAt(relativeIndex));
-    } else {
-      _s.currentReader = null;
-    }
-  }
-
-  @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  void _prune() {
-    final minNeeded = _s.bookmarkCount == 0
-        ? _s.currentAbsoluteIndex
-        : _s.bookmarkAbsoluteIndex[0];
-
-    while (_s.queueStartIndex < minNeeded) {
-      _s.chunks.removeFirst();
-      _s.queueStartIndex++;
-    }
-  }
+  void _advanceChunk() => _s.advanceChunk();
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
@@ -533,6 +445,7 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
     }
 
     final bytes = readBytes(length);
+
     return utf8.decode(bytes, allowMalformed: allowMalformed);
   }
 
@@ -546,6 +459,29 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
     final length = readVarUint();
     return readString(length, allowMalformed: allowMalformed);
   }
+
+  /// Reads a UTF-8 encoded string prefixed with a fixed-width length.
+  ///
+  /// Throws [NotEnoughDataException] if fewer than the required bytes for the
+  /// length prefix are available.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  String readStringFixed({
+    LengthEncoding lengthEncoding = .u8,
+    bool allowMalformed = false,
+  }) {
+    final length = _readLength(lengthEncoding);
+    return readString(length, allowMalformed: allowMalformed);
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int _readLength(LengthEncoding encoding) => switch (encoding) {
+    .u8 => readUint8(),
+    .u16 => readUint16(),
+    .u32 => readUint32(),
+    .u64 => readUint64(),
+  };
 
   /// Advances the read position by the specified number of bytes.
   ///
@@ -589,44 +525,65 @@ extension type StreamBinaryReader._(_StreamReaderState _s) {
 }
 
 /// Internal state holder for [StreamBinaryReader].
-final class _StreamReaderState {
-  _StreamReaderState()
-    : availableBytes = 0,
-      currentAbsoluteIndex = 0,
-      queueStartIndex = 0,
-      chunks = ListQueue<Uint8List>(),
-      bookmarkAbsoluteIndex = Int32List(16),
-      bookmarkReaderOffset = Int32List(16),
-      bookmarkAvailableBytes = Int32List(16),
-      bookmarkCount = 0;
+final class _StreamReaderState extends ChunkedTransactionalState<Uint8List>
+    implements TransactionalReader<List<int>> {
+  _StreamReaderState() : bookmarkReaderOffset = Int32List(16), super();
 
-  final ListQueue<Uint8List> chunks;
-
-  int currentAbsoluteIndex;
-  int queueStartIndex;
-  int availableBytes;
   BinaryReader? currentReader;
 
   // Zero-allocation bookmarks using parallel arrays
-  Int32List bookmarkAbsoluteIndex;
   Int32List bookmarkReaderOffset;
-  Int32List bookmarkAvailableBytes;
-  int bookmarkCount;
+
+  @override
+  void addChunk(List<int> bytes) {
+    if (bytes.isEmpty) {
+      return;
+    }
+
+    final chunk = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    super.addChunk(chunk);
+  }
+
+  @override
+  int getChunkLength(Uint8List chunk) => chunk.length;
+
+  @override
+  bool get hasCurrentReader => currentReader != null;
+
+  @override
+  void onBindReader(Uint8List chunk, int offset) {
+    final cr = currentReader;
+    if (cr != null) {
+      cr
+        ..rebind(chunk)
+        ..seek(offset);
+    } else {
+      currentReader = BinaryReader(chunk)..seek(offset);
+    }
+  }
+
+  @override
+  void onUnbindReader() {
+    currentReader = null;
+  }
+
+  @override
+  void onSaveBookmark(int bookmarkIndex) {
+    bookmarkReaderOffset[bookmarkIndex] = currentReader?.offset ?? 0;
+  }
+
+  @override
+  int onRestoreBookmark(int bookmarkIndex) =>
+      bookmarkReaderOffset[bookmarkIndex];
 
   @pragma('vm:never-inline')
-  void _growBookmarks() {
-    final newCapacity = bookmarkAbsoluteIndex.length * 2;
-    final newAbsIndex = Int32List(newCapacity);
-    final newOffset = Int32List(newCapacity);
-    final newAvail = Int32List(newCapacity);
+  @override
+  void growBookmarks() {
+    super.growBookmarks();
 
-    newAbsIndex.setRange(0, bookmarkCount, bookmarkAbsoluteIndex);
-    newOffset.setRange(0, bookmarkCount, bookmarkReaderOffset);
-    newAvail.setRange(0, bookmarkCount, bookmarkAvailableBytes);
-
-    bookmarkAbsoluteIndex = newAbsIndex;
-    bookmarkReaderOffset = newOffset;
-    bookmarkAvailableBytes = newAvail;
+    final newCapacity = bookmarkAbsoluteIndex.length;
+    bookmarkReaderOffset = Int32List(newCapacity)
+      ..setRange(0, bookmarkCount, bookmarkReaderOffset);
   }
 }
 
