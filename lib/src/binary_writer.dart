@@ -617,7 +617,7 @@ extension type BinaryWriter._(_WriterState _ws) {
     // 3. Write the actual string data directly into the buffer.
     writeString(value, allowMalformed: allowMalformed);
 
-    // Cache the offset immediately after writing to determine the exact byte 
+    // Cache the offset immediately after writing to determine the exact byte
     // length.
     var currentOffset = _ws.offset;
     final byteLength = currentOffset - (startOffset + estimatedSize);
@@ -625,8 +625,8 @@ extension type BinaryWriter._(_WriterState _ws) {
     // 4. Determine the actual VarInt size required for the encoded byte length.
     final actualSize = _varIntSize(byteLength);
 
-    // 5. If the optimistic estimate was wrong (e.g., due to multi-byte UTF-8 
-    // characters), shift the written string data to accommodate the actual 
+    // 5. If the optimistic estimate was wrong (e.g., due to multi-byte UTF-8
+    // characters), shift the written string data to accommodate the actual
     //VarInt size.
     if (actualSize != estimatedSize) {
       final shift = actualSize - estimatedSize;
@@ -642,7 +642,7 @@ extension type BinaryWriter._(_WriterState _ws) {
         startOffset + estimatedSize,
       );
 
-      // Adjust the local tracker instead of modifying the heap property 
+      // Adjust the local tracker instead of modifying the heap property
       // repeatedly.
       currentOffset += shift;
     }
@@ -671,7 +671,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// The length prefix size is determined by [lengthEncoding].
   ///
   /// [value] is the string to write.
-  /// [lengthEncoding] specifies the size of the length prefix (defaults to 
+  /// [lengthEncoding] specifies the size of the length prefix (defaults to
   /// [LengthEncoding.u8]).
   /// [allowMalformed] if true, malformed UTF-8 sequences will be replaced
   /// with U+FFFD.
