@@ -168,15 +168,15 @@ Explore the [example](example/) directory for complete, runnable projects:
 
 [Full API documentation](https://pub.dev/documentation/pro_binary/latest/pro_binary/)
 
-| Class | Description |
-| ----- | ------------ |
-| **BinaryWriter** | Encode data: fixed types, VarInt/ZigZag, strings, bytes. Supports `takeBytes()`, `toBytes()`, `reset()`, `seek()`. |
-| **BinaryReader** | Decode data: all fixed/variable types, navigation (`skip`, `seek`, `rewind`, `peek`), `rebind()` for reuse. |
-| **StreamBinaryReader** | Async streaming: chunk-based reading with `bookmark`/`rollback`/`commit` transactional model. |
-| **BinaryStreamTransformer\<T\>** | Stream parser: extend and implement `parse()` to process binary streams. |
-| **TransactionalStreamTransformer\<TMessage, TChunk, TReader\>** | Generic stream transformer: extend for custom chunk types and readers. |
-| **BinaryWriterPool** | Object pool: `acquire()`/`release()` or `withWriter()` for high-frequency writes. |
-| **getUtf8Length** | Utility: calculate UTF-8 byte length without encoding. |
+| Component | Description |
+| --------- | ----------- |
+| **BinaryWriter** | Fast encoder for fixed-width, VarInt/ZigZag, and one-pass strings. Features automatic expansion and pooling. |
+| **BinaryReader** | Zero-copy decoder with advanced navigation (`seek`, `rewind`, `peek`). Optimized for performance. |
+| **StreamBinaryReader** | Handles async data chunks seamlessly with a transactional `bookmark`/`rollback` model for partial data. |
+| **BinaryStreamTransformer** | The easiest way to parse a `Stream<List<int>>` into a stream of typed messages or objects. |
+| **BinaryWriterPool** | Object pool for `BinaryWriter` to eliminate GC pressure during high-frequency write operations. |
+| **getUtf8Length** | High-speed utility to calculate UTF-8 byte length without encoding (O(n) but heavily optimized). |
+| **TransactionalReader** | Base interface for custom transactional readers. Used internally by `StreamBinaryReader`. |
 
 ## Performance
 
