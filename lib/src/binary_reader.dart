@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'constants.dart';
+
 /// A high-performance binary reader for decoding data from a byte buffer.
 ///
 /// Provides methods for reading various data types including:
@@ -528,6 +530,41 @@ extension type BinaryReader._(_ReaderState _rs) {
 
     return readString(length, allowMalformed: allowMalformed);
   }
+
+  /// Reads a UTF-8 encoded string prefixed with a fixed-width length.
+  ///
+  /// The length prefix size is determined by [lengthEncoding].
+  ///
+  /// [lengthEncoding] specifies the size of the length prefix (defaults to
+  /// [LengthEncoding.u8]).
+  /// [allowMalformed] if true, malformed UTF-8 sequences will be replaced
+  /// with U+FFFD.
+  ///
+  /// This is the counterpart to `BinaryWriter.writeStringFixed`.
+  ///
+  /// Example:
+  /// ```dart
+  /// final text = reader.readStringFixed(lengthEncoding: LengthEncoding.u16);
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  String readStringFixed({
+    LengthEncoding lengthEncoding = .u8,
+    bool allowMalformed = false,
+  }) {
+    final length = _readLength(lengthEncoding);
+
+    return readString(length, allowMalformed: allowMalformed);
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int _readLength(LengthEncoding encoding) => switch (encoding) {
+    .u8 => readUint8(),
+    .u16 => readUint16(),
+    .u32 => readUint32(),
+    .u64 => readUint64(),
+  };
 
   /// Reads a boolean value (1 byte).
   ///

@@ -49,5 +49,79 @@ void main() {
         expect(result, isNotEmpty);
       });
     });
+
+    group('readStringFixed', () {
+      test('read with LengthEncoding.u8', () {
+        final buffer = Uint8List.fromList([3, 65, 66, 67]);
+        final reader = BinaryReader(buffer);
+        expect(
+          reader.readStringFixed(),
+          equals('ABC'),
+        );
+      });
+
+      test('read with LengthEncoding.u16', () {
+        final buffer = Uint8List.fromList([0, 3, 65, 66, 67]);
+        final reader = BinaryReader(buffer);
+        expect(
+          reader.readStringFixed(lengthEncoding: .u16),
+          equals('ABC'),
+        );
+      });
+
+      test('read empty string with LengthEncoding.u32', () {
+        final buffer = Uint8List.fromList([0, 0, 0, 0]);
+        final reader = BinaryReader(buffer);
+        expect(
+          reader.readStringFixed(lengthEncoding: LengthEncoding.u32),
+          equals(''),
+        );
+      });
+
+      test('read multi-byte string with LengthEncoding.u8', () {
+        final buffer = Uint8List.fromList([
+          12,
+          208,
+          159,
+          209,
+          128,
+          208,
+          184,
+          208,
+          178,
+          208,
+          181,
+          209,
+          130,
+        ]);
+        final reader = BinaryReader(buffer);
+        expect(
+          reader.readStringFixed(),
+          equals('Привет'),
+        );
+      });
+
+      test('read with LengthEncoding.u64', () {
+        final buffer = Uint8List.fromList([
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          4,
+          68,
+          65,
+          82,
+          84,
+        ]);
+        final reader = BinaryReader(buffer);
+        expect(
+          reader.readStringFixed(lengthEncoding: LengthEncoding.u64),
+          equals('DART'),
+        );
+      });
+    });
   });
 }
