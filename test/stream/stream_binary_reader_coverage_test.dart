@@ -148,9 +148,23 @@ void main() {
       expect(reader.readUint8, throwsA(isA<NotEnoughDataException>()));
     });
 
-    test('rollback handles no current reader', () {
+    test('rollback handles no current reader and maintains state', () {
+      final bytes = Uint8List.fromList([1, 2, 3]);
+      reader.addChunk(bytes);
+
+      final initialAvailable = reader.availableBytes;
+      expect(initialAvailable, equals(3));
+
       reader.bookmark();
+      // Rollback without consuming any data
       expect(() => reader.rollback(), returnsNormally);
+
+      // State should be identical
+      expect(reader.availableBytes, equals(initialAvailable));
+
+      // Should still be able to read correctly
+      expect(reader.readUint8(), equals(1));
+      expect(reader.availableBytes, equals(2));
     });
 
     test('readVarUint throws FormatException for oversized varint', () {
