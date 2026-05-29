@@ -9,8 +9,9 @@ part of 'binary_writer.dart';
 ///
 /// ## Features
 /// - **Automatic reuse:** [acquire] gets a pooled writer or creates a new one
-/// - **Memory bounds:** Only reuses writers with buffers ≤ 64 KiB
-/// - **Size limits:** Maintains max 32 pooled instances
+/// - **Memory bounds:** Only reuses writers with
+///    buffers ≤ `maxReusableCapacity`
+/// - **Size limits:** Maintains max `maxPoolSize` pooled instances
 /// - **Safe:** Prevents double-release and handles edge cases
 ///
 /// ## Usage Pattern
@@ -40,29 +41,88 @@ part of 'binary_writer.dart';
 /// ## Performance Considerations
 /// - Pooling is beneficial for high-frequency write operations
 /// - Overhead is minimal for single-use writers (use regular constructor)
-/// - Large buffers (>64 KiB) are discarded to avoid memory waste
+/// - Large buffers (>64 KiB by default) are discarded to avoid memory waste
 ///
 /// ## Memory Management
-/// - Pool max size: 32 writers
-/// - Max reusable buffer: 64 KiB
-/// - Default buffer size: 1 KiB
+/// - Default pool max size: 32 writers
+/// - Default max reusable buffer: 64 KiB
+/// - Default initial buffer size: 1 KiB
+/// - Use [configure] to change these limits
 /// - Use [clear] to free pooled memory explicitly
 ///
 /// See also: [BinaryWriter], [stats] for pool monitoring
 // ignore: avoid_classes_with_only_static_members
 abstract final class BinaryWriterPool {
+  /// Configures the pool settings.
+  ///
+  /// This should typically be called once at application startup.
+  ///
+  /// Parameters:
+  /// - [maxPoolSize]: Maximum number of writers to keep in the pool
+  ///   (default: 32).
+  /// - [initialBufferSize]: Default initial buffer size for new writers
+  ///   (default: 1 KiB).
+  /// - [maxReusableCapacity]: Maximum buffer capacity allowed for pooling
+  ///   (default: 64 KiB). Writers exceeding this are discarded on release.
+  ///
+  /// Example:
+  /// ```dart
+  /// // Configure for heavy load with larger buffers
+  /// BinaryWriterPool.configure(
+  ///   maxPoolSize: 64,
+  ///   maxReusableCapacity: 256 * 1024,
+  /// );
+  /// ```
+  static void configure({
+    int maxPoolSize = 32,
+    int initialBufferSize = 1024,
+    int maxReusableCapacity = 64 * 1024,
+  }) {
+    if (maxPoolSize <= 0) {
+      throw ArgumentError.value(maxPoolSize, 'maxPoolSize', 'Must be positive');
+    }
+
+    if (initialBufferSize <= 0) {
+      throw ArgumentError.value(
+        initialBufferSize,
+        'initialBufferSize',
+        'Must be positive',
+      );
+    }
+
+    if (maxReusableCapacity <= 0) {
+      throw ArgumentError.value(
+        maxReusableCapacity,
+        'maxReusableCapacity',
+        'Must be positive',
+      );
+    }
+
+    if (initialBufferSize > maxReusableCapacity) {
+      throw ArgumentError(
+        'initialBufferSize ($initialBufferSize) cannot be larger than '
+        'maxReusableCapacity ($maxReusableCapacity). '
+        'This would cause all pooled writers to be discarded immediately.',
+      );
+    }
+
+    _maxPoolSize = maxPoolSize;
+    _initialBufferSize = initialBufferSize;
+    _maxReusableCapacity = maxReusableCapacity;
+  }
+
   // The internal pool of reusable writer states.
   static final _pool = <_WriterState>[];
 
   /// Maximum number of writers to keep in the pool.
-  static const _maxPoolSize = 32;
+  static var _maxPoolSize = 32;
 
   /// Default initial buffer size for new writers (1 KiB).
-  static const _initialBufferSizer = 1024;
+  static var _initialBufferSize = 1024;
 
   /// Maximum buffer capacity allowed for pooling (64 KiB).
-  /// Writers that exceed this size are discarded to free up system memory
-  static const int _maxReusableCapacity = 64 * 1024;
+  /// Writers that exceed this size are discarded to free up system memory.
+  static var _maxReusableCapacity = 64 * 1024;
 
   // Performance counters
   static var _acquireHit = 0;
@@ -83,36 +143,67 @@ abstract final class BinaryWriterPool {
   ///
   /// There are two ways to get the data:
   /// 1. Use [BinaryWriter.toBytes] if you consume data **inside** the try
-  ///   block (zero-copy view).
-  /// 2. Use [BinaryWriter.takeBytes] if you need to **return** the data
-  ///   (transfers buffer ownership).
+  ///    block (zero-copy view). This is the fastest method but the view
+  ///    becomes invalid if the writer is reused.
+  /// 2. Use [BinaryWriter.takeBytes] with `copy: true` if you need to
+  ///    **return** the data. This copies the written bytes but **retains**
+  ///    the internal buffer for the pool, preventing future re-allocations.
+  /// 3. Use [BinaryWriter.takeBytes] with `copy: false` (default) for a
+  ///    zero-copy transfer of ownership. This detaches the buffer from the
+  ///    writer, causing the pool to allocate a new buffer next time.
   ///
   /// ```dart
   /// final writer = BinaryWriterPool.acquire();
   /// try {
   ///   writer.writeUint32(123);
-  ///   return writer.takeBytes();
+  ///   return writer.takeBytes(copy: true); // Recommended for pooling
   /// } finally {
   ///   BinaryWriterPool.release(writer);
   /// }
   /// ```
   ///
   /// Returns: A [BinaryWriter] ready for use.
-  static BinaryWriter acquire([int initialBufferSizer = _initialBufferSizer]) {
-    if (initialBufferSizer <= 0) {
+  static BinaryWriter acquire([int? initialBufferSize]) {
+    final size = initialBufferSize ?? _initialBufferSize;
+
+    if (size <= 0) {
       throw RangeError.value(
-        initialBufferSizer,
-        'initialBufferSizer',
+        size,
+        'initialBufferSize',
         'Must be positive',
       );
     }
 
     if (_pool.isNotEmpty) {
-      _acquireHit++;
-      final state = _pool.removeLast().._isInPool = false;
+      // Find the best-fitting buffer: smallest one that is >= requested size.
+      // If none, take the largest available to minimize expansions.
+      var bestIndex = -1;
+      var smallestSuitableCapacity = double.infinity;
 
-      if (state.capacity < initialBufferSizer) {
-        state.ensureSize(initialBufferSizer);
+      for (var i = 0; i < _pool.length; i++) {
+        final cap = _pool[i].capacity;
+        if (cap >= size && cap < smallestSuitableCapacity) {
+          bestIndex = i;
+          smallestSuitableCapacity = cap.toDouble();
+        }
+      }
+
+      // If no suitable buffer found, take the largest one to minimize growth
+      if (bestIndex == -1) {
+        var largestCap = -1;
+        for (var i = 0; i < _pool.length; i++) {
+          if (_pool[i].capacity > largestCap) {
+            largestCap = _pool[i].capacity;
+            bestIndex = i;
+          }
+        }
+      }
+
+      _acquireHit++;
+      final state = _pool.removeAt(bestIndex).._isInPool = false;
+
+      if (state.capacity < size) {
+        state.ensureSize(size);
       }
 
       return BinaryWriter._(state);
@@ -120,7 +211,7 @@ abstract final class BinaryWriterPool {
 
     _acquireMiss++;
 
-    return BinaryWriter(initialBufferSize: initialBufferSizer);
+    return BinaryWriter(initialBufferSize: size);
   }
 
   /// Acquires a writer, executes the given [action], and automatically
@@ -131,21 +222,21 @@ abstract final class BinaryWriterPool {
   ///
   /// Parameters:
   /// - [action]: The function to execute with the acquired writer
-  /// - [initialBufferSizer]: Initial buffer size for new writers
-  ///   (defaults to 1 KiB)
+  /// - [initialBufferSize]: Initial buffer size for new writers
+  ///   (defaults to pool setting)
   ///
   /// Example:
   /// ```dart
   /// final bytes = BinaryWriterPool.withWriter((writer) {
   ///   writer.writeUint32(42);
-  ///   return writer.takeBytes();
+  ///   return writer.takeBytes(copy: true);
   /// });
   /// ```
   static T withWriter<T>(
     T Function(BinaryWriter writer) action, [
-    int initialBufferSizer = _initialBufferSizer,
+    int? initialBufferSize,
   ]) {
-    final writer = acquire(initialBufferSizer);
+    final writer = acquire(initialBufferSize);
     try {
       return action(writer);
     } finally {
@@ -156,23 +247,16 @@ abstract final class BinaryWriterPool {
   /// Returns a [BinaryWriter] to the pool for future reuse.
   ///
   /// The writer is reset (offset cleared) and stored for future [acquire]
-  /// calls. Writers with buffers larger than 64 KiB are not pooled to avoid
-  /// long-term memory retention.
+  /// calls. Writers with buffers larger than `maxReusableCapacity` are not
+  /// pooled to avoid long-term memory retention.
   ///
   /// **Safe to call multiple times** (duplicate releases are ignored).
   ///
-  /// Only writers with capacity ≤ 64 KiB are pooled. Writers exceeding this
-  /// limit are discarded, allowing the buffer to be garbage collected.
+  /// Only writers with capacity ≤ [_maxReusableCapacity] are pooled.
+  /// Writers exceeding this limit are discarded, allowing the buffer to be
+  /// garbage collected.
   ///
-  /// **Do NOT use the writer after releasing it:**
-  ///
-  /// ```dart
-  /// final writer = BinaryWriterPool.acquire();
-  /// writer.writeUint32(42);
-  /// final bytes = writer.toBytes();
-  /// BinaryWriterPool.release(writer);
-  /// // DON'T USE writer here - it's returned to the pool and may be reused!
-  /// ```
+  /// **Do NOT use the writer after releasing it.**
   ///
   /// Parameters:
   /// - [writer]: The [BinaryWriter] to return to the pool
@@ -185,7 +269,6 @@ abstract final class BinaryWriterPool {
     }
 
     // Only pool writers with reasonable buffer sizes
-    // Prevents memory bloat from occasional large allocations
     if (state.capacity <= _maxReusableCapacity && _pool.length < _maxPoolSize) {
       state
         ..offset = 0
@@ -210,7 +293,7 @@ abstract final class BinaryWriterPool {
   /// Returns a map with keys:
   /// - `'pooled'`: Number of writers currently in the pool
   /// - `'maxPoolSize'`: Maximum pool capacity
-  /// - `'initialBufferSizer'`: Initial buffer size for new writers
+  /// - `'initialBufferSize'`: Initial buffer size for new writers
   /// - `'maxReusableCapacity'`: Maximum buffer size for pooling
   /// - `'acquireHit'`: Number of successful reuses from pool
   /// - `'acquireMiss'`: Number of new writer allocations
@@ -221,13 +304,13 @@ abstract final class BinaryWriterPool {
   /// Example:
   /// ```dart
   /// final stats = BinaryWriterPool.stats;
-  /// print('Pooled writers: ${stats.pooled}');  // 5
-  /// print('Hit rate: ${stats.acquireHit / (stats.acquireHit + stats.acquireMiss)}');
+  /// print('Pooled writers: ${stats.pooled}');
+  /// print('Hit rate: ${stats.hitRate}');
   /// ```
   static PoolStatistics get stats => PoolStatistics({
     'pooled': _pool.length,
     'maxPoolSize': _maxPoolSize,
-    'initialBufferSizer': _initialBufferSizer,
+    'initialBufferSize': _initialBufferSize,
     'maxReusableCapacity': _maxReusableCapacity,
     'acquireHit': _acquireHit,
     'acquireMiss': _acquireMiss,
@@ -244,19 +327,7 @@ abstract final class BinaryWriterPool {
   /// - Handle memory pressure
   ///
   /// After clearing, subsequent [acquire] calls will create new writers.
-  ///
-  /// Example:
-  /// ```dart
-  /// BinaryWriterPool.clear();  // All pooled writers discarded
-  /// ```
   static void clear() {
-    // Assist GC by breaking links to potentially large byte buffers
-    for (var i = 0; i < _pool.length; i++) {
-      _pool[i]
-        ..list = Uint8List(0)
-        ..data = ByteData(0)
-        .._isInPool = false;
-    }
     _pool.clear();
     _acquireHit = 0;
     _acquireMiss = 0;
@@ -274,7 +345,7 @@ extension type PoolStatistics(Map<String, int> _stats) {
   int get maxPoolSize => _stats['maxPoolSize']!;
 
   /// Initial buffer size for new writers.
-  int get initialBufferSizer => _stats['initialBufferSizer']!;
+  int get initialBufferSize => _stats['initialBufferSize']!;
 
   /// Maximum buffer size for pooling.
   int get maxReusableCapacity => _stats['maxReusableCapacity']!;

@@ -163,6 +163,24 @@ extension type BinaryWriter._(_WriterState _ws) {
     writeVarUint(encoded);
   }
 
+  /// Writes a boolean value as a single byte.
+  ///
+  /// `true` is written as `1` and `false` as `0`.
+  ///
+  /// Example:
+  /// ```dart
+  /// writer.writeBool(true);   // Writes byte 0x01
+  /// writer.writeBool(false);  // Writes byte 0x00
+  /// ```
+  ///
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  // Disable lint to allow positional boolean parameter for simplicity
+  // ignore: avoid_positional_boolean_parameters
+  void writeBool(bool value) {
+    writeUint8(value ? 1 : 0);
+  }
+
   /// Writes an 8-bit unsigned integer (0-255).
   ///
   /// Example:
@@ -657,7 +675,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   }
 
   @pragma('vm:prefer-inline')
-  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   int _varIntSize(int value) => switch (value) {
     < 0x80 => 1,
     < 0x4000 => 2,
@@ -684,7 +702,7 @@ extension type BinaryWriter._(_WriterState _ws) {
   /// writer.writeStringFixed('Hello', lengthEncoding: LengthEncoding.u16);
   /// ```
   @pragma('vm:prefer-inline')
-  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void writeStringFixed(
     String value, {
     LengthEncoding lengthEncoding = .u8,
@@ -728,24 +746,6 @@ extension type BinaryWriter._(_WriterState _ws) {
     }
   }
 
-  /// Writes a boolean value as a single byte.
-  ///
-  /// `true` is written as `1` and `false` as `0`.
-  ///
-  /// Example:
-  /// ```dart
-  /// writer.writeBool(true);   // Writes byte 0x01
-  /// writer.writeBool(false);  // Writes byte 0x00
-  /// ```
-  ///
-  @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  // Disable lint to allow positional boolean parameter for simplicity
-  // ignore: avoid_positional_boolean_parameters
-  void writeBool(bool value) {
-    writeUint8(value ? 1 : 0);
-  }
-
   /// Writes a sequence of bytes.
   ///
   /// This is a concise alias for [writeBytes].
@@ -760,34 +760,50 @@ extension type BinaryWriter._(_WriterState _ws) {
 
   /// Extracts all written bytes and resets the writer.
   ///
+  /// [copy] determines how the bytes are extracted:
+  /// - If `true`: The written bytes are copied into a new [Uint8List]. The
+  ///   internal buffer is retained and its offset is reset to 0. This is
+  ///   highly efficient for pooling (e.g., [BinaryWriterPool]) as the same
+  ///   large buffer is reused for subsequent operations without re-allocation.
+  /// - If `false` (default): A view of the internal buffer is returned, and
+  ///   the writer detaches from it by allocating a fresh initial-sized buffer.
+  ///   While the returned bytes are "zero-copy" relative to the old buffer,
+  ///   this forces the writer to re-allocate memory, which is less efficient
+  ///   for pooling long-term.
+  ///
   /// After calling this method, the writer is reset and ready for reuse.
-  /// This is more efficient than creating a new writer for each operation.
-  ///
-  /// Returns a view of the written bytes (no copying occurs).
-  ///
-  /// **Use case:** When you're done with this batch and want to start fresh.
   ///
   /// Example:
   /// ```dart
   /// final writer = BinaryWriter();
   /// writer.writeUint32(42);
-  /// final packet1 = writer.takeBytes();  // Get bytes and reset
-  /// writer.writeUint32(100);             // Writer is ready for reuse
-  /// final packet2 = writer.takeBytes();
+  /// // For best pooling performance (retains internal buffer):
+  /// final packet = writer.takeBytes(copy: true);
   /// ```
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  Uint8List takeBytes() {
+  Uint8List takeBytes({bool copy = false}) {
+    if (copy) {
+      final result = _ws.list.sublist(0, _ws.offset);
+      _ws.offset = 0;
+
+      return result;
+    }
+
     final result = Uint8List.sublistView(_ws.list, 0, _ws.offset);
     _ws._initializeBuffer();
 
     return result;
   }
 
-  /// Returns a view of the written bytes without resetting the writer.
+  /// Returns a view of the written bytes (from index 0 up to the current
+  /// [bytesWritten]) without resetting the writer.
   ///
   /// Unlike [takeBytes], this does not reset the writer's state.
   /// Subsequent writes will continue appending to the buffer.
+  ///
+  /// **Note:** Since this returns a view, the content of the returned list
+  /// will change if you continue writing to this writer.
   ///
   /// **Use case:** When you need to inspect or copy data mid-stream.
   ///
@@ -827,33 +843,60 @@ extension type BinaryWriter._(_WriterState _ws) {
     _ws.offset = position;
   }
 
+  /// Returns the byte at the specified [index] without changing the current
+  /// write position.
+  ///
+  /// Throws [RangeError] if [index] is negative or greater than or equal to
+  /// [bytesWritten].
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int operator [](int index) {
+    if (index < 0 || index >= _ws.offset) {
+      throw RangeError.range(index, 0, _ws.offset - 1, 'index');
+    }
+    return _ws.list[index];
+  }
+
+  /// Writes a byte at the specified [index] without changing the current
+  /// write position.
+  ///
+  /// This operator is used to overwrite already written bytes. To append data,
+  /// use the standard `write*` methods.
+  ///
+  /// Throws [RangeError] if [index] is negative or greater than or equal to
+  /// [bytesWritten].
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void operator []=(int index, int value) {
+    if (index < 0 || index >= _ws.offset) {
+      throw RangeError.range(index, 0, _ws.offset - 1, 'index');
+    }
+
+    _checkRange(value, 0, 255, 'Uint8');
+    _ws.list[index] = value;
+  }
+
   /// Writes a byte at the specified [position] without changing the current
   /// write position.
   ///
-  /// This is useful for overwriting data at a known offset (e.g., updating a
-  /// length field after writing the payload).
+  /// Used to overwrite data at a previously written offset (e.g.,
+  /// updating a length field).
   ///
-  /// Throws [RangeError] if [position] is negative or exceeds [bytesWritten].
+  /// This is a functional alias for `operator []=`.
+  ///
+  /// Throws [RangeError] if [position] is negative or greater than or equal to
+  /// [bytesWritten].
   ///
   /// Example:
   /// ```dart
   /// writer.writeUint32(10);  // Write length placeholder
   /// writer.writeString('data');
   /// writer.writeUint8At(0, 15);  // Overwrite length at position 0
+  /// // or: writer[0] = 15;
   /// ```
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  void writeUint8At(int position, int value) {
-    if (position < 0 || position > _ws.offset) {
-      throw RangeError.range(position, 0, _ws.offset, 'position');
-    }
-
-    _checkRange(value, 0, 255, 'Uint8');
-    _ws.list[position] = value;
-    if (position == _ws.offset) {
-      _ws.offset = position + 1;
-    }
-  }
+  void writeUint8At(int position, int value) => this[position] = value;
 
   /// Resets the writer to its initial state, discarding all written data.
   @pragma('vm:prefer-inline')

@@ -5,6 +5,7 @@ import 'package:meta/meta.dart';
 
 import '../binary_reader.dart';
 import '../constants.dart';
+import '../internal.dart';
 import 'transactional_reader.dart';
 
 /// A reader designed for asynchronous streaming data that spans multiple
@@ -355,7 +356,7 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
       throw RangeError.value(length, 'length', 'Length must be non-negative');
     }
     if (length == 0) {
-      return _emptyBytes;
+      return emptyUintList_;
     }
 
     _checkAvailable(length);
@@ -586,6 +587,3 @@ final class _StreamReaderState extends ChunkedTransactionalState<Uint8List>
       ..setRange(0, bookmarkCount, bookmarkReaderOffset);
   }
 }
-
-/// Empty bytes cache
-final _emptyBytes = Uint8List(0);

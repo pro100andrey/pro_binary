@@ -78,5 +78,52 @@ void main() {
       expect(largerWriter.capacity, greaterThanOrEqualTo(1000));
       BinaryWriterPool.release(largerWriter);
     });
+
+    group('configure', () {
+      test('sets pool limits correctly', () {
+        BinaryWriterPool.configure(
+          maxPoolSize: 10,
+          initialBufferSize: 512,
+          maxReusableCapacity: 2048,
+        );
+
+        final stats = BinaryWriterPool.stats;
+        expect(stats.maxPoolSize, equals(10));
+        expect(stats.initialBufferSize, equals(512));
+        expect(stats.maxReusableCapacity, equals(2048));
+      });
+
+      test('throws ArgumentError for invalid values', () {
+        expect(
+          () => BinaryWriterPool.configure(maxPoolSize: 0),
+          throwsArgumentError,
+        );
+        expect(
+          () => BinaryWriterPool.configure(initialBufferSize: 0),
+          throwsArgumentError,
+        );
+        expect(
+          () => BinaryWriterPool.configure(maxReusableCapacity: 0),
+          throwsArgumentError,
+        );
+        expect(
+          () => BinaryWriterPool.configure(maxPoolSize: -1),
+          throwsArgumentError,
+        );
+      });
+
+      test(
+        'throws ArgumentError if initialBufferSize > maxReusableCapacity',
+        () {
+          expect(
+            () => BinaryWriterPool.configure(
+              initialBufferSize: 2048,
+              maxReusableCapacity: 1024,
+            ),
+            throwsArgumentError,
+          );
+        },
+      );
+    });
   });
 }

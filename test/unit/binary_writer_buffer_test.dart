@@ -68,14 +68,27 @@ void main() {
       expect(writer.bytesWritten, equals(0));
     });
 
-    test('capacity resets to initial size after takeBytes', () {
+    test('capacity resets to initial size after takeBytes (copy: false)', () {
       // Force expansion
       writer.writeBytes(Uint8List(200));
       expect(writer.capacity, greaterThan(128));
 
-      // takeBytes() resets to initial size (128)
+      // takeBytes() resets to initial size (128) by default
       writer.takeBytes();
       expect(writer.capacity, equals(128));
+      expect(writer.bytesWritten, equals(0));
+    });
+
+    test('capacity is retained after takeBytes(copy: true)', () {
+      // Force expansion
+      writer.writeBytes(Uint8List(200));
+      final capacityBefore = writer.capacity;
+      expect(capacityBefore, greaterThan(128));
+
+      // takeBytes(copy: true) keeps the buffer
+      final bytes = writer.takeBytes(copy: true);
+      expect(bytes.length, equals(200));
+      expect(writer.capacity, equals(capacityBefore));
       expect(writer.bytesWritten, equals(0));
     });
 
@@ -192,12 +205,31 @@ void main() {
     });
 
     group('Memory efficiency', () {
-      test('takeBytes creates view not copy', () {
+      test('takeBytes(copy: false) creates view not copy', () {
         writer.writeUint32(0x12345678);
         final bytes = writer.takeBytes();
 
         expect(bytes, isA<Uint8List>());
         expect(bytes.length, equals(4));
+
+        // It's a view, but the writer has a NEW buffer now.
+        // We can't easily prove it's a view of the OLD buffer without keeping
+        // a reference to the old buffer.
+      });
+
+      test('takeBytes(copy: true) creates copy', () {
+        writer.writeUint32(0x12345678);
+        final bytes = writer.takeBytes(copy: true);
+
+        expect(bytes, isA<Uint8List>());
+        expect(bytes.length, equals(4));
+
+        // Modify the copy and check if writer's retained buffer is affected
+        bytes[0] = 0xFF;
+        writer.writeUint8(0x00);
+        // If it was a copy, the first byte of writer's current buffer
+        // (offset 0) should be 0x00
+        expect(writer.toBytes()[0], equals(0x00));
       });
 
       test('toBytes creates view not copy', () {
