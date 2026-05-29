@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:pro_binary/pro_binary.dart';
 import 'package:test/test.dart';
 
@@ -162,6 +164,131 @@ void main() {
 
         expect(writer.takeBytes(), equals([42, 0x01, 0x01, 0x02, 0x00]));
       });
+    });
+
+    test('writeFloat32/readFloat32 special values round-trip', () {
+      final values = [
+        double.nan,
+        double.infinity,
+        double.negativeInfinity,
+      ];
+
+      for (final value in values) {
+        writer
+          ..reset()
+          ..writeFloat32(value);
+        final reader = BinaryReader(writer.takeBytes());
+        final result = reader.readFloat32();
+
+        if (value.isNaN) {
+          expect(result.isNaN, isTrue, reason: 'Value should be NaN');
+        } else {
+          expect(result, equals(value), reason: 'Value should be $value');
+        }
+      }
+    });
+
+    test('writeFloat64/readFloat64 special values round-trip', () {
+      final values = [
+        double.nan,
+        double.infinity,
+        double.negativeInfinity,
+      ];
+
+      for (final value in values) {
+        writer
+          ..reset()
+          ..writeFloat64(value);
+        final reader = BinaryReader(writer.takeBytes());
+        final result = reader.readFloat64();
+
+        if (value.isNaN) {
+          expect(result.isNaN, isTrue, reason: 'Value should be NaN');
+        } else {
+          expect(result, equals(value), reason: 'Value should be $value');
+        }
+      }
+    });
+
+    test('writeInt64/readInt64 round-trip', () {
+      const values = [
+        kMinInt64,
+        -1234567890123456,
+        -1,
+        0,
+        1,
+        1234567890123456,
+        kMaxInt64,
+      ];
+
+      for (final value in values) {
+        // Big-endian
+        writer
+          ..reset()
+          ..writeInt64(value);
+        var reader = BinaryReader(writer.takeBytes());
+        expect(reader.readInt64(), equals(value), reason: 'BE: $value');
+
+        // Little-endian
+        writer
+          ..reset()
+          ..writeInt64(value, Endian.little);
+        reader = BinaryReader(writer.takeBytes());
+        expect(
+          reader.readInt64(Endian.little),
+          equals(value),
+          reason: 'LE: $value',
+        );
+      }
+    });
+
+    test('writeUint64/readUint64 round-trip', () {
+      const values = [
+        0,
+        1,
+        1234567890123456,
+        kMaxInt64, // Dart int max (limited by signedness)
+      ];
+
+      for (final value in values) {
+        // Big-endian
+        writer
+          ..reset()
+          ..writeUint64(value);
+        var reader = BinaryReader(writer.takeBytes());
+        expect(reader.readUint64(), equals(value), reason: 'BE: $value');
+
+        // Little-endian
+        writer
+          ..reset()
+          ..writeUint64(value, Endian.little);
+        reader = BinaryReader(writer.takeBytes());
+        expect(
+          reader.readUint64(Endian.little),
+          equals(value),
+          reason: 'LE: $value',
+        );
+      }
+    });
+
+    test('writeUint64 explicitly handles 9223372036854775807 (kMaxInt64)', () {
+      const value = 9223372036854775807; // kMaxInt64
+
+      // Big-endian: [0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+      writer
+        ..reset()
+        ..writeUint64(value);
+      final bytesBE = writer.takeBytes();
+      expect(bytesBE, equals([0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]));
+      expect(BinaryReader(bytesBE).readUint64(), equals(value));
+
+      // Little-endian: [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F]
+      writer
+        ..reset()
+        ..writeUint64(value, Endian.little);
+      final bytesLE = writer.takeBytes();
+      expect(bytesLE, equals([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F]));
+      expect(BinaryReader(bytesLE).readUint64(Endian.little), equals(value));
     });
 
     test('allow reusing writer after takeBytes', () {

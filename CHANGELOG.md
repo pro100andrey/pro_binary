@@ -1,5 +1,24 @@
 <!-- markdownlint-disable-file MD025 -->
 
+# 5.1.0
+
+- **BinaryWriterPool**:
+  - **New Feature**: Added `BinaryWriterPool.configure()` for global pool settings (`maxPoolSize`, `initialBufferSize`, `maxReusableCapacity`).
+  - **New Feature**: Implemented "best-fit" acquisition strategy to minimize memory fragmentation.
+  - **New Feature**: Added `BinaryWriterPool.stats` for real-time pool performance monitoring.
+  - **Improvement**: Optimized `release()` and `clear()` logic with zero-allocation buffer detachment.
+  - **Bug Fix**: Renamed `initialBufferSizer` to `initialBufferSize` (API alignment).
+
+- **BinaryWriter**:
+  - **New Feature**: Added `operator []` and `operator []=` for symmetric random access to written bytes.
+  - **New Feature**: Added `copy` parameter to `takeBytes()` to allow returning data while retaining the internal buffer for pool reuse.
+  - **Improvement**: Refactored `writeUint8At` as a functional alias for `operator []=`.
+  - **Fix**: Corrected documentation for bounds checks on random access methods.
+
+- **Documentation**:
+  - Unified terminology (using "1 KiB" consistently).
+  - Updated `withWriter` examples to recommend `takeBytes(copy: true)` for pooling scenarios.
+
 # 5.0.0
 
 - **BREAKING CHANGES:**

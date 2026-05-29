@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'constants.dart';
+import 'internal.dart';
 
 /// A high-performance binary reader for decoding data from a byte buffer.
 ///
@@ -635,7 +636,7 @@ extension type BinaryReader._(_ReaderState _rs) {
     }
 
     if (length == 0) {
-      return Uint8List(0);
+      return emptyUintList_;
     }
 
     final peekOffset = offset ?? _rs.offset;

@@ -139,7 +139,7 @@ class FixedStringBench extends BenchmarkBase {
 
 void runComparison(String name, String payload) {
   OnePassStringBench(name, payload).report();
-  FixedStringBench(name, payload, LengthEncoding.u32).report();
+  FixedStringBench(name, payload, .u32).report();
   TwoPassStringBench(name, payload).report();
   StandardDartCorrectBench(name, payload).report();
   StandardDartNaiveBench(name, payload).report();

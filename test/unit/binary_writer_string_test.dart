@@ -45,6 +45,17 @@ void main() {
     });
 
     group('Lone surrogate pairs', () {
+      test('writeString defaults to allowMalformed=true', () {
+        const testStr = 'Before\uD800After';
+        // Should not throw
+        writer.writeString(testStr);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final result = reader.readString(bytes.length, allowMalformed: true);
+        expect(result, contains('\uFFFD'));
+      });
+
       test(
         'writeString handles lone high surrogate with allowMalformed=true',
         () {
@@ -132,6 +143,83 @@ void main() {
           );
         },
       );
+
+      test('writeVarString defaults to allowMalformed=true', () {
+        const testStr = 'Before\uD800After';
+        // Should not throw
+        writer.writeVarString(testStr);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final result = reader.readVarString(allowMalformed: true);
+        expect(result, contains('\uFFFD'));
+      });
+
+      test('writeVarString respects allowMalformed=false', () {
+        const testStr = 'Before\uD800After';
+        expect(
+          () => writer.writeVarString(testStr, allowMalformed: false),
+          throwsA(isA<FormatException>()),
+        );
+      });
+    });
+
+    group('Fixed-length strings (FixedString)', () {
+      test(
+        'writeStringFixed throws RangeError if length exceeds u8 capacity',
+        () {
+          final longStr = 'A' * 256;
+          expect(
+            () => writer.writeStringFixed(longStr),
+            throwsRangeError,
+          );
+        },
+      );
+
+      test(
+        'writeStringFixed throws RangeError if length exceeds u16 capacity',
+        () {
+          final longStr = 'A' * 65536;
+          expect(
+            () => writer.writeStringFixed(
+              longStr,
+              lengthEncoding: .u16,
+            ),
+            throwsRangeError,
+          );
+        },
+      );
+
+      test(
+        'readStringFixed throws RangeError if declared length > '
+        'remaining bytes',
+        () {
+          writer
+            ..writeUint8(10) // Declared length 10
+            ..writeString('123'); // Actual data 3 bytes
+
+          final reader = BinaryReader(writer.takeBytes());
+          expect(
+            reader.readStringFixed,
+            throwsRangeError,
+          );
+        },
+      );
+
+      test('readStringFixed works for all length encodings', () {
+        const testStr = 'Hello';
+        for (final encoding in LengthEncoding.values) {
+          writer
+            ..reset()
+            ..writeStringFixed(testStr, lengthEncoding: encoding);
+
+          final reader = BinaryReader(writer.takeBytes());
+          expect(
+            reader.readStringFixed(lengthEncoding: encoding),
+            equals(testStr),
+          );
+        }
+      });
     });
 
     group('Very large strings', () {
@@ -316,12 +404,12 @@ void main() {
       });
 
       test('write with LengthEncoding.u16', () {
-        writer.writeStringFixed('ABC', lengthEncoding: LengthEncoding.u16);
+        writer.writeStringFixed('ABC', lengthEncoding: .u16);
         expect(writer.takeBytes(), equals([0, 3, 65, 66, 67]));
       });
 
       test('write empty string with LengthEncoding.u32', () {
-        writer.writeStringFixed('', lengthEncoding: LengthEncoding.u32);
+        writer.writeStringFixed('', lengthEncoding: .u32);
         expect(writer.takeBytes(), equals([0, 0, 0, 0]));
       });
 
@@ -333,7 +421,7 @@ void main() {
       });
 
       test('write with LengthEncoding.u64', () {
-        writer.writeStringFixed('DART', lengthEncoding: LengthEncoding.u64);
+        writer.writeStringFixed('DART', lengthEncoding: .u64);
         final bytes = writer.takeBytes();
         expect(bytes.length, equals(8 + 4));
         expect(bytes.sublist(0, 8), equals([0, 0, 0, 0, 0, 0, 0, 4]));
