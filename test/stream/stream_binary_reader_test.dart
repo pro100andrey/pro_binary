@@ -78,7 +78,7 @@ void main() {
 
     test('readStringFixed handles chunk boundary', () {
       final writer = BinaryWriter()
-        ..writeStringFixed('Streaming', lengthEncoding: LengthEncoding.u16);
+        ..writeStringFixed('Streaming', lengthEncoding: .u16);
       final bytes = writer.takeBytes();
 
       reader
@@ -86,7 +86,7 @@ void main() {
         ..addChunk(bytes.sublist(5));
 
       expect(
-        reader.readStringFixed(lengthEncoding: LengthEncoding.u16),
+        reader.readStringFixed(lengthEncoding: .u16),
         equals('Streaming'),
       );
     });

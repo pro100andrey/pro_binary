@@ -164,6 +164,64 @@ void main() {
       });
     });
 
+    group('Fixed-length strings (FixedString)', () {
+      test(
+        'writeStringFixed throws RangeError if length exceeds u8 capacity',
+        () {
+          final longStr = 'A' * 256;
+          expect(
+            () => writer.writeStringFixed(longStr),
+            throwsRangeError,
+          );
+        },
+      );
+
+      test(
+        'writeStringFixed throws RangeError if length exceeds u16 capacity',
+        () {
+          final longStr = 'A' * 65536;
+          expect(
+            () => writer.writeStringFixed(
+              longStr,
+              lengthEncoding: .u16,
+            ),
+            throwsRangeError,
+          );
+        },
+      );
+
+      test(
+        'readStringFixed throws RangeError if declared length > '
+        'remaining bytes',
+        () {
+          writer
+            ..writeUint8(10) // Declared length 10
+            ..writeString('123'); // Actual data 3 bytes
+
+          final reader = BinaryReader(writer.takeBytes());
+          expect(
+            reader.readStringFixed,
+            throwsRangeError,
+          );
+        },
+      );
+
+      test('readStringFixed works for all length encodings', () {
+        const testStr = 'Hello';
+        for (final encoding in LengthEncoding.values) {
+          writer
+            ..reset()
+            ..writeStringFixed(testStr, lengthEncoding: encoding);
+
+          final reader = BinaryReader(writer.takeBytes());
+          expect(
+            reader.readStringFixed(lengthEncoding: encoding),
+            equals(testStr),
+          );
+        }
+      });
+    });
+
     group('Very large strings', () {
       test('writeString with string exceeding initial buffer size', () {
         final writer = BinaryWriter(initialBufferSize: 8);
@@ -346,12 +404,12 @@ void main() {
       });
 
       test('write with LengthEncoding.u16', () {
-        writer.writeStringFixed('ABC', lengthEncoding: LengthEncoding.u16);
+        writer.writeStringFixed('ABC', lengthEncoding: .u16);
         expect(writer.takeBytes(), equals([0, 3, 65, 66, 67]));
       });
 
       test('write empty string with LengthEncoding.u32', () {
-        writer.writeStringFixed('', lengthEncoding: LengthEncoding.u32);
+        writer.writeStringFixed('', lengthEncoding: .u32);
         expect(writer.takeBytes(), equals([0, 0, 0, 0]));
       });
 
@@ -363,7 +421,7 @@ void main() {
       });
 
       test('write with LengthEncoding.u64', () {
-        writer.writeStringFixed('DART', lengthEncoding: LengthEncoding.u64);
+        writer.writeStringFixed('DART', lengthEncoding: .u64);
         final bytes = writer.takeBytes();
         expect(bytes.length, equals(8 + 4));
         expect(bytes.sublist(0, 8), equals([0, 0, 0, 0, 0, 0, 0, 4]));

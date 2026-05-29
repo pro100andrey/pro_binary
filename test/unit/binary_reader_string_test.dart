@@ -73,7 +73,7 @@ void main() {
         final buffer = Uint8List.fromList([0, 0, 0, 0]);
         final reader = BinaryReader(buffer);
         expect(
-          reader.readStringFixed(lengthEncoding: LengthEncoding.u32),
+          reader.readStringFixed(lengthEncoding: .u32),
           equals(''),
         );
       });
@@ -118,7 +118,7 @@ void main() {
         ]);
         final reader = BinaryReader(buffer);
         expect(
-          reader.readStringFixed(lengthEncoding: LengthEncoding.u64),
+          reader.readStringFixed(lengthEncoding: .u64),
           equals('DART'),
         );
       });
