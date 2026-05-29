@@ -166,6 +166,50 @@ void main() {
       });
     });
 
+    test('writeFloat32/readFloat32 special values round-trip', () {
+      final values = [
+        double.nan,
+        double.infinity,
+        double.negativeInfinity,
+      ];
+
+      for (final value in values) {
+        writer
+          ..reset()
+          ..writeFloat32(value);
+        final reader = BinaryReader(writer.takeBytes());
+        final result = reader.readFloat32();
+
+        if (value.isNaN) {
+          expect(result.isNaN, isTrue, reason: 'Value should be NaN');
+        } else {
+          expect(result, equals(value), reason: 'Value should be $value');
+        }
+      }
+    });
+
+    test('writeFloat64/readFloat64 special values round-trip', () {
+      final values = [
+        double.nan,
+        double.infinity,
+        double.negativeInfinity,
+      ];
+
+      for (final value in values) {
+        writer
+          ..reset()
+          ..writeFloat64(value);
+        final reader = BinaryReader(writer.takeBytes());
+        final result = reader.readFloat64();
+
+        if (value.isNaN) {
+          expect(result.isNaN, isTrue, reason: 'Value should be NaN');
+        } else {
+          expect(result, equals(value), reason: 'Value should be $value');
+        }
+      }
+    });
+
     test('writeInt64/readInt64 round-trip', () {
       const values = [
         kMinInt64,

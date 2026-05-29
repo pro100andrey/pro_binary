@@ -45,6 +45,17 @@ void main() {
     });
 
     group('Lone surrogate pairs', () {
+      test('writeString defaults to allowMalformed=true', () {
+        const testStr = 'Before\uD800After';
+        // Should not throw
+        writer.writeString(testStr);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final result = reader.readString(bytes.length, allowMalformed: true);
+        expect(result, contains('\uFFFD'));
+      });
+
       test(
         'writeString handles lone high surrogate with allowMalformed=true',
         () {
@@ -132,6 +143,25 @@ void main() {
           );
         },
       );
+
+      test('writeVarString defaults to allowMalformed=true', () {
+        const testStr = 'Before\uD800After';
+        // Should not throw
+        writer.writeVarString(testStr);
+        final bytes = writer.takeBytes();
+
+        final reader = BinaryReader(bytes);
+        final result = reader.readVarString(allowMalformed: true);
+        expect(result, contains('\uFFFD'));
+      });
+
+      test('writeVarString respects allowMalformed=false', () {
+        const testStr = 'Before\uD800After';
+        expect(
+          () => writer.writeVarString(testStr, allowMalformed: false),
+          throwsA(isA<FormatException>()),
+        );
+      });
     });
 
     group('Very large strings', () {
