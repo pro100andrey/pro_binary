@@ -20,7 +20,7 @@
 
 ```yaml
 dependencies:
-  pro_binary: ^5.0.0
+  pro_binary: ^5.1.0
 ```
 
 ## Quick Start
