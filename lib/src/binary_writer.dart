@@ -881,21 +881,11 @@ extension type BinaryWriter._(_WriterState _ws) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void shiftBytes(int start, int end, int target) {
-    if (start < 0) {
-      throw RangeError.value(start, 'start', 'must be non-negative');
-    }
-    if (end < start) {
-      throw RangeError.value(end, 'end', 'must be >= start');
-    }
-    if (end > _ws.offset) {
-      throw RangeError.range(end, start, _ws.offset, 'end');
-    }
-    if (target < 0) {
-      throw RangeError.value(target, 'target', 'must be non-negative');
-    }
-    if (target > start) {
-      throw RangeError.value(target, 'target', 'must be <= start');
-    }
+    assert(start >= 0, 'start must be non-negative');
+    assert(end >= start, 'end must be >= start');
+    assert(end <= _ws.offset, 'end exceeds current bytesWritten');
+    assert(target >= 0, 'target must be non-negative');
+    assert(target <= start, 'target must be <= start (can only shift left)');
 
     final length = end - start;
     if (length == 0) {

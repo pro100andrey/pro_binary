@@ -139,31 +139,31 @@ void main() {
       expect(writer.bytesWritten, equals(12));
     });
 
-    test('shift negative start throws RangeError', () {
+    test('shift negative start throws AssertionError', () {
       writer.writeUint8(0xAA);
-      expect(() => writer.shiftBytes(-1, 1, 0), throwsA(isA<RangeError>()));
+      expect(() => writer.shiftBytes(-1, 1, 0), throwsA(isA<AssertionError>()));
     });
 
-    test('shift end < start throws RangeError', () {
+    test('shift end < start throws AssertionError', () {
       writer.writeUint8(0xAA);
-      expect(() => writer.shiftBytes(1, 0, 0), throwsA(isA<RangeError>()));
+      expect(() => writer.shiftBytes(1, 0, 0), throwsA(isA<AssertionError>()));
     });
 
-    test('shift end > offset throws RangeError', () {
+    test('shift end > offset throws AssertionError', () {
       writer.writeUint8(0xAA);
-      expect(() => writer.shiftBytes(0, 5, 0), throwsA(isA<RangeError>()));
+      expect(() => writer.shiftBytes(0, 5, 0), throwsA(isA<AssertionError>()));
     });
 
-    test('shift target < 0 throws RangeError', () {
+    test('shift target < 0 throws AssertionError', () {
       writer.writeUint8(0xAA);
-      expect(() => writer.shiftBytes(0, 1, -1), throwsA(isA<RangeError>()));
+      expect(() => writer.shiftBytes(0, 1, -1), throwsA(isA<AssertionError>()));
     });
 
-    test('shift target > start throws RangeError', () {
+    test('shift target > start throws AssertionError', () {
       writer
         ..writeUint8(0xAA)
         ..writeUint8(0xBB);
-      expect(() => writer.shiftBytes(0, 1, 1), throwsA(isA<RangeError>()));
+      expect(() => writer.shiftBytes(0, 1, 1), throwsA(isA<AssertionError>()));
     });
 
     test('shift preserves data integrity for non-shifted bytes', () {
