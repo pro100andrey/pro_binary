@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'transactional_reader.dart';
 
 /// A [StreamTransformer] that simplifies parsing messages from a stream

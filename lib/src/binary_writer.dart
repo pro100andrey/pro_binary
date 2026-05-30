@@ -974,6 +974,7 @@ extension type BinaryWriter._(_WriterState _ws) {
     list[offset] = 0xEF;
     list[offset + 1] = 0xBF;
     list[offset + 2] = 0xBD;
+
     return offset + 3;
   }
 
@@ -1047,6 +1048,7 @@ final class _WriterState {
   @pragma('dart2js:tryInline')
   void ensureSize(int size) {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+
     if (offset + size > capacity) {
       _expand(size);
     }
@@ -1056,6 +1058,7 @@ final class _WriterState {
   @pragma('dart2js:tryInline')
   void ensureOneByte() {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+
     if (offset + 1 > capacity) {
       _expand(1);
     }
@@ -1065,6 +1068,7 @@ final class _WriterState {
   @pragma('dart2js:tryInline')
   void ensureTwoBytes() {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+
     if (offset + 2 > capacity) {
       _expand(2);
     }
@@ -1074,6 +1078,7 @@ final class _WriterState {
   @pragma('dart2js:tryInline')
   void ensureFourBytes() {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+
     if (offset + 4 > capacity) {
       _expand(4);
     }
@@ -1083,6 +1088,7 @@ final class _WriterState {
   @pragma('dart2js:tryInline')
   void ensureEightBytes() {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+
     if (offset + 8 > capacity) {
       _expand(8);
     }
