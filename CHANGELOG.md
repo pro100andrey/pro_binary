@@ -1,5 +1,11 @@
 <!-- markdownlint-disable-file MD025 -->
 
+# 5.2.0
+
+- **BinaryWriter**:
+  - **New Feature**: Added `skip(int count)` — advances the write position by [count] bytes without writing data, for reserving space (Reserve & Backpatch pattern).
+  - **New Feature**: Added `shiftBytes(int start, int end, int target)` — shifts a block of written bytes within the buffer, enabling in-place compaction when reserved header space exceeds actual needs.
+
 # 5.1.0
 
 - **BinaryWriterPool**:

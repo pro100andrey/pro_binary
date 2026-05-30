@@ -25,6 +25,27 @@ void main() {
       expect(reader.readUint32(), equals(42));
     });
 
+    test('readFloat64 handles complex chunk boundary', () {
+      // 3.141592653589793 in big-endian bytes
+      final bytes = [0x40, 0x09, 0x21, 0xFB, 0x54, 0x44, 0x2D, 0x18];
+      reader
+        ..addChunk(bytes.sublist(0, 2))
+        ..addChunk(bytes.sublist(2, 5))
+        ..addChunk(bytes.sublist(5, 8));
+      expect(reader.readFloat64(), equals(3.141592653589793));
+    });
+
+    test('readInt64 handles chunk boundary', () {
+      // 0x0102030405060708
+      final bytes = [1, 2, 3, 4, 5, 6, 7, 8];
+      reader
+        ..addChunk(bytes.sublist(0, 7))
+        ..addChunk(bytes.sublist(7, 8));
+      //
+      // ignore: avoid_js_rounded_ints
+      expect(reader.readInt64(), equals(0x0102030405060708));
+    });
+
     test('readVarUint handles chunk boundary', () {
       // 300 is [0xAC, 0x02]
       reader

@@ -86,10 +86,13 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
     // Invariant: availableBytes > 0 implies currentReader != null
     final cr = _s.currentReader!;
     final val = cr.readUint8();
+
     _s.availableBytes -= 1;
+
     if (cr.availableBytes == 0) {
       _advanceChunk();
     }
+
     return val;
   }
 
@@ -100,12 +103,16 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
   @pragma('dart2js:tryInline')
   int readInt8() {
     _checkAvailable(1);
+
     final cr = _s.currentReader!;
     final val = cr.readInt8();
+
     _s.availableBytes -= 1;
+
     if (cr.availableBytes == 0) {
       _advanceChunk();
     }
+
     return val;
   }
 
@@ -118,9 +125,12 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
   @pragma('dart2js:tryInline')
   bool readBool() {
     _checkAvailable(1);
+
     final cr = _s.currentReader!;
     final val = cr.readUint8();
+
     _s.availableBytes -= 1;
+
     if (cr.availableBytes == 0) {
       _advanceChunk();
     }
@@ -137,15 +147,20 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
   @pragma('dart2js:tryInline')
   int readUint16([Endian endian = Endian.big]) {
     _checkAvailable(2);
+
     final cr = _s.currentReader!;
     if (cr.availableBytes >= 2) {
       final val = cr.readUint16(endian);
+
       _s.availableBytes -= 2;
+
       if (cr.availableBytes == 0) {
         _advanceChunk();
       }
+
       return val;
     }
+
     return _readCrossChunk(2, (data) => data.getUint16(0, endian));
   }
 
@@ -158,15 +173,20 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
   @pragma('dart2js:tryInline')
   int readInt16([Endian endian = Endian.big]) {
     _checkAvailable(2);
+
     final cr = _s.currentReader!;
     if (cr.availableBytes >= 2) {
       final val = cr.readInt16(endian);
+
       _s.availableBytes -= 2;
+
       if (cr.availableBytes == 0) {
         _advanceChunk();
       }
+
       return val;
     }
+
     return _readCrossChunk(2, (data) => data.getInt16(0, endian));
   }
 
@@ -179,15 +199,20 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
   @pragma('dart2js:tryInline')
   int readUint32([Endian endian = Endian.big]) {
     _checkAvailable(4);
+
     final cr = _s.currentReader!;
     if (cr.availableBytes >= 4) {
       final val = cr.readUint32(endian);
+
       _s.availableBytes -= 4;
+
       if (cr.availableBytes == 0) {
         _advanceChunk();
       }
+
       return val;
     }
+
     return _readCrossChunk(4, (data) => data.getUint32(0, endian));
   }
 
@@ -200,15 +225,20 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
   @pragma('dart2js:tryInline')
   int readInt32([Endian endian = Endian.big]) {
     _checkAvailable(4);
+
     final cr = _s.currentReader!;
     if (cr.availableBytes >= 4) {
       final val = cr.readInt32(endian);
+
       _s.availableBytes -= 4;
+
       if (cr.availableBytes == 0) {
         _advanceChunk();
       }
+
       return val;
     }
+
     return _readCrossChunk(4, (data) => data.getInt32(0, endian));
   }
 
@@ -221,15 +251,20 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
   @pragma('dart2js:tryInline')
   int readUint64([Endian endian = Endian.big]) {
     _checkAvailable(8);
+
     final cr = _s.currentReader!;
     if (cr.availableBytes >= 8) {
       final val = cr.readUint64(endian);
+
       _s.availableBytes -= 8;
+
       if (cr.availableBytes == 0) {
         _advanceChunk();
       }
+
       return val;
     }
+
     return _readCrossChunk(8, (data) => data.getUint64(0, endian));
   }
 
@@ -242,15 +277,20 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
   @pragma('dart2js:tryInline')
   int readInt64([Endian endian = Endian.big]) {
     _checkAvailable(8);
+
     final cr = _s.currentReader!;
     if (cr.availableBytes >= 8) {
       final val = cr.readInt64(endian);
+
       _s.availableBytes -= 8;
+
       if (cr.availableBytes == 0) {
         _advanceChunk();
       }
+
       return val;
     }
+
     return _readCrossChunk(8, (data) => data.getInt64(0, endian));
   }
 
@@ -263,15 +303,20 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
   @pragma('dart2js:tryInline')
   double readFloat32([Endian endian = Endian.big]) {
     _checkAvailable(4);
+
     final cr = _s.currentReader!;
     if (cr.availableBytes >= 4) {
       final val = cr.readFloat32(endian);
+
       _s.availableBytes -= 4;
+
       if (cr.availableBytes == 0) {
         _advanceChunk();
       }
+
       return val;
     }
+
     return _readCrossChunk(4, (data) => data.getFloat32(0, endian));
   }
 
@@ -284,23 +329,38 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
   @pragma('dart2js:tryInline')
   double readFloat64([Endian endian = Endian.big]) {
     _checkAvailable(8);
+
     final cr = _s.currentReader!;
     if (cr.availableBytes >= 8) {
       final val = cr.readFloat64(endian);
+
       _s.availableBytes -= 8;
+
       if (cr.availableBytes == 0) {
         _advanceChunk();
       }
+
       return val;
     }
+
     return _readCrossChunk(8, (data) => data.getFloat64(0, endian));
   }
 
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   T _readCrossChunk<T>(int length, T Function(ByteData) parser) {
+    if (length <= 8) {
+      final scratch = _s.scratchBuffer;
+      for (var i = 0; i < length; i++) {
+        scratch[i] = readUint8();
+      }
+
+      return parser(_s.scratchData);
+    }
+
     final bytes = readBytes(length);
     final data = ByteData.sublistView(bytes);
+
     return parser(data);
   }
 
@@ -315,10 +375,13 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
       final before = cr.availableBytes;
       final value = cr.readVarUint();
       final readLen = before - cr.availableBytes;
+
       _s.availableBytes -= readLen;
+
       if (cr.availableBytes == 0) {
         _advanceChunk();
       }
+
       return value;
     }
 
@@ -330,8 +393,10 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
       if ((byte & 0x80) == 0) {
         return result;
       }
+
       shift += 7;
     }
+
     throw const FormatException('VarInt is too long (more than 10 bytes)');
   }
 
@@ -342,6 +407,7 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
   @pragma('dart2js:tryInline')
   int readVarInt() {
     final v = readVarUint();
+
     return (v >>> 1) ^ -(v & 1);
   }
 
@@ -355,6 +421,7 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
     if (length < 0) {
       throw RangeError.value(length, 'length', 'Length must be non-negative');
     }
+
     if (length == 0) {
       return emptyUintList_;
     }
@@ -364,7 +431,9 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
     final cr = _s.currentReader!;
     if (cr.availableBytes >= length) {
       final bytes = cr.readBytes(length);
+
       _s.availableBytes -= length;
+
       if (cr.availableBytes == 0) {
         _advanceChunk();
       }
@@ -383,7 +452,9 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
       if (chunkAvailable >= remaining) {
         final bytes = chunkReader.readBytes(remaining);
         result.setRange(resultOffset, resultOffset + remaining, bytes);
+
         _s.availableBytes -= remaining;
+
         if (chunkReader.availableBytes == 0) {
           _advanceChunk();
         }
@@ -392,13 +463,16 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
         if (chunkAvailable > 0) {
           final bytes = chunkReader.readBytes(chunkAvailable);
           result.setRange(resultOffset, resultOffset + chunkAvailable, bytes);
+
           resultOffset += chunkAvailable;
           remaining -= chunkAvailable;
           _s.availableBytes -= chunkAvailable;
         }
+
         _advanceChunk();
       }
     }
+
     return result;
   }
 
@@ -417,6 +491,7 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
   @pragma('dart2js:tryInline')
   Uint8List readVarBytes() {
     final length = readVarUint();
+
     return readBytes(length);
   }
 
@@ -430,9 +505,11 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
     if (length < 0) {
       throw RangeError.value(length, 'length', 'Length must be non-negative');
     }
+
     if (length == 0) {
       return '';
     }
+
     _checkAvailable(length);
 
     final cr = _s.currentReader!;
@@ -442,6 +519,7 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
       if (cr.availableBytes == 0) {
         _advanceChunk();
       }
+
       return value;
     }
 
@@ -458,6 +536,7 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
   @pragma('dart2js:tryInline')
   String readVarString({bool allowMalformed = false}) {
     final length = readVarUint();
+
     return readString(length, allowMalformed: allowMalformed);
   }
 
@@ -472,6 +551,7 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
     bool allowMalformed = false,
   }) {
     final length = _readLength(lengthEncoding);
+
     return readString(length, allowMalformed: allowMalformed);
   }
 
@@ -494,7 +574,9 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
     if (length < 0) {
       throw RangeError.value(length, 'length', 'Length must be non-negative');
     }
+
     _checkAvailable(length);
+
     var remaining = length;
 
     while (remaining > 0) {
@@ -521,6 +603,7 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
     if (length < 0) {
       throw RangeError.value(length, 'length', 'Length must be non-negative');
     }
+
     return _s.availableBytes >= length;
   }
 }
@@ -528,9 +611,20 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
 /// Internal state holder for [StreamBinaryReader].
 final class _StreamReaderState extends ChunkedTransactionalState<Uint8List>
     implements TransactionalReader<List<int>> {
-  _StreamReaderState() : bookmarkReaderOffset = Int32List(16), super();
+  _StreamReaderState()
+    : bookmarkReaderOffset = Int32List(16),
+      scratchBuffer = Uint8List(8),
+      super() {
+    scratchData = ByteData.sublistView(scratchBuffer);
+  }
 
   BinaryReader? currentReader;
+
+  /// Pre-allocated buffer for zero-allocation cross-chunk primitive reads.
+  final Uint8List scratchBuffer;
+
+  /// ByteData view for the [scratchBuffer].
+  late final ByteData scratchData;
 
   // Zero-allocation bookmarks using parallel arrays
   Int32List bookmarkReaderOffset;

@@ -125,5 +125,45 @@ void main() {
         },
       );
     });
+
+    group('Custom Instances', () {
+      test('custom pool is isolated from global pool', () {
+        final customPool = BinaryWriterPool(maxPoolSize: 5);
+        final writer = customPool.acquireInstance();
+        customPool.releaseInstance(writer);
+
+        expect(customPool.instanceStats.pooled, equals(1));
+        expect(BinaryWriterPool.stats.pooled, equals(0));
+      });
+
+      test('custom pool uses its own configuration', () {
+        final customPool = BinaryWriterPool(
+          maxPoolSize: 2,
+          initialBufferSize: 256,
+          maxReusableCapacity: 512,
+        );
+
+        final stats = customPool.instanceStats;
+        expect(stats.maxPoolSize, equals(2));
+        expect(stats.initialBufferSize, equals(256));
+        expect(stats.maxReusableCapacity, equals(512));
+      });
+
+      test('withWriterInstance works correctly', () {
+        final customPool = BinaryWriterPool();
+        final result = customPool.withWriterInstance((w) {
+          w.writeUint8(100);
+          return w.toBytes();
+        });
+        expect(result, equals([100]));
+        expect(customPool.instanceStats.pooled, equals(1));
+      });
+
+      test('reconfigure updates instance settings', () {
+        final customPool = BinaryWriterPool(maxPoolSize: 5)
+          ..reconfigure(maxPoolSize: 10);
+        expect(customPool.instanceStats.maxPoolSize, equals(10));
+      });
+    });
   });
 }

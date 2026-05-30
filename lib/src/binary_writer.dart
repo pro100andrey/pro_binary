@@ -176,7 +176,6 @@ extension type BinaryWriter._(_WriterState _ws) {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   // Disable lint to allow positional boolean parameter for simplicity
-  // ignore: avoid_positional_boolean_parameters
   void writeBool(bool value) {
     writeUint8(value ? 1 : 0);
   }
@@ -843,6 +842,63 @@ extension type BinaryWriter._(_WriterState _ws) {
     _ws.offset = position;
   }
 
+  /// Advances the write position by [count] bytes without writing data.
+  ///
+  /// The skipped bytes may contain garbage. This is primarily used to reserve
+  /// space for a header that will be written later
+  /// (Reserve & Backpatch pattern).
+  ///
+  /// Throws [RangeError] if [count] is negative.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void skip(int count) {
+    if (count < 0) {
+      throw RangeError.value(count, 'count', 'must be non-negative');
+    }
+
+    if (count == 0) {
+      return;
+    }
+
+    _ws
+      ..ensureSize(count)
+      ..offset += count;
+  }
+
+  /// Shifts a block of written bytes within the buffer.
+  ///
+  /// Used for the "Reserve & Backpatch" pattern when the reserved header space
+  /// was larger than actually needed. This allows shifting the payload left to
+  /// overwrite the unused reserved space, avoiding a new array allocation.
+  ///
+  /// [start] - The starting index of the block to shift.
+  /// [end] - The ending index (exclusive) of the block to shift.
+  /// [target] - The index where the block should be moved to
+  ///   (must be <= start).
+  ///
+  /// Throws [RangeError] if parameters define an invalid range or would cause
+  /// data corruption.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void shiftBytes(int start, int end, int target) {
+    assert(start >= 0, 'start must be non-negative');
+    assert(end >= start, 'end must be >= start');
+    assert(end <= _ws.offset, 'end exceeds current bytesWritten');
+    assert(target >= 0, 'target must be non-negative');
+    assert(target <= start, 'target must be <= start (can only shift left)');
+
+    final length = end - start;
+    if (length == 0) {
+      return;
+    }
+
+    _ws.list.setRange(target, target + length, _ws.list, start);
+
+    if (end == _ws.offset) {
+      _ws.offset = target + length;
+    }
+  }
+
   /// Returns the byte at the specified [index] without changing the current
   /// write position.
   ///
@@ -918,6 +974,7 @@ extension type BinaryWriter._(_WriterState _ws) {
     list[offset] = 0xEF;
     list[offset + 1] = 0xBF;
     list[offset + 2] = 0xBD;
+
     return offset + 3;
   }
 
@@ -991,6 +1048,7 @@ final class _WriterState {
   @pragma('dart2js:tryInline')
   void ensureSize(int size) {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+
     if (offset + size > capacity) {
       _expand(size);
     }
@@ -1000,6 +1058,7 @@ final class _WriterState {
   @pragma('dart2js:tryInline')
   void ensureOneByte() {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+
     if (offset + 1 > capacity) {
       _expand(1);
     }
@@ -1009,6 +1068,7 @@ final class _WriterState {
   @pragma('dart2js:tryInline')
   void ensureTwoBytes() {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+
     if (offset + 2 > capacity) {
       _expand(2);
     }
@@ -1018,6 +1078,7 @@ final class _WriterState {
   @pragma('dart2js:tryInline')
   void ensureFourBytes() {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+
     if (offset + 4 > capacity) {
       _expand(4);
     }
@@ -1027,6 +1088,7 @@ final class _WriterState {
   @pragma('dart2js:tryInline')
   void ensureEightBytes() {
     assert(!_isInPool, 'Cannot ensure size on a pooled writer');
+
     if (offset + 8 > capacity) {
       _expand(8);
     }

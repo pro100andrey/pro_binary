@@ -20,7 +20,7 @@
 
 ```yaml
 dependencies:
-  pro_binary: ^5.1.0
+  pro_binary: ^5.2.0
 ```
 
 ## Quick Start
@@ -170,7 +170,7 @@ Explore the [example](example/) directory for complete, runnable projects:
 
 | Component | Description |
 | --------- | ----------- |
-| **BinaryWriter** | Fast encoder for fixed-width, VarInt/ZigZag, and one-pass strings. Features automatic expansion and pooling. |
+| **BinaryWriter** | Fast encoder for fixed-width, VarInt/ZigZag, and one-pass strings. Features automatic expansion, pooling, and in-place buffer manipulation (`skip`, `shiftBytes`). |
 | **BinaryReader** | Zero-copy decoder with advanced navigation (`seek`, `rewind`, `peek`). Optimized for performance. |
 | **StreamBinaryReader** | Handles async data chunks seamlessly with a transactional `bookmark`/`rollback` model for partial data. |
 | **BinaryStreamTransformer** | The easiest way to parse a `Stream<List<int>>` into a stream of typed messages or objects. |
@@ -184,16 +184,16 @@ Run benchmarks to see it in action:
 
 ```bash
 # Serialization (Writer)
-dart run performance/serialization_bench.dart
+dart run benchmark_harness:bench --flavor aot --target  performance/serialization_bench.dart
 
 # Deserialization (Reader)
-dart run performance/deserialization_bench.dart
+dart run benchmark_harness:bench --flavor aot --target  performance/deserialization_bench.dart
 
 # String encoding (One-pass vs Two-pass vs Standard)
-dart run performance/strings_bench.dart
+dart run benchmark_harness:bench --flavor aot --target  performance/strings_bench.dart
 
 # Object Pooling (GC impact mitigation)
-dart run performance/pool_bench.dart
+dart run benchmark_harness:bench --flavor aot --target  performance/pool_bench.dart
 ```
 
 ## Testing

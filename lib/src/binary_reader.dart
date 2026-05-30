@@ -105,6 +105,7 @@ extension type BinaryReader._(_ReaderState _rs) {
     var byte = list[offset++];
     if ((byte & 0x80) == 0) {
       _rs.offset = offset;
+
       return byte;
     }
 
@@ -121,6 +122,7 @@ extension type BinaryReader._(_ReaderState _rs) {
 
     if ((byte & 0x80) == 0) {
       _rs.offset = offset;
+
       return result;
     }
 
@@ -134,6 +136,7 @@ extension type BinaryReader._(_ReaderState _rs) {
 
     if ((byte & 0x80) == 0) {
       _rs.offset = offset;
+
       return result;
     }
 
@@ -149,6 +152,7 @@ extension type BinaryReader._(_ReaderState _rs) {
 
       if ((byte & 0x80) == 0) {
         _rs.offset = offset;
+
         return result;
       }
 
@@ -417,11 +421,12 @@ extension type BinaryReader._(_ReaderState _rs) {
 
     // Create a view of the underlying buffer without copying
     final bOffset = _rs.baseOffset;
-    final bytes = _rs.data.buffer.asUint8List(bOffset + _rs.offset, length);
+    final offset = _rs.offset;
+    final view = _rs.data.buffer.asUint8List(bOffset + offset, length);
 
     _rs.offset += length;
 
-    return bytes;
+    return view;
   }
 
   /// Reads all remaining bytes from the current position to the end of the
@@ -500,7 +505,9 @@ extension type BinaryReader._(_ReaderState _rs) {
     _checkBounds(length, 'String');
 
     final bOffset = _rs.baseOffset;
-    final view = _rs.data.buffer.asUint8List(bOffset + _rs.offset, length);
+    final offset = _rs.offset;
+    final view = _rs.data.buffer.asUint8List(bOffset + offset, length);
+
     _rs.offset += length;
 
     return utf8.decode(view, allowMalformed: allowMalformed);
@@ -640,12 +647,13 @@ extension type BinaryReader._(_ReaderState _rs) {
     }
 
     final peekOffset = offset ?? _rs.offset;
+
     _checkBounds(length, 'Peek Bytes', peekOffset);
 
     final bOffset = _rs.baseOffset;
-    final bytes = _rs.data.buffer.asUint8List(bOffset + peekOffset, length);
+    final view = _rs.data.buffer.asUint8List(bOffset + peekOffset, length);
 
-    return bytes;
+    return view;
   }
 
   /// Returns the byte at the current read position without advancing the
