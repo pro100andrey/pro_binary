@@ -1,5 +1,22 @@
 <!-- markdownlint-disable-file MD025 -->
 
+# 5.3.0
+
+- **BinaryReader**:
+  - **New Feature**: Added random access read methods — `getUint8(int position)`, `getInt16(int position)`, `getUint16(int position)`, `getInt32(int position)`, `getUint32(int position)`, `getInt64(int position)`, `getUint64(int position)`, `getFloat32(int position)`, `getFloat64(int position)` — read at arbitrary position without advancing offset.
+  - **Refactoring**: Rewritten using `extension type` for zero-cost abstractions.
+  - **Refactoring**: Methods organized into semantic extension groups (`BinaryReaderCore`, `BinaryReaderVarInt`, `BinaryReaderNumeric`, `BinaryReaderBytesString`, `BinaryReaderRandomAccess`, `BinaryReaderPosition`, `BinaryReaderInternal`).
+
+- **BinaryWriter**:
+  - **New Feature**: Added random access read methods — `getUint8(int position)`, `getInt16(int position)`, `getUint16(int position)`, `getInt32(int position)`, `getUint32(int position)`, `getInt64(int position)`, `getUint64(int position)`, `getFloat32(int position)`, `getFloat64(int position)` — read written bytes at arbitrary position.
+  - **New Feature**: Added random access write methods — `setUint8(int position, int value)`, `setInt16(int position, int value)`, `setUint16(int position, int value)`, `setInt32(int position, int value)`, `setUint32(int position, int value)`, `setInt64(int position, int value)`, `setUint64(int position, int value)`, `setFloat32(int position, double value)`, `setFloat64(int position, double value)` — write at arbitrary position without changing offset.
+  - **Refactoring**: Rewritten using `extension type` for zero-cost abstractions.
+  - **Refactoring**: Methods organized into semantic extension groups (`BinaryWriterCore`, `BinaryWriterVarInt`, `BinaryWriterNumeric`, `BinaryWriterBytesString`, `BinaryWriterRandomAccess`, `BinaryWriterPosition`, `BinaryWriterInternal`).
+
+- **Tests**:
+  - Added `test/unit/binary_reader_get_test.dart` — 41 tests for random access reads.
+  - Added `test/unit/binary_writer_set_get_test.dart` — 49 tests for random access reads/writes.
+
 # 5.2.0
 
 - **BinaryWriter**:

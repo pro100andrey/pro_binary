@@ -35,7 +35,8 @@ void main() {
   _log('\nPool API');
   final pooledBytes = BinaryWriterPool.withWriter((w) {
     user.encode(w);
-    return w.toBytes(); // toBytes() returns a zero-copy view
+    // safely copy data, keeping internal buffer pooled
+    return w.takeBytes(copy: true);
   });
   _log('  Pooled serialization done: ${pooledBytes.length} bytes');
 

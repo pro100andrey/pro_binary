@@ -48,7 +48,10 @@ extension type BinaryReader._(_ReaderState _rs) {
   /// ```
   factory BinaryReader.fromList(List<int> buffer) =>
       BinaryReader(Uint8List.fromList(buffer));
+}
 
+/// Core properties and operators for [BinaryReader].
+extension BinaryReaderCore on BinaryReader {
   /// Returns the number of bytes remaining to be read.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
@@ -64,6 +67,46 @@ extension type BinaryReader._(_ReaderState _rs) {
   @pragma('dart2js:tryInline')
   int get length => _rs.length;
 
+  /// Returns the byte at the specified absolute [index] in the buffer.
+  ///
+  /// This allows random access without affecting the current [offset].
+  ///
+  /// Example:
+  /// ```dart
+  /// final firstByte = reader[0];
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int operator [](int index) => _rs.list[index];
+
+  /// Reads [length] bytes from the current position.
+  ///
+  /// This is a concise alias for [readBytes].
+  ///
+  /// Example:
+  /// ```dart
+  /// final data = reader(10); // Same as reader.readBytes(10)
+  /// ```
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  Uint8List call(int length) => readBytes(length);
+
+  /// Rebinds the reader to a new buffer without creating a new [BinaryReader].
+  ///
+  /// Resets the read position and replaces the internal buffer with [buffer].
+  /// This is useful for streaming scenarios where you want to reuse a reader
+  /// with new data without allocating a new [BinaryReader] or [_ReaderState].
+  ///
+  /// After rebinding, the reader starts at position 0 of the new buffer.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void rebind(Uint8List buffer) {
+    _rs.rebind(buffer);
+  }
+}
+
+/// Variable-length integer reading methods for [BinaryReader].
+extension BinaryReaderVarInt on BinaryReader {
   /// Reads an unsigned variable-length integer encoded using VarInt format.
   ///
   /// VarInt encoding uses the lower 7 bits of each byte for data and the
@@ -186,7 +229,10 @@ extension type BinaryReader._(_ReaderState _rs) {
     // Decode: right shift by 1, XOR with sign-extended LSB
     return (v >>> 1) ^ -(v & 1);
   }
+}
 
+/// Fixed-width numeric reading methods for [BinaryReader].
+extension BinaryReaderNumeric on BinaryReader {
   /// Reads an 8-bit unsigned integer (0-255).
   ///
   /// Example:
@@ -393,7 +439,10 @@ extension type BinaryReader._(_ReaderState _rs) {
 
     return value;
   }
+}
 
+/// Byte array and string reading methods for [BinaryReader].
+extension BinaryReaderBytesString on BinaryReader {
   /// Reads a sequence of bytes and returns them as a [Uint8List].
   ///
   /// Returns a view of the underlying buffer without copying data,
@@ -565,15 +614,6 @@ extension type BinaryReader._(_ReaderState _rs) {
     return readString(length, allowMalformed: allowMalformed);
   }
 
-  @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  int _readLength(LengthEncoding encoding) => switch (encoding) {
-    .u8 => readUint8(),
-    .u16 => readUint16(),
-    .u32 => readUint32(),
-    .u64 => readUint64(),
-  };
-
   /// Reads a boolean value (1 byte).
   ///
   /// A byte value of 0 is interpreted as `false`, any non-zero value as `true`.
@@ -590,29 +630,168 @@ extension type BinaryReader._(_ReaderState _rs) {
 
     return value != 0;
   }
+}
 
-  /// Checks if there are at least [length] bytes available to read.
+/// Random access and position inspection methods for [BinaryReader].
+extension BinaryReaderRandomAccess on BinaryReader {
+  /// Reads a byte at the specified [position] without changing the current
+  /// read position.
   ///
-  /// Returns `true` if enough bytes are available, `false` otherwise.
+  /// Throws [RangeError] if [position] is negative or beyond the buffer.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int getUint8(int position) {
+    assert(position >= 0 && position < _rs.length, 'position out of bounds');
+    return _rs.list[position];
+  }
+
+  /// Reads a 16-bit signed integer at the specified [position] without changing
+  /// the current read position.
   ///
-  /// Useful for conditional reads when the data format may vary.
+  /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Throws [RangeError] if [position] is negative or beyond `length - 1`.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int getInt16(int position, [Endian endian = Endian.big]) {
+    assert(
+      position >= 0 && position + 2 <= _rs.length,
+      'position out of bounds',
+    );
+    return _rs.data.getInt16(position, endian);
+  }
+
+  /// Reads a 16-bit unsigned integer at the specified [position] without
+  /// changing the current read position.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Throws [RangeError] if [position] is negative or beyond `length - 1`.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int getUint16(int position, [Endian endian = Endian.big]) {
+    assert(
+      position >= 0 && position + 2 <= _rs.length,
+      'position out of bounds',
+    );
+    return _rs.data.getUint16(position, endian);
+  }
+
+  /// Reads a 32-bit signed integer at the specified [position] without changing
+  /// the current read position.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Throws [RangeError] if [position] is negative or beyond `length - 3`.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int getInt32(int position, [Endian endian = Endian.big]) {
+    assert(
+      position >= 0 && position + 4 <= _rs.length,
+      'position out of bounds',
+    );
+    return _rs.data.getInt32(position, endian);
+  }
+
+  /// Reads a 32-bit unsigned integer at the specified [position] without
+  /// changing the current read position.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Throws [RangeError] if [position] is negative or beyond `length - 3`.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int getUint32(int position, [Endian endian = Endian.big]) {
+    assert(
+      position >= 0 && position + 4 <= _rs.length,
+      'position out of bounds',
+    );
+    return _rs.data.getUint32(position, endian);
+  }
+
+  /// Reads a 64-bit signed integer at the specified [position] without changing
+  /// the current read position.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Throws [RangeError] if [position] is negative or beyond `length - 7`.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int getInt64(int position, [Endian endian = Endian.big]) {
+    assert(
+      position >= 0 && position + 8 <= _rs.length,
+      'position out of bounds',
+    );
+    return _rs.data.getInt64(position, endian);
+  }
+
+  /// Reads a 64-bit unsigned integer at the specified [position] without
+  /// changing the current read position.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Throws [RangeError] if [position] is negative or beyond `length - 7`.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int getUint64(int position, [Endian endian = Endian.big]) {
+    assert(
+      position >= 0 && position + 8 <= _rs.length,
+      'position out of bounds',
+    );
+    return _rs.data.getUint64(position, endian);
+  }
+
+  /// Reads a 32-bit floating-point number at the specified [position] without
+  /// changing the current read position.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Throws [RangeError] if [position] is negative or beyond `length - 3`.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  double getFloat32(int position, [Endian endian = Endian.big]) {
+    assert(
+      position >= 0 && position + 4 <= _rs.length,
+      'position out of bounds',
+    );
+    return _rs.data.getFloat32(position, endian);
+  }
+
+  /// Reads a 64-bit floating-point number at the specified [position] without
+  /// changing the current read position.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Throws [RangeError] if [position] is negative or beyond `length - 7`.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  double getFloat64(int position, [Endian endian = Endian.big]) {
+    assert(
+      position >= 0 && position + 8 <= _rs.length,
+      'position out of bounds',
+    );
+    return _rs.data.getFloat64(position, endian);
+  }
+
+  /// Returns the byte at the current read position without advancing the
+  /// offset.
+  ///
+  /// This is a convenience method for peeking at the next byte to be read.
+  ///
   /// Example:
   /// ```dart
-  /// if (reader.hasBytes(4)) {
-  ///   final value = reader.readUint32();
-  ///   // Process value
-  /// } else {
-  ///   // Handle missing data
+  /// final nextByte = reader.peekByte();
+  /// if (nextByte == 0x42) {
+  ///   // Handle type 0x42
   /// }
+  /// final actualByte = reader.readUint8(); // Now read it
   /// ```
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  bool hasBytes(int length) {
-    if (length < 0) {
-      throw RangeError.value(length, 'length', 'Length must be non-negative');
-    }
+  int peekByte() {
+    _checkBounds(1, 'Peek Byte');
 
-    return (_rs.offset + length) <= _rs.length;
+    return _rs.list[_rs.offset];
   }
 
   /// Reads bytes without advancing the read position.
@@ -655,26 +834,32 @@ extension type BinaryReader._(_ReaderState _rs) {
 
     return view;
   }
+}
 
-  /// Returns the byte at the current read position without advancing the
-  /// offset.
+/// Position management methods for [BinaryReader].
+extension BinaryReaderPosition on BinaryReader {
+  /// Checks if there are at least [length] bytes available to read.
   ///
-  /// This is a convenience method for peeking at the next byte to be read.
+  /// Returns `true` if enough bytes are available, `false` otherwise.
   ///
+  /// Useful for conditional reads when the data format may vary.
   /// Example:
   /// ```dart
-  /// final nextByte = reader.peekByte();
-  /// if (nextByte == 0x42) {
-  ///   // Handle type 0x42
+  /// if (reader.hasBytes(4)) {
+  ///   final value = reader.readUint32();
+  ///   // Process value
+  /// } else {
+  ///   // Handle missing data
   /// }
-  /// final actualByte = reader.readUint8(); // Now read it
   /// ```
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  int peekByte() {
-    _checkBounds(1, 'Peek Byte');
+  bool hasBytes(int length) {
+    if (length < 0) {
+      throw RangeError.value(length, 'length', 'Length must be non-negative');
+    }
 
-    return _rs.list[_rs.offset];
+    return (_rs.offset + length) <= _rs.length;
   }
 
   /// Advances the read position by the specified number of bytes.
@@ -751,43 +936,18 @@ extension type BinaryReader._(_ReaderState _rs) {
 
     _rs.offset -= length;
   }
+}
 
-  /// Rebinds the reader to a new buffer without creating a new [BinaryReader].
-  ///
-  /// Resets the read position and replaces the internal buffer with [buffer].
-  /// This is useful for streaming scenarios where you want to reuse a reader
-  /// with new data without allocating a new [BinaryReader] or [_ReaderState].
-  ///
-  /// After rebinding, the reader starts at position 0 of the new buffer.
+/// Internal methods for [BinaryReader].
+extension _BinaryReaderInternal on BinaryReader {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  void rebind(Uint8List buffer) {
-    _rs.rebind(buffer);
-  }
-
-  /// Returns the byte at the specified absolute [index] in the buffer.
-  ///
-  /// This allows random access without affecting the current [offset].
-  ///
-  /// Example:
-  /// ```dart
-  /// final firstByte = reader[0];
-  /// ```
-  @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  int operator [](int index) => _rs.list[index];
-
-  /// Reads [length] bytes from the current position.
-  ///
-  /// This is a concise alias for [readBytes].
-  ///
-  /// Example:
-  /// ```dart
-  /// final data = reader(10); // Same as reader.readBytes(10)
-  /// ```
-  @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  Uint8List call(int length) => readBytes(length);
+  int _readLength(LengthEncoding encoding) => switch (encoding) {
+    .u8 => readUint8(),
+    .u16 => readUint16(),
+    .u32 => readUint32(),
+    .u64 => readUint64(),
+  };
 
   /// Internal method to check if enough bytes are available to read.
   ///

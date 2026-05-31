@@ -35,14 +35,12 @@ void main() async {
     ).encode(writer);
 
     if (writer.bytesWritten >= 64000) {
-      ios.add(writer.toBytes());
-      writer.seek(0);
+      ios.add(writer.takeBytes(copy: true));
     }
   }
 
   if (writer.bytesWritten > 0) {
-    ios.add(writer.toBytes());
-    writer.seek(0);
+    ios.add(writer.takeBytes(copy: true));
   }
 
   writeWatch.stop();
