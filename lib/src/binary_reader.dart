@@ -650,7 +650,7 @@ extension BinaryReaderRandomAccess on BinaryReader {
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond [length - 1].
+  /// Throws [RangeError] if [position] is negative or beyond `length - 1`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int getInt16(int position, [Endian endian = Endian.big]) {
@@ -666,7 +666,7 @@ extension BinaryReaderRandomAccess on BinaryReader {
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond [length - 1].
+  /// Throws [RangeError] if [position] is negative or beyond `length - 1`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int getUint16(int position, [Endian endian = Endian.big]) {
@@ -682,7 +682,7 @@ extension BinaryReaderRandomAccess on BinaryReader {
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond [length - 3].
+  /// Throws [RangeError] if [position] is negative or beyond `length - 3`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int getInt32(int position, [Endian endian = Endian.big]) {
@@ -698,7 +698,7 @@ extension BinaryReaderRandomAccess on BinaryReader {
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond [length - 3].
+  /// Throws [RangeError] if [position] is negative or beyond `length - 3`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int getUint32(int position, [Endian endian = Endian.big]) {
@@ -714,7 +714,7 @@ extension BinaryReaderRandomAccess on BinaryReader {
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond [length - 7].
+  /// Throws [RangeError] if [position] is negative or beyond `length - 7`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int getInt64(int position, [Endian endian = Endian.big]) {
@@ -730,7 +730,7 @@ extension BinaryReaderRandomAccess on BinaryReader {
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond [length - 7].
+  /// Throws [RangeError] if [position] is negative or beyond `length - 7`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int getUint64(int position, [Endian endian = Endian.big]) {
@@ -746,7 +746,7 @@ extension BinaryReaderRandomAccess on BinaryReader {
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond [length - 3].
+  /// Throws [RangeError] if [position] is negative or beyond `length - 3`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   double getFloat32(int position, [Endian endian = Endian.big]) {
@@ -762,7 +762,7 @@ extension BinaryReaderRandomAccess on BinaryReader {
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond [length - 7].
+  /// Throws [RangeError] if [position] is negative or beyond `length - 7`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   double getFloat64(int position, [Endian endian = Endian.big]) {

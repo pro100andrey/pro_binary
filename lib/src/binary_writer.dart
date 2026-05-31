@@ -863,7 +863,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 1].
+  /// `bytesWritten - 1`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int getInt16(int position, [Endian endian = Endian.big]) {
@@ -880,7 +880,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  ///  [bytesWritten - 1].
+  ///  `bytesWritten - 1`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int getUint16(int position, [Endian endian = Endian.big]) {
@@ -897,7 +897,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 3].
+  /// `bytesWritten - 3`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int getInt32(int position, [Endian endian = Endian.big]) {
@@ -914,7 +914,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 3].
+  /// `bytesWritten - 3`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int getUint32(int position, [Endian endian = Endian.big]) {
@@ -931,7 +931,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 7].
+  /// `bytesWritten - 7`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int getInt64(int position, [Endian endian = Endian.big]) {
@@ -948,7 +948,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 7].
+  /// `bytesWritten - 7`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   int getUint64(int position, [Endian endian = Endian.big]) {
@@ -965,7 +965,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 3].
+  /// `bytesWritten - 3`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   double getFloat32(int position, [Endian endian = Endian.big]) {
@@ -982,7 +982,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 7].
+  /// `bytesWritten - 7`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   double getFloat64(int position, [Endian endian = Endian.big]) {
@@ -1014,7 +1014,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 1].
+  /// `bytesWritten - 1`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void setInt16(int position, int value, [Endian endian = Endian.big]) {
@@ -1031,7 +1031,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 1].
+  /// `bytesWritten - 1`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void setUint16(int position, int value, [Endian endian = Endian.big]) {
@@ -1048,7 +1048,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 3].
+  /// `bytesWritten - 3`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void setInt32(int position, int value, [Endian endian = Endian.big]) {
@@ -1065,7 +1065,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 3].
+  /// `bytesWritten - 3`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void setUint32(int position, int value, [Endian endian = Endian.big]) {
@@ -1082,7 +1082,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 7].
+  /// `bytesWritten - 7`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void setInt64(int position, int value, [Endian endian = Endian.big]) {
@@ -1099,7 +1099,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 7].
+  /// `bytesWritten - 7`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void setUint64(int position, int value, [Endian endian = Endian.big]) {
@@ -1116,7 +1116,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 3].
+  /// `bytesWritten - 3`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void setFloat32(int position, double value, [Endian endian = Endian.big]) {
@@ -1132,7 +1132,7 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   /// [endian] specifies byte order (defaults to big-endian).
   ///
   /// Throws [RangeError] if [position] is negative or beyond
-  /// [bytesWritten - 7].
+  /// `bytesWritten - 7`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void setFloat64(int position, double value, [Endian endian = Endian.big]) {
