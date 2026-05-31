@@ -20,8 +20,21 @@
 
 ```yaml
 dependencies:
-  pro_binary: ^5.2.0
+  pro_binary: last_version
 ```
+
+or:
+
+Add `pro_binary` as a dependency to your project:
+
+```bash
+dart pub add pro_binary
+```
+
+Or for Flutter projects:
+
+```bash
+flutter pub add pro_binary
 
 ## Quick Start
 
