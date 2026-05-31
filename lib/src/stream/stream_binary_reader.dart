@@ -351,8 +351,31 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
   T _readCrossChunk<T>(int length, T Function(ByteData) parser) {
     if (length <= 8) {
       final scratch = _s.scratchBuffer;
-      for (var i = 0; i < length; i++) {
-        scratch[i] = readUint8();
+      var remaining = length;
+      var scratchOffset = 0;
+
+      while (remaining > 0) {
+        final cr = _s.currentReader!;
+        final chunkAvailable = cr.availableBytes;
+        final readLen = chunkAvailable >= remaining
+            ? remaining
+            : chunkAvailable;
+
+        if (readLen > 0) {
+          final chunk = _s.currentChunk!;
+          var offset = cr.offset;
+          for (var i = 0; i < readLen; i++) {
+            scratch[scratchOffset++] = chunk[offset++];
+          }
+
+          cr.skip(readLen);
+          _s.availableBytes -= readLen;
+          remaining -= readLen;
+        }
+
+        if (cr.availableBytes == 0) {
+          _advanceChunk();
+        }
       }
 
       return parser(_s.scratchData);
@@ -388,7 +411,17 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
     var result = 0;
     var shift = 0;
     for (var i = 0; i < 10; i++) {
-      final byte = readUint8();
+      if (_s.availableBytes == 0) {
+        throw const NotEnoughDataException(1, 0);
+      }
+      final cr = _s.currentReader!;
+      final byte = _s.currentChunk![cr.offset];
+      cr.skip(1);
+      _s.availableBytes -= 1;
+      if (cr.availableBytes == 0) {
+        _advanceChunk();
+      }
+
       result |= (byte & 0x7f) << shift;
       if ((byte & 0x80) == 0) {
         return result;
@@ -448,27 +481,24 @@ extension type StreamBinaryReader._(_StreamReaderState _s)
     while (remaining > 0) {
       final chunkReader = _s.currentReader!;
       final chunkAvailable = chunkReader.availableBytes;
+      final readLen = chunkAvailable >= remaining ? remaining : chunkAvailable;
 
-      if (chunkAvailable >= remaining) {
-        final bytes = chunkReader.readBytes(remaining);
-        result.setRange(resultOffset, resultOffset + remaining, bytes);
+      if (readLen > 0) {
+        result.setRange(
+          resultOffset,
+          resultOffset + readLen,
+          _s.currentChunk!,
+          chunkReader.offset,
+        );
 
-        _s.availableBytes -= remaining;
+        chunkReader.skip(readLen);
+        _s.availableBytes -= readLen;
 
-        if (chunkReader.availableBytes == 0) {
-          _advanceChunk();
-        }
-        break;
-      } else {
-        if (chunkAvailable > 0) {
-          final bytes = chunkReader.readBytes(chunkAvailable);
-          result.setRange(resultOffset, resultOffset + chunkAvailable, bytes);
+        resultOffset += readLen;
+        remaining -= readLen;
+      }
 
-          resultOffset += chunkAvailable;
-          remaining -= chunkAvailable;
-          _s.availableBytes -= chunkAvailable;
-        }
-
+      if (chunkReader.availableBytes == 0) {
         _advanceChunk();
       }
     }
@@ -619,6 +649,7 @@ final class _StreamReaderState extends ChunkedTransactionalState<Uint8List>
   }
 
   BinaryReader? currentReader;
+  Uint8List? currentChunk;
 
   /// Pre-allocated buffer for zero-allocation cross-chunk primitive reads.
   final Uint8List scratchBuffer;
@@ -647,6 +678,7 @@ final class _StreamReaderState extends ChunkedTransactionalState<Uint8List>
 
   @override
   void onBindReader(Uint8List chunk, int offset) {
+    currentChunk = chunk;
     final cr = currentReader;
     if (cr != null) {
       cr
@@ -659,6 +691,7 @@ final class _StreamReaderState extends ChunkedTransactionalState<Uint8List>
 
   @override
   void onUnbindReader() {
+    currentChunk = null;
     currentReader = null;
   }
 
