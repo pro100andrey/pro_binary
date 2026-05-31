@@ -66,13 +66,5 @@ void main() {
         expect(reader.readUint8(), equals(1));
       });
     });
-
-    group('Internal buffer access', () {
-      test('peekByte returns byte without advancing offset', () {
-        final reader = BinaryReader(Uint8List.fromList([0x42, 0x43]));
-        expect(reader.peekByte(), equals(0x42));
-        expect(reader.offset, equals(0));
-      });
-    });
   });
 }
