@@ -44,7 +44,7 @@ Add `pro_binary` to your `pubspec.yaml` manually:
 
 ```yaml
 dependencies:
-  pro_binary: <latest_version>
+  pro_binary: any
 ```
 
 Or add it using the command line:
