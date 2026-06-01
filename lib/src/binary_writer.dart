@@ -41,7 +41,24 @@ extension type BinaryWriter._(_WriterState _ws) {
     : this._(_WriterState(initialBufferSize));
 }
 
-/// Core properties and operators for [BinaryWriter].
+/// Core properties, operators, and lifecycle methods for [BinaryWriter].
+///
+/// Provides access to the writer's state ([bytesWritten], [capacity]),
+/// random-access operators (`[]`, `[]=`), byte extraction ([takeBytes],
+/// [toBytes]), and reset functionality.
+///
+/// Example:
+/// ```dart
+/// final writer = BinaryWriter();
+/// writer.writeUint32(42);
+///
+/// print(writer.bytesWritten);  // 4
+/// print(writer[0]);            // 0x2A
+///
+/// writer[0] = 0xFF;            // Overwrite first byte
+///
+/// final bytes = writer.takeBytes();  // Extract and reset
+/// ```
 extension BinaryWriterCore on BinaryWriter {
   /// Returns the total number of bytes written to the buffer.
   int get bytesWritten => _ws.offset;
@@ -161,6 +178,24 @@ extension BinaryWriterCore on BinaryWriter {
 }
 
 /// Variable-length integer writing methods for [BinaryWriter].
+///
+/// Provides space-efficient encoding for integers that vary widely in
+/// magnitude. Uses VarInt encoding for unsigned values and ZigZag + VarInt
+/// for signed values.
+///
+/// **VarInt:** Uses 7 bits per byte for data, 1 bit as continuation flag.
+/// Small values (0-127) fit in a single byte.
+///
+/// **ZigZag:** Maps signed integers to unsigned: 0→0, -1→1, 1→2, -2→3, etc.
+/// Ensures small absolute values (positive and negative) encode efficiently.
+///
+/// Example:
+/// ```dart
+/// writer.writeVarUint(42);         // 1 byte
+/// writer.writeVarUint(2000);       // 2 bytes
+/// writer.writeVarInt(-1);          // 1 byte (ZigZag: -1 → 1)
+/// writer.writeVarInt(1000000);     // 3 bytes
+/// ```
 extension BinaryWriterVarInt on BinaryWriter {
   /// Writes an unsigned variable-length integer using VarInt encoding.
   ///
@@ -281,6 +316,25 @@ extension BinaryWriterVarInt on BinaryWriter {
 }
 
 /// Fixed-width numeric writing methods for [BinaryWriter].
+///
+/// Writes primitive types at their natural, fixed size. All multi-byte
+/// integers use configurable endianness (defaults to big-endian).
+///
+/// **Type sizes:**
+/// - `bool`: 1 byte (0 or 1)
+/// - `Uint8`/`Int8`: 1 byte
+/// - `Uint16`/`Int16`: 2 bytes
+/// - `Uint32`/`Int32`: 4 bytes
+/// - `Uint64`/`Int64`: 8 bytes
+/// - `Float32`: 4 bytes (IEEE 754)
+/// - `Float64`: 8 bytes (IEEE 754)
+///
+/// Example:
+/// ```dart
+/// writer.writeBool(true);
+/// writer.writeUint32(0x12345678);
+/// writer.writeFloat64(3.14, Endian.little);
+/// ```
 extension BinaryWriterNumeric on BinaryWriter {
   /// Writes a boolean value as a single byte.
   ///
@@ -311,9 +365,9 @@ extension BinaryWriterNumeric on BinaryWriter {
   @pragma('dart2js:tryInline')
   void writeUint8(int value) {
     _checkRange(value, 0, 255, 'Uint8');
-    _ws.ensureOneByte();
 
-    _ws.list[_ws.offset++] = value;
+    _ws.ensureOneByte();
+    _ws.data.setUint8(_ws.offset++, value);
   }
 
   /// Writes an 8-bit signed integer (-128 to 127).
@@ -328,9 +382,9 @@ extension BinaryWriterNumeric on BinaryWriter {
   @pragma('dart2js:tryInline')
   void writeInt8(int value) {
     _checkRange(value, -128, 127, 'Int8');
-    _ws.ensureOneByte();
 
-    _ws.list[_ws.offset++] = value & 0xFF;
+    _ws.ensureOneByte();
+    _ws.data.setInt8(_ws.offset++, value);
   }
 
   /// Writes a 16-bit unsigned integer (0-65535).
@@ -347,8 +401,8 @@ extension BinaryWriterNumeric on BinaryWriter {
   @pragma('dart2js:tryInline')
   void writeUint16(int value, [Endian endian = .big]) {
     _checkRange(value, 0, 65535, 'Uint16');
-    _ws.ensureTwoBytes();
 
+    _ws.ensureTwoBytes();
     _ws.data.setUint16(_ws.offset, value, endian);
     _ws.offset += 2;
   }
@@ -367,8 +421,8 @@ extension BinaryWriterNumeric on BinaryWriter {
   @pragma('dart2js:tryInline')
   void writeInt16(int value, [Endian endian = .big]) {
     _checkRange(value, -32768, 32767, 'Int16');
-    _ws.ensureTwoBytes();
 
+    _ws.ensureTwoBytes();
     _ws.data.setInt16(_ws.offset, value, endian);
     _ws.offset += 2;
   }
@@ -387,8 +441,8 @@ extension BinaryWriterNumeric on BinaryWriter {
   @pragma('dart2js:tryInline')
   void writeUint32(int value, [Endian endian = .big]) {
     _checkRange(value, 0, 4294967295, 'Uint32');
-    _ws.ensureFourBytes();
 
+    _ws.ensureFourBytes();
     _ws.data.setUint32(_ws.offset, value, endian);
     _ws.offset += 4;
   }
@@ -407,8 +461,8 @@ extension BinaryWriterNumeric on BinaryWriter {
   @pragma('dart2js:tryInline')
   void writeInt32(int value, [Endian endian = .big]) {
     _checkRange(value, -2147483648, 2147483647, 'Int32');
-    _ws.ensureFourBytes();
 
+    _ws.ensureFourBytes();
     _ws.data.setInt32(_ws.offset, value, endian);
     _ws.offset += 4;
   }
@@ -433,8 +487,8 @@ extension BinaryWriterNumeric on BinaryWriter {
   @pragma('dart2js:tryInline')
   void writeUint64(int value, [Endian endian = .big]) {
     _checkRange(value, 0, kMaxInt64, 'Uint64');
-    _ws.ensureEightBytes();
 
+    _ws.ensureEightBytes();
     _ws.data.setUint64(_ws.offset, value, endian);
     _ws.offset += 8;
   }
@@ -455,8 +509,8 @@ extension BinaryWriterNumeric on BinaryWriter {
   @pragma('dart2js:tryInline')
   void writeInt64(int value, [Endian endian = .big]) {
     _checkRange(value, kMinInt64, kMaxInt64, 'Int64');
-    _ws.ensureEightBytes();
 
+    _ws.ensureEightBytes();
     _ws.data.setInt64(_ws.offset, value, endian);
     _ws.offset += 8;
   }
@@ -473,7 +527,6 @@ extension BinaryWriterNumeric on BinaryWriter {
   @pragma('dart2js:tryInline')
   void writeFloat32(double value, [Endian endian = .big]) {
     _ws.ensureFourBytes();
-
     _ws.data.setFloat32(_ws.offset, value, endian);
     _ws.offset += 4;
   }
@@ -490,13 +543,34 @@ extension BinaryWriterNumeric on BinaryWriter {
   @pragma('dart2js:tryInline')
   void writeFloat64(double value, [Endian endian = .big]) {
     _ws.ensureEightBytes();
-
     _ws.data.setFloat64(_ws.offset, value, endian);
     _ws.offset += 8;
   }
 }
 
 /// Byte array and string writing methods for [BinaryWriter].
+///
+/// Provides methods for writing raw byte sequences and UTF-8 encoded strings,
+/// with optional length prefixing for self-describing data.
+///
+/// **Writing patterns:**
+/// - Raw bytes: [writeBytes] — direct byte copy
+/// - Length-prefixed: [writeVarBytes] — VarUint length + data
+/// - Strings: [writeString] — UTF-8 encoded
+/// - Length-prefixed strings: [writeVarString] — VarUint length + UTF-8
+///
+/// Example:
+/// ```dart
+/// // Raw bytes
+/// writer.writeBytes([1, 2, 3]);
+///
+/// // Length-prefixed binary blob
+/// writer.writeVarBytes(imageData);
+///
+/// // Strings
+/// writer.writeString('Hello');
+/// writer.writeVarString('Hello, 世界! 🌍');
+/// ```
 extension BinaryWriterBytesString on BinaryWriter {
   /// Writes a sequence of bytes from the given list.
   ///
@@ -844,185 +918,182 @@ extension BinaryWriterBytesString on BinaryWriter {
 }
 
 /// Random access read/write methods for [BinaryWriter].
+///
+/// These methods allow reading from and writing to arbitrary positions in the
+/// buffer without changing the current write position (offset). This is useful
+/// for inspecting already-written data or backpatching values at known offsets.
+///
+/// **Important:** Unlike [seek], these methods do NOT advance the write
+/// position
+///
+/// — they only access/modify bytes at the specified `position`.
+///
+/// **Read methods** (`get*`): return values at `position` without modification.
+/// **Write methods** (`set*`): overwrite bytes at `position` without changing
+/// the current offset.
+///
+/// **Writing beyond [bytesWritten]:** If you write to a position beyond the
+/// current `bytesWritten`, the data is stored in the buffer but will NOT be
+/// included in `takeBytes()` or `toBytes()` output. To include such data,
+/// advance the offset first using [seek]:
+///
+/// Example:
+/// ```dart
+/// final writer = BinaryWriter();
+/// writer.writeUint32(0x12345678);  // writes 4 bytes
+///
+/// // Read at arbitrary position without advancing offset
+/// print(writer.getUint32(0));  // 0x12345678
+///
+/// // Overwrite at arbitrary position
+/// writer.setUint32(0, 0xDEADBEEF);
+///
+/// // Write beyond bytesWritten — data stored but NOT in output
+/// writer.setUint32(100, 0xABCDEF00);
+/// writer.toBytes().length;  // 4, position 100 is excluded
+///
+/// // Fix: advance offset first, then write
+/// writer.seek(100);
+/// writer.setUint32(100, 0xABCDEF00);
+/// writer.toBytes().length;  // 104, position 100 is now included
+/// ```
 extension BinaryWriterRandomAccess on BinaryWriter {
-  /// Reads a byte at the specified [position] without changing the current
-  /// write position.
-  ///
-  /// Throws [RangeError] if [position] is negative or greater than or equal to
-  /// [bytesWritten].
-  @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  int getUint8(int position) {
-    assert(position >= 0 && position < _ws.offset, 'position out of bounds');
-    return _ws.list[position];
-  }
-
-  /// Reads a 16-bit signed integer at the specified [position] without changing
+  /// Reads an 8-bit unsigned value at the specified [position] without changing
   /// the current write position.
   ///
-  /// [endian] specifies byte order (defaults to big-endian).
-  ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 1`.
+  /// Throws [RangeError] if [position] is negative or if the position + size
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  int getInt16(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 2 <= _ws.offset,
-      'position out of bounds',
-    );
-    return _ws.data.getInt16(position, endian);
-  }
+  int getUint8(int position) => _ws.data.getUint8(position);
+
+  /// Reads an 8-bit signed integer at the specified [position] without changing
+  /// the current write position.
+  ///
+  /// Throws [RangeError] if [position] is negative or if the position + size
+  /// exceeds the buffer [capacity].
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int getInt8(int position) => _ws.data.getInt8(position);
 
   /// Reads a 16-bit unsigned integer at the specified [position] without
   /// changing the current write position.
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  ///  `bytesWritten - 1`.
+  /// Throws [RangeError] if [position] is negative or if `position + 2`
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  int getUint16(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 2 <= _ws.offset,
-      'position out of bounds',
-    );
-    return _ws.data.getUint16(position, endian);
-  }
+  int getUint16(int position, [Endian endian = Endian.big]) =>
+      _ws.data.getUint16(position, endian);
 
-  /// Reads a 32-bit signed integer at the specified [position] without changing
+  /// Reads a 16-bit signed integer at the specified [position] without changing
   /// the current write position.
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 3`.
+  /// Throws [RangeError] if [position] is negative or if `position + 2`
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  int getInt32(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 4 <= _ws.offset,
-      'position out of bounds',
-    );
-    return _ws.data.getInt32(position, endian);
-  }
+  int getInt16(int position, [Endian endian = Endian.big]) =>
+      _ws.data.getInt16(position, endian);
 
   /// Reads a 32-bit unsigned integer at the specified [position] without
   /// changing the current write position.
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 3`.
+  /// Throws [RangeError] if [position] is negative or if `position + 4`
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  int getUint32(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 4 <= _ws.offset,
-      'position out of bounds',
-    );
-    return _ws.data.getUint32(position, endian);
-  }
+  int getUint32(int position, [Endian endian = Endian.big]) =>
+      _ws.data.getUint32(position, endian);
 
-  /// Reads a 64-bit signed integer at the specified [position] without changing
+  /// Reads a 32-bit signed integer at the specified [position] without changing
   /// the current write position.
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 7`.
+  /// Throws [RangeError] if [position] is negative or if `position + 4`
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  int getInt64(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 8 <= _ws.offset,
-      'position out of bounds',
-    );
-    return _ws.data.getInt64(position, endian);
-  }
+  int getInt32(int position, [Endian endian = Endian.big]) =>
+      _ws.data.getInt32(position, endian);
 
   /// Reads a 64-bit unsigned integer at the specified [position] without
   /// changing the current write position.
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 7`.
+  /// Throws [RangeError] if [position] is negative or if `position + 8`
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  int getUint64(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 8 <= _ws.offset,
-      'position out of bounds',
-    );
-    return _ws.data.getUint64(position, endian);
-  }
+  int getUint64(int position, [Endian endian = Endian.big]) =>
+      _ws.data.getUint64(position, endian);
+
+  /// Reads a 64-bit signed integer at the specified [position] without changing
+  /// the current write position.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Throws [RangeError] if [position] is negative or if `position + 8`
+  /// exceeds the buffer [capacity].
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int getInt64(int position, [Endian endian = Endian.big]) =>
+      _ws.data.getInt64(position, endian);
 
   /// Reads a 32-bit floating-point number at the specified [position] without
   /// changing the current write position.
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 3`.
+  /// Throws [RangeError] if [position] is negative or if `position + 4`
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  double getFloat32(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 4 <= _ws.offset,
-      'position out of bounds',
-    );
-    return _ws.data.getFloat32(position, endian);
-  }
+  double getFloat32(int position, [Endian endian = Endian.big]) =>
+      _ws.data.getFloat32(position, endian);
 
   /// Reads a 64-bit floating-point number at the specified [position] without
   /// changing the current write position.
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 7`.
+  /// Throws [RangeError] if [position] is negative or if `position + 8`
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  double getFloat64(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 8 <= _ws.offset,
-      'position out of bounds',
-    );
-    return _ws.data.getFloat64(position, endian);
-  }
+  double getFloat64(int position, [Endian endian = Endian.big]) =>
+      _ws.data.getFloat64(position, endian);
 
-  /// Writes a byte at the specified [position] without changing the current
-  /// write position.
+  /// Writes an 8-bit unsigned value at the specified [position] without
+  /// changing the current write position.
   ///
-  /// Throws [RangeError] if [position] is negative or greater than or equal to
-  /// [bytesWritten].
+  /// Throws [RangeError] if [position] is negative or if the position + size
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void setUint8(int position, int value) {
-    if (position < 0 || position >= _ws.offset) {
-      throw RangeError.range(position, 0, _ws.offset - 1, 'position');
-    }
     _checkRange(value, 0, 255, 'Uint8');
-    _ws.list[position] = value;
+    _ws.data.setUint8(position, value);
   }
 
-  /// Writes a 16-bit signed integer at the specified [position] without
-  /// changing the current write position.
+  /// Writes an 8-bit signed value at the specified [position] without changing
+  /// the current write position.
   ///
-  /// [endian] specifies byte order (defaults to big-endian).
-  ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 1`.
+  /// Throws [RangeError] if [position] is negative or if the position + size
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  void setInt16(int position, int value, [Endian endian = Endian.big]) {
-    if (position < 0 || position + 2 > _ws.offset) {
-      throw RangeError.range(position, 0, _ws.offset - 2, 'position');
-    }
-    _checkRange(value, -32768, 32767, 'Int16');
-    _ws.data.setInt16(position, value, endian);
+  void setInt8(int position, int value) {
+    _checkRange(value, -128, 127, 'Int8');
+    _ws.data.setInt8(position, value);
   }
 
   /// Writes a 16-bit unsigned integer at the specified [position] without
@@ -1030,33 +1101,27 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 1`.
+  /// Throws [RangeError] if [position] is negative or if `position + 2`
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void setUint16(int position, int value, [Endian endian = Endian.big]) {
-    if (position < 0 || position + 2 > _ws.offset) {
-      throw RangeError.range(position, 0, _ws.offset - 2, 'position');
-    }
     _checkRange(value, 0, 65535, 'Uint16');
     _ws.data.setUint16(position, value, endian);
   }
 
-  /// Writes a 32-bit signed integer at the specified [position] without
+  /// Writes a 16-bit signed integer at the specified [position] without
   /// changing the current write position.
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 3`.
+  /// Throws [RangeError] if [position] is negative or if `position + 2`
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  void setInt32(int position, int value, [Endian endian = Endian.big]) {
-    if (position < 0 || position + 4 > _ws.offset) {
-      throw RangeError.range(position, 0, _ws.offset - 4, 'position');
-    }
-    _checkRange(value, -2147483648, 2147483647, 'Int32');
-    _ws.data.setInt32(position, value, endian);
+  void setInt16(int position, int value, [Endian endian = Endian.big]) {
+    _checkRange(value, -32768, 32767, 'Int16');
+    _ws.data.setInt16(position, value, endian);
   }
 
   /// Writes a 32-bit unsigned integer at the specified [position] without
@@ -1064,33 +1129,27 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 3`.
+  /// Throws [RangeError] if [position] is negative or if `position + 4`
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void setUint32(int position, int value, [Endian endian = Endian.big]) {
-    if (position < 0 || position + 4 > _ws.offset) {
-      throw RangeError.range(position, 0, _ws.offset - 4, 'position');
-    }
     _checkRange(value, 0, 4294967295, 'Uint32');
     _ws.data.setUint32(position, value, endian);
   }
 
-  /// Writes a 64-bit signed integer at the specified [position] without
+  /// Writes a 32-bit signed integer at the specified [position] without
   /// changing the current write position.
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 7`.
+  /// Throws [RangeError] if [position] is negative or if `position + 4`
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  void setInt64(int position, int value, [Endian endian = Endian.big]) {
-    if (position < 0 || position + 8 > _ws.offset) {
-      throw RangeError.range(position, 0, _ws.offset - 8, 'position');
-    }
-    _checkRange(value, kMinInt64, kMaxInt64, 'Int64');
-    _ws.data.setInt64(position, value, endian);
+  void setInt32(int position, int value, [Endian endian = Endian.big]) {
+    _checkRange(value, -2147483648, 2147483647, 'Int32');
+    _ws.data.setInt32(position, value, endian);
   }
 
   /// Writes a 64-bit unsigned integer at the specified [position] without
@@ -1098,16 +1157,27 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 7`.
+  /// Throws [RangeError] if [position] is negative or if `position + 8`
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void setUint64(int position, int value, [Endian endian = Endian.big]) {
-    if (position < 0 || position + 8 > _ws.offset) {
-      throw RangeError.range(position, 0, _ws.offset - 8, 'position');
-    }
     _checkRange(value, 0, kMaxInt64, 'Uint64');
     _ws.data.setUint64(position, value, endian);
+  }
+
+  /// Writes a 64-bit signed integer at the specified [position] without
+  /// changing the current write position.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Throws [RangeError] if [position] is negative or if `position + 8`
+  /// exceeds the buffer [capacity].
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void setInt64(int position, int value, [Endian endian = Endian.big]) {
+    _checkRange(value, kMinInt64, kMaxInt64, 'Int64');
+    _ws.data.setInt64(position, value, endian);
   }
 
   /// Writes a 32-bit floating-point number at the specified [position] without
@@ -1115,14 +1185,11 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 3`.
+  /// Throws [RangeError] if [position] is negative or if `position + 4`
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void setFloat32(int position, double value, [Endian endian = Endian.big]) {
-    if (position < 0 || position + 4 > _ws.offset) {
-      throw RangeError.range(position, 0, _ws.offset - 4, 'position');
-    }
     _ws.data.setFloat32(position, value, endian);
   }
 
@@ -1131,41 +1198,44 @@ extension BinaryWriterRandomAccess on BinaryWriter {
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond
-  /// `bytesWritten - 7`.
+  /// Throws [RangeError] if [position] is negative or if `position + 8`
+  /// exceeds the buffer [capacity].
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   void setFloat64(int position, double value, [Endian endian = Endian.big]) {
-    if (position < 0 || position + 8 > _ws.offset) {
-      throw RangeError.range(position, 0, _ws.offset - 8, 'position');
-    }
     _ws.data.setFloat64(position, value, endian);
   }
-
-  /// Writes a byte at the specified [position] without changing the current
-  /// write position.
-  ///
-  /// Used to overwrite data at a previously written offset (e.g.,
-  /// updating a length field).
-  ///
-  /// This is a functional alias for `operator []=`.
-  ///
-  /// Throws [RangeError] if [position] is negative or greater than or equal to
-  /// [bytesWritten].
-  ///
-  /// Example:
-  /// ```dart
-  /// writer.writeUint32(10);  // Write length placeholder
-  /// writer.writeString('data');
-  /// writer.writeUint8At(0, 15);  // Overwrite length at position 0
-  /// // or: writer[0] = 15;
-  /// ```
-  @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  void writeUint8At(int position, int value) => this[position] = value;
 }
 
 /// Position management methods for [BinaryWriter].
+///
+/// Controls the write position (offset) within the buffer and provides
+/// utilities for the "Reserve & Backpatch" pattern.
+///
+/// **Key methods:**
+/// - [seek]: move to any position within written bytes
+/// - [skip]: advance position without writing (reserve space)
+/// - [reserve]: reserve space and return starting position
+/// - [shiftBytes]: compact buffer by shifting payload left
+///
+/// **Reserve & Backpatch pattern:**
+/// ```dart
+/// final headerPos = writer.reserve(8);  // Reserve 8 bytes for header
+/// writer.writeUint32(0x12345678);       // Write payload
+///
+/// // Backpatch header at reserved position
+/// writer.seek(headerPos);
+/// writer.writeUint32(0xCAFEBABE);
+/// ```
+///
+/// **Compacting reserved space:**
+/// ```dart
+/// final headerPos = writer.reserve(8);
+/// writer.writeUint32(0x11111111);
+/// writer.writeUint32(0x22222222);
+/// // Shift payload left to overwrite unused reserved space
+/// writer.shiftBytes(headerPos + 2, writer.bytesWritten, 0);
+/// ```
 extension BinaryWriterPosition on BinaryWriter {
   /// Sets the write position to the specified byte offset.
   ///
@@ -1212,6 +1282,17 @@ extension BinaryWriterPosition on BinaryWriter {
     _ws
       ..ensureSize(count)
       ..offset += count;
+  }
+
+  /// Reserves [count] bytes for later backpatching and returns the starting
+  /// offset of the reserved block.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int reserve(int count) {
+    final currentOffset = _ws.offset;
+    skip(count);
+
+    return currentOffset;
   }
 
   /// Shifts a block of written bytes within the buffer.

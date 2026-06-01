@@ -35,34 +35,6 @@ void main() {
       });
     });
 
-    group('writeUint8At', () {
-      test('overwrites byte at middle position', () {
-        writer
-          ..writeUint8(1)
-          ..writeUint8(2)
-          ..writeUint8(3)
-          ..writeUint8At(1, 99);
-        expect(writer.toBytes(), equals([1, 99, 3]));
-        expect(writer.bytesWritten, equals(3));
-      });
-
-      test('does not change current write position', () {
-        writer
-          ..writeUint8(1)
-          ..writeUint8(2)
-          ..writeUint8At(0, 99)
-          ..writeUint8(3);
-
-        expect(writer.toBytes(), equals([99, 2, 3]));
-        expect(writer.bytesWritten, equals(3));
-      });
-
-      test('throws for position at the end', () {
-        writer.writeUint8(1);
-        expect(() => writer.writeUint8At(1, 99), throwsRangeError);
-      });
-    });
-
     group('index operators', () {
       test('operator [] returns byte at absolute position', () {
         writer

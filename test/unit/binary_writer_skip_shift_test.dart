@@ -65,6 +65,74 @@ void main() {
     });
   });
 
+  group('BinaryWriter reserve', () {
+    late BinaryWriter writer;
+
+    setUp(() {
+      writer = BinaryWriter();
+    });
+
+    test('reserve returns starting offset', () {
+      writer.writeUint32(0xDEADBEEF);
+      final pos = writer.reserve(8);
+      expect(pos, equals(4));
+    });
+
+    test('reserve advances bytesWritten', () {
+      writer.writeUint32(0xDEADBEEF);
+      final before = writer.bytesWritten;
+      final pos = writer.reserve(8);
+      expect(writer.bytesWritten, equals(before + 8));
+      expect(pos, equals(before));
+    });
+
+    test('reserved bytes can be backpatched', () {
+      final headerPos = writer.reserve(4);
+      writer
+        ..writeUint32(0x12345678)
+        ..seek(headerPos)
+        ..writeUint32(0xABCDEF00);
+      expect(writer[headerPos], equals(0xAB));
+      expect(writer[headerPos + 1], equals(0xCD));
+      expect(writer[headerPos + 2], equals(0xEF));
+      expect(writer[headerPos + 3], equals(0x00));
+    });
+
+    test('reserve multiple blocks', () {
+      final pos1 = writer.reserve(4);
+      final pos2 = writer.reserve(8);
+      writer.writeUint8(0xFF);
+      expect(pos1, equals(0));
+      expect(pos2, equals(4));
+      expect(writer.bytesWritten, equals(12 + 1));
+    });
+
+    test('reserve 0 bytes returns current offset', () {
+      writer.writeUint32(42);
+      final pos = writer.reserve(0);
+      expect(pos, equals(4));
+      expect(writer.bytesWritten, equals(4));
+    });
+
+    test('reserve then shiftBytes compacts buffer', () {
+      final headerPos = writer.reserve(8);
+      writer
+        ..writeUint32(0x11111111)
+        ..writeUint32(0x22222222)
+        // Shift payload left to overwrite unused reserved space
+        ..shiftBytes(headerPos + 2, writer.bytesWritten, 0);
+      // Now backpatch the compacted header
+      writer[headerPos] = 0x00;
+      writer[headerPos + 1] = 0x0C;
+      expect(writer.bytesWritten, equals(14));
+      expect(writer[0], equals(0x00));
+      expect(writer[1], equals(0x0C));
+      // Payload shifted to position 6
+      expect(writer[6], equals(0x11));
+      expect(writer[10], equals(0x22));
+    });
+  });
+
   group('BinaryWriter shiftBytes', () {
     late BinaryWriter writer;
 

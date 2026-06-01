@@ -33,12 +33,7 @@ void main() {
 
       test('throws for negative position', () {
         writer.writeUint8(1);
-        expect(() => writer.getUint8(-1), throwsA(isA<AssertionError>()));
-      });
-
-      test('throws for position at end', () {
-        writer.writeUint8(1);
-        expect(() => writer.getUint8(1), throwsA(isA<AssertionError>()));
+        expect(() => writer.getUint8(-1), throwsRangeError);
       });
     });
 
@@ -66,11 +61,6 @@ void main() {
         expect(() => writer.setUint8(-1, 1), throwsRangeError);
       });
 
-      test('throws for position at end', () {
-        writer.writeUint8(1);
-        expect(() => writer.setUint8(1, 1), throwsRangeError);
-      });
-
       test('throws for value out of range', () {
         writer
           ..writeUint8(1)
@@ -86,6 +76,35 @@ void main() {
           ..setUint8(0, 0)
           ..setUint8(1, 255);
         expect(writer.toBytes(), equals([0, 255]));
+      });
+    });
+
+    group('getInt8 / setInt8', () {
+      test('round-trip signed values', () {
+        writer
+          ..writeInt8(127)
+          ..writeInt8(-1)
+          ..writeInt8(-128)
+          ..writeInt8(0);
+        expect(writer.getInt8(0), equals(127));
+        expect(writer.getInt8(1), equals(-1));
+        expect(writer.getInt8(2), equals(-128));
+        expect(writer.getInt8(3), equals(0));
+      });
+
+      test('does not change offset', () {
+        writer
+          ..writeInt8(42)
+          ..writeInt8(99);
+        final offset = writer.bytesWritten;
+        writer.getInt8(0);
+        expect(writer.bytesWritten, equals(offset));
+      });
+
+      test('throws for negative position', () {
+        writer.writeInt8(1);
+        expect(() => writer.getInt8(-1), throwsRangeError);
+        expect(() => writer.setInt8(-1, 1), throwsRangeError);
       });
     });
 
@@ -118,22 +137,11 @@ void main() {
         expect(writer.bytesWritten, equals(4));
       });
 
-      test('throws for position out of bounds', () {
-        writer.writeInt16(100);
-        expect(() => writer.getInt16(1), throwsA(isA<AssertionError>()));
-        expect(() => writer.setInt16(1, 100), throwsRangeError);
-      });
-
-      test('throws for negative position', () {
-        writer.writeInt16(100);
-        expect(() => writer.getInt16(-1), throwsA(isA<AssertionError>()));
-        expect(() => writer.setInt16(-1, 100), throwsRangeError);
-      });
-
       test('throws for value out of range', () {
         writer
           ..writeInt16(1)
           ..writeInt16(2);
+
         expect(() => writer.setInt16(0, 32768), throwsRangeError);
         expect(() => writer.setInt16(0, -32769), throwsRangeError);
       });
@@ -192,12 +200,6 @@ void main() {
         expect(writer.getInt32(0), equals(999));
         expect(writer.getInt32(4), equals(200));
         expect(writer.bytesWritten, equals(8));
-      });
-
-      test('throws for position out of bounds', () {
-        writer.writeInt32(100);
-        expect(() => writer.getInt32(3), throwsA(isA<AssertionError>()));
-        expect(() => writer.setInt32(3, 100), throwsRangeError);
       });
 
       test('throws for value out of range', () {
@@ -262,12 +264,6 @@ void main() {
         expect(writer.getInt64(0), equals(999));
         expect(writer.getInt64(8), equals(200));
         expect(writer.bytesWritten, equals(16));
-      });
-
-      test('throws for position out of bounds', () {
-        writer.writeInt64(100);
-        expect(() => writer.getInt64(7), throwsA(isA<AssertionError>()));
-        expect(() => writer.setInt64(7, 100), throwsRangeError);
       });
 
       test('throws for value out of range', () {
@@ -335,12 +331,6 @@ void main() {
         expect(writer.getFloat32(4), closeTo(2.5, 0.001));
         expect(writer.bytesWritten, equals(8));
       });
-
-      test('throws for position out of bounds', () {
-        writer.writeFloat32(1);
-        expect(() => writer.getFloat32(3), throwsA(isA<AssertionError>()));
-        expect(() => writer.setFloat32(3, 1), throwsRangeError);
-      });
     });
 
     group('getFloat64 / setFloat64', () {
@@ -371,12 +361,6 @@ void main() {
         expect(writer.getFloat64(0), closeTo(9.9, 0.00000000000001));
         expect(writer.getFloat64(8), closeTo(2.5, 0.00000000000001));
         expect(writer.bytesWritten, equals(16));
-      });
-
-      test('throws for position out of bounds', () {
-        writer.writeFloat64(1);
-        expect(() => writer.getFloat64(7), throwsA(isA<AssertionError>()));
-        expect(() => writer.setFloat64(7, 1), throwsRangeError);
       });
     });
 

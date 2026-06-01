@@ -50,7 +50,26 @@ extension type BinaryReader._(_ReaderState _rs) {
       BinaryReader(Uint8List.fromList(buffer));
 }
 
-/// Core properties and operators for [BinaryReader].
+/// Core properties, operators, and lifecycle methods for [BinaryReader].
+///
+/// Provides access to the reader's state ([offset],[length],[availableBytes]),
+/// random-access operator (`[]`), byte reading ([call]), and buffer rebinding
+/// ([rebind]).
+///
+/// Example:
+/// ```dart
+/// final reader = BinaryReader(Uint8List.fromList([0x00, 0x01, 0x02, 0x03]));
+/// print(reader.offset);    // 0
+/// print(reader[0]);        // 0x00
+///
+/// reader.readUint32();
+/// print(reader.offset);    // 4
+/// print(reader.availableBytes);  // 0
+///
+/// // Rebind to new buffer
+/// reader.rebind(Uint8List.fromList([0xFF]));
+/// print(reader.offset);    // 0
+/// ```
 extension BinaryReaderCore on BinaryReader {
   /// Returns the number of bytes remaining to be read.
   @pragma('vm:prefer-inline')
@@ -106,6 +125,20 @@ extension BinaryReaderCore on BinaryReader {
 }
 
 /// Variable-length integer reading methods for [BinaryReader].
+///
+/// Provides methods for reading VarInt and ZigZag encoded integers.
+///
+/// **VarInt:** Uses 7 bits per byte for data, 1 bit as continuation flag.
+/// Small values (0-127) fit in a single byte.
+///
+/// **ZigZag:** Decodes signed integers: 0→0, 1→-1, 2→1, 3→-2, etc.
+/// Ensures small absolute values (positive and negative) decode efficiently.
+///
+/// Example:
+/// ```dart
+/// final a = reader.readVarUint();     // 1 byte for values 0-127
+/// final b = reader.readVarInt();      // Signed with ZigZag
+/// ```
 extension BinaryReaderVarInt on BinaryReader {
   /// Reads an unsigned variable-length integer encoded using VarInt format.
   ///
@@ -232,6 +265,25 @@ extension BinaryReaderVarInt on BinaryReader {
 }
 
 /// Fixed-width numeric reading methods for [BinaryReader].
+///
+/// Reads primitive types at their natural, fixed size. All multi-byte
+/// integers use configurable endianness (defaults to big-endian).
+///
+/// **Type sizes:**
+/// - `bool`: 1 byte (0 or 1)
+/// - `Uint8`/`Int8`: 1 byte
+/// - `Uint16`/`Int16`: 2 bytes
+/// - `Uint32`/`Int32`: 4 bytes
+/// - `Uint64`/`Int64`: 8 bytes
+/// - `Float32`: 4 bytes (IEEE 754)
+/// - `Float64`: 8 bytes (IEEE 754)
+///
+/// Example:
+/// ```dart
+/// final version = reader.readUint8();
+/// final timestamp = reader.readUint32();
+/// final value = reader.readFloat64(Endian.little);
+/// ```
 extension BinaryReaderNumeric on BinaryReader {
   /// Reads an 8-bit unsigned integer (0-255).
   ///
@@ -442,6 +494,33 @@ extension BinaryReaderNumeric on BinaryReader {
 }
 
 /// Byte array and string reading methods for [BinaryReader].
+///
+/// Provides methods for reading raw byte sequences and UTF-8 encoded strings,
+/// with optional length prefixing for self-describing data.
+///
+/// **Reading patterns:**
+/// - Raw bytes: [readBytes], [readRemainingBytes] — direct byte extraction
+/// - Length-prefixed: [readVarBytes] — VarUint length + data
+/// - Strings: [readString] — UTF-8 encoded with specified byte length
+/// - Length-prefixed strings: [readVarString] — VarUint length + UTF-8
+/// - Fixed-length strings: [readStringFixed] — length prefix with fixed size
+///
+/// **Performance:** All methods use zero-copy buffer views where possible.
+///
+/// Example:
+/// ```dart
+/// // Raw bytes
+/// final header = reader.readBytes(4);
+/// final remaining = reader.readRemainingBytes();
+///
+/// // Length-prefixed binary blob
+/// final data = reader.readVarBytes();
+///
+/// // Strings
+/// final byteLength = reader.readVarUint();
+/// final text = reader.readString(byteLength);
+/// final varText = reader.readVarString();
+/// ```
 extension BinaryReaderBytesString on BinaryReader {
   /// Reads a sequence of bytes and returns them as a [Uint8List].
   ///
@@ -632,34 +711,46 @@ extension BinaryReaderBytesString on BinaryReader {
   }
 }
 
-/// Random access and position inspection methods for [BinaryReader].
+/// Random access read methods for [BinaryReader].
+///
+/// These methods allow reading from arbitrary positions in the buffer without
+/// changing the current read position (offset). This is useful for inspecting
+/// data at known offsets or peeking ahead.
+///
+/// **Important:** Unlike regular read methods, these do NOT advance the read
+/// position — they only read bytes at the specified `position`.
+///
+/// **Read methods** (`get*`): return values at `position` without modification.
+///
+/// Example:
+/// ```dart
+/// final reader = BinaryReader(Uint8List.fromList(
+///   [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07],
+/// ));
+///
+/// // Read at arbitrary position without advancing offset
+/// print(reader.getUint32(0));  // 0x00010203
+/// print(reader.getUint32(4));  // 0x04050607
+///
+/// // Read same data multiple times
+/// print(reader.getUint32(0));  // 0x00010203
+/// ```
 extension BinaryReaderRandomAccess on BinaryReader {
-  /// Reads a byte at the specified [position] without changing the current
-  /// read position.
+  /// Reads a 8-bit unsigned integer at the specified [position] without
+  /// changing the current read position.
   ///
   /// Throws [RangeError] if [position] is negative or beyond the buffer.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  int getUint8(int position) {
-    assert(position >= 0 && position < _rs.length, 'position out of bounds');
-    return _rs.list[position];
-  }
+  int getUint8(int position) => _rs.data.getUint8(position);
 
-  /// Reads a 16-bit signed integer at the specified [position] without changing
-  /// the current read position.
+  /// Reads a 8-bit signed integer at the specified [position] without
+  /// changing the current read position.
   ///
-  /// [endian] specifies byte order (defaults to big-endian).
-  ///
-  /// Throws [RangeError] if [position] is negative or beyond `length - 1`.
+  /// Throws [RangeError] if [position] is negative or beyond the buffer.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  int getInt16(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 2 <= _rs.length,
-      'position out of bounds',
-    );
-    return _rs.data.getInt16(position, endian);
-  }
+  int getInt8(int position) => _rs.data.getInt8(position);
 
   /// Reads a 16-bit unsigned integer at the specified [position] without
   /// changing the current read position.
@@ -669,29 +760,19 @@ extension BinaryReaderRandomAccess on BinaryReader {
   /// Throws [RangeError] if [position] is negative or beyond `length - 1`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  int getUint16(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 2 <= _rs.length,
-      'position out of bounds',
-    );
-    return _rs.data.getUint16(position, endian);
-  }
+  int getUint16(int position, [Endian endian = Endian.big]) =>
+      _rs.data.getUint16(position, endian);
 
-  /// Reads a 32-bit signed integer at the specified [position] without changing
+  /// Reads a 16-bit signed integer at the specified [position] without changing
   /// the current read position.
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond `length - 3`.
+  /// Throws [RangeError] if [position] is negative or beyond `length - 1`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  int getInt32(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 4 <= _rs.length,
-      'position out of bounds',
-    );
-    return _rs.data.getInt32(position, endian);
-  }
+  int getInt16(int position, [Endian endian = Endian.big]) =>
+      _rs.data.getInt16(position, endian);
 
   /// Reads a 32-bit unsigned integer at the specified [position] without
   /// changing the current read position.
@@ -701,29 +782,19 @@ extension BinaryReaderRandomAccess on BinaryReader {
   /// Throws [RangeError] if [position] is negative or beyond `length - 3`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  int getUint32(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 4 <= _rs.length,
-      'position out of bounds',
-    );
-    return _rs.data.getUint32(position, endian);
-  }
+  int getUint32(int position, [Endian endian = Endian.big]) =>
+      _rs.data.getUint32(position, endian);
 
-  /// Reads a 64-bit signed integer at the specified [position] without changing
+  /// Reads a 32-bit signed integer at the specified [position] without changing
   /// the current read position.
   ///
   /// [endian] specifies byte order (defaults to big-endian).
   ///
-  /// Throws [RangeError] if [position] is negative or beyond `length - 7`.
+  /// Throws [RangeError] if [position] is negative or beyond `length - 3`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  int getInt64(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 8 <= _rs.length,
-      'position out of bounds',
-    );
-    return _rs.data.getInt64(position, endian);
-  }
+  int getInt32(int position, [Endian endian = Endian.big]) =>
+      _rs.data.getInt32(position, endian);
 
   /// Reads a 64-bit unsigned integer at the specified [position] without
   /// changing the current read position.
@@ -733,13 +804,19 @@ extension BinaryReaderRandomAccess on BinaryReader {
   /// Throws [RangeError] if [position] is negative or beyond `length - 7`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  int getUint64(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 8 <= _rs.length,
-      'position out of bounds',
-    );
-    return _rs.data.getUint64(position, endian);
-  }
+  int getUint64(int position, [Endian endian = Endian.big]) =>
+      _rs.data.getUint64(position, endian);
+
+  /// Reads a 64-bit signed integer at the specified [position] without changing
+  /// the current read position.
+  ///
+  /// [endian] specifies byte order (defaults to big-endian).
+  ///
+  /// Throws [RangeError] if [position] is negative or beyond `length - 7`.
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  int getInt64(int position, [Endian endian = Endian.big]) =>
+      _rs.data.getInt64(position, endian);
 
   /// Reads a 32-bit floating-point number at the specified [position] without
   /// changing the current read position.
@@ -749,13 +826,8 @@ extension BinaryReaderRandomAccess on BinaryReader {
   /// Throws [RangeError] if [position] is negative or beyond `length - 3`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  double getFloat32(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 4 <= _rs.length,
-      'position out of bounds',
-    );
-    return _rs.data.getFloat32(position, endian);
-  }
+  double getFloat32(int position, [Endian endian = Endian.big]) =>
+      _rs.data.getFloat32(position, endian);
 
   /// Reads a 64-bit floating-point number at the specified [position] without
   /// changing the current read position.
@@ -765,34 +837,8 @@ extension BinaryReaderRandomAccess on BinaryReader {
   /// Throws [RangeError] if [position] is negative or beyond `length - 7`.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  double getFloat64(int position, [Endian endian = Endian.big]) {
-    assert(
-      position >= 0 && position + 8 <= _rs.length,
-      'position out of bounds',
-    );
-    return _rs.data.getFloat64(position, endian);
-  }
-
-  /// Returns the byte at the current read position without advancing the
-  /// offset.
-  ///
-  /// This is a convenience method for peeking at the next byte to be read.
-  ///
-  /// Example:
-  /// ```dart
-  /// final nextByte = reader.peekByte();
-  /// if (nextByte == 0x42) {
-  ///   // Handle type 0x42
-  /// }
-  /// final actualByte = reader.readUint8(); // Now read it
-  /// ```
-  @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  int peekByte() {
-    _checkBounds(1, 'Peek Byte');
-
-    return _rs.list[_rs.offset];
-  }
+  double getFloat64(int position, [Endian endian = Endian.big]) =>
+      _rs.data.getFloat64(position, endian);
 
   /// Reads bytes without advancing the read position.
   ///
@@ -837,6 +883,32 @@ extension BinaryReaderRandomAccess on BinaryReader {
 }
 
 /// Position management methods for [BinaryReader].
+///
+/// Controls the read position (offset) within the buffer and provides
+/// utilities for navigating through binary data.
+///
+/// **Key methods:**
+/// - [hasBytes]: check if enough bytes are available
+/// - [skip]: advance position without reading
+/// - [seek]: jump to any position within buffer
+/// - [rewind]: move backwards to re-read data
+///
+/// Example:
+/// ```dart
+/// // Check and read conditionally
+/// if (reader.hasBytes(4)) {
+///   final value = reader.readUint32();
+/// }
+///
+/// // Skip unknown data
+/// reader.skip(100);
+///
+/// // Jump to specific position
+/// reader.seek(0);  // Restart from beginning
+///
+/// // Re-read previous data
+/// reader.rewind(4);
+/// ```
 extension BinaryReaderPosition on BinaryReader {
   /// Checks if there are at least [length] bytes available to read.
   ///

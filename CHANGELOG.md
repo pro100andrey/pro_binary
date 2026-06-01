@@ -1,5 +1,23 @@
 <!-- markdownlint-disable-file MD025 -->
 
+# 6.0.0
+
+**BREAKING CHANGES:**
+
+- **BinaryReader**: removed `peekByte()` — use `reader.getUint8(reader.offset)` instead
+- **BinaryWriter**: removed `writeUint8At(int position, int value)` — use `writer[position] = value` or `setUint8(position, value)` instead
+
+**New Features:**
+
+- **BinaryReader**: added `getInt8(int position)` — read signed Int8 at arbitrary position without advancing offset
+- **BinaryWriter**: added `getInt8(int position)` — read signed Int8 at arbitrary position
+- **BinaryWriter**: added `setInt8(int position, int value)` — write signed Int8 at arbitrary position (range: -128..127)
+- **BinaryWriter**: added `reserve(int count)` — reserve bytes for later backpatching, returns starting offset
+
+**Tests:**
+
+- Added 14 new tests
+
 # 5.3.0
 
 - **BinaryReader**:

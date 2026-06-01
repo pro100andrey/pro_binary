@@ -28,11 +28,47 @@ void main() {
       });
 
       test('throws for negative position', () {
-        expect(() => reader.getUint8(-1), throwsA(isA<AssertionError>()));
+        expect(() => reader.getUint8(-1), throwsRangeError);
       });
 
       test('throws for position at end', () {
-        expect(() => reader.getUint8(32), throwsA(isA<AssertionError>()));
+        expect(() => reader.getUint8(32), throwsRangeError);
+      });
+    });
+
+    group('getInt8', () {
+      test('reads signed Int8 byte at position', () {
+        final buffer = Uint8List.fromList([0x80, 0x7F, 0x00, 0xFF, 0x01]);
+        final reader = BinaryReader(buffer);
+        expect(reader.getInt8(0), equals(-128));
+        expect(reader.getInt8(1), equals(127));
+        expect(reader.getInt8(2), equals(0));
+        expect(reader.getInt8(3), equals(-1));
+        expect(reader.getInt8(4), equals(1));
+      });
+
+      test('does not change offset', () {
+        reader
+          ..seek(5)
+          ..getInt8(0);
+        expect(reader.offset, equals(5));
+      });
+
+      test('throws for negative position', () {
+        expect(() => reader.getInt8(-1), throwsRangeError);
+      });
+
+      test('throws for position at end', () {
+        expect(() => reader.getInt8(32), throwsRangeError);
+      });
+
+      test('signed round-trip', () {
+        final buffer = Uint8List.fromList([0xFF, 0x80, 0x00, 0x7F]);
+        final reader = BinaryReader(buffer);
+        expect(reader.getInt8(0), equals(-1));
+        expect(reader.getInt8(1), equals(-128));
+        expect(reader.getInt8(2), equals(0));
+        expect(reader.getInt8(3), equals(127));
       });
     });
 
@@ -74,11 +110,11 @@ void main() {
       test('throws for position out of bounds', () {
         // 32-byte buffer: getUint16(31) needs bytes 31-32, but 32 is out of
         // bounds
-        expect(() => reader.getUint16(31), throwsA(isA<AssertionError>()));
+        expect(() => reader.getUint16(31), throwsRangeError);
       });
 
       test('throws for negative position', () {
-        expect(() => reader.getUint16(-1), throwsA(isA<AssertionError>()));
+        expect(() => reader.getUint16(-1), throwsRangeError);
       });
     });
 
@@ -131,11 +167,11 @@ void main() {
       test('throws for position out of bounds', () {
         // 32-byte buffer: getUint32(29) needs bytes 29-32, but 32 is out of
         // bounds
-        expect(() => reader.getUint32(29), throwsA(isA<AssertionError>()));
+        expect(() => reader.getUint32(29), throwsRangeError);
       });
 
       test('throws for negative position', () {
-        expect(() => reader.getUint32(-1), throwsA(isA<AssertionError>()));
+        expect(() => reader.getUint32(-1), throwsRangeError);
       });
     });
 
@@ -210,11 +246,11 @@ void main() {
       test('throws for position out of bounds', () {
         // 32-byte buffer: getUint64(25) needs bytes 25-32, but 32 is out of
         // bounds
-        expect(() => reader.getUint64(25), throwsA(isA<AssertionError>()));
+        expect(() => reader.getUint64(25), throwsRangeError);
       });
 
       test('throws for negative position', () {
-        expect(() => reader.getUint64(-1), throwsA(isA<AssertionError>()));
+        expect(() => reader.getUint64(-1), throwsRangeError);
       });
     });
 
@@ -280,13 +316,13 @@ void main() {
 
       test('throws for position out of bounds', () {
         // 32-byte buffer
-        expect(() => reader.getFloat32(29), throwsA(isA<AssertionError>()));
-        expect(() => reader.getFloat64(25), throwsA(isA<AssertionError>()));
+        expect(() => reader.getFloat32(29), throwsRangeError);
+        expect(() => reader.getFloat64(25), throwsRangeError);
       });
 
       test('throws for negative position', () {
-        expect(() => reader.getFloat32(-1), throwsA(isA<AssertionError>()));
-        expect(() => reader.getFloat64(-1), throwsA(isA<AssertionError>()));
+        expect(() => reader.getFloat32(-1), throwsRangeError);
+        expect(() => reader.getFloat64(-1), throwsRangeError);
       });
     });
 
@@ -352,14 +388,14 @@ void main() {
       test('read from empty buffer', () {
         final emptyBuffer = Uint8List(0);
         final emptyReader = BinaryReader(emptyBuffer);
-        expect(() => emptyReader.getUint8(0), throwsA(isA<AssertionError>()));
+        expect(() => emptyReader.getUint8(0), throwsRangeError);
       });
 
       test('read from single byte buffer', () {
         final buffer = Uint8List.fromList([0x42]);
         final reader = BinaryReader(buffer);
         expect(reader.getUint8(0), equals(0x42));
-        expect(() => reader.getUint16(0), throwsA(isA<AssertionError>()));
+        expect(() => reader.getUint16(0), throwsRangeError);
       });
 
       test('multiple reads at same position', () {
